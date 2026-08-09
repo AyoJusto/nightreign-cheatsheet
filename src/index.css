@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  /* Near-black with a cold cast. Neutral charcoal reads as a settings app;
+     the blue-grey is what makes it feel like night. */
+  --color-ink-900: #08090c;
+  --color-ink-800: #0d1015;
+  --color-ink-700: #12161d;
+  --color-ink-600: #191e27;
+  --color-ink-500: #232935;
+  --color-ink-400: #333b4a;
+
+  --color-bone: #e9e6df;
+  --color-ash: #9aa1ad;
+  --color-dim: #6b7381;
+
+  /* Aged gold. Structural — rules, headers, active state. Not decoration. */
+  --color-gold: #c9a961;
+  --color-gold-dim: #8a7440;
+
+  /* The two signs. Deliberately not green/red: negation runs backwards from the
+     usual instinct, so borrowing that palette would import the wrong reflex.
+     Cold blue = a gap in the armour. Rust = it soaks this. */
+  --color-weak: #74cdf0;
+  --color-resist: #c4635a;
+
+  /* The game's own elemental assignments, so they read without labels. */
+  --color-magic: #a5b4fc;
+  --color-fire: #fb923c;
+  --color-lightning: #fde047;
+  --color-holy: #fef08a;
+
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/**
+ * The page ground. Any element that has to sit opaquely on top of scrolling
+ * content — a sticky header — uses this same class rather than a translucent
+ * tint, so it matches exactly instead of showing as a lighter band.
+ *
+ * background-attachment: fixed pins the grain to the viewport, which means the
+ * sticky bar's grain lines up with the body's instead of sliding against it.
+ */
+.ground,
+body {
+  background-color: var(--color-ink-900);
+  /* Faint grain. Generated, so nothing is fetched. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+
+body {
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers are the point of this page; they have to line up. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Hairline rules read as engraved rather than drawn. */
+.rule-gold {
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--color-gold) 55%, transparent),
+    transparent
+  );
+}
+
+.icon-lift {
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.6));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
