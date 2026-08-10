@@ -115,8 +115,11 @@ export function FormBlock({ form }: { form: Form }) {
             single column, and spanning 2 there invents an implicit second
             column and scrolls the page sideways. */}
         <div className="sm:[grid-column:span_2]">
-          <Heading>Status buildup</Heading>
-          <p className="mb-2 text-xs text-dim">Lower procs faster.</p>
+          {/* The direction is inverted and nothing on screen implies it, so it
+              rides along in the heading instead of as a sentence underneath. */}
+          <Heading>
+            Status buildup <span className="normal-case tracking-normal text-dim">lower = faster</span>
+          </Heading>
           <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]">
             {statuses.map((k) => (
               <StatusCell key={k} k={k} v={form.status[k]} />

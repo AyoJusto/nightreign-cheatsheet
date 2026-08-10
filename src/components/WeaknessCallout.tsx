@@ -41,12 +41,12 @@ export function WeaknessCallout({ e }: { e: Expedition }) {
           </span>
         </div>
 
-        <p className="mt-2 text-sm text-dim">
-          {listed.kind === "damage"
-            ? `Takes ${Math.abs(listed.value)}% more damage from this.`
-            : "Fastest status to proc. Lower buildup lands sooner."}
-          {listed.derived && " No source lists a weakness for this one — this is the best number."}
-        </p>
+        {/* No prose restating the number. The only thing worth saying here is
+            the thing the number cannot say: that nobody actually lists a
+            weakness for this boss and it was computed from its own table. */}
+        {listed.derived && (
+          <p className="mt-2 text-sm text-dim">Not listed anywhere; taken from its own table.</p>
+        )}
       </div>
 
       {(alsoStatuses.length > 0 || alsoDamage.length > 0) && (
@@ -73,9 +73,11 @@ export function WeaknessCallout({ e }: { e: Expedition }) {
         </div>
       )}
 
+      {/* Kept, shortened to a tag. Without it -35 looks wrong next to Gnoster's
+          -40 in the table below, and the reason is not derivable from either. */}
       {e.forms.length > 1 && (
-        <p className="border-t border-ink-500/70 bg-ink-800/60 px-5 py-2.5 text-xs text-ash sm:px-6">
-          Worst case across both forms — this works on either one, not just the softer of the two.
+        <p className="border-t border-ink-500/70 bg-ink-800/60 px-5 py-2 text-xs text-dim sm:px-6">
+          Worst case of {e.forms.length} forms
         </p>
       )}
     </section>

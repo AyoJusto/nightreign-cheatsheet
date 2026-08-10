@@ -102,15 +102,11 @@ export function NightBossDetail({
                 )}
               </div>
 
+              {/* Which phase is not in the number, so it stays. The rest of the
+                  sentence was restating it. */}
               {d.phaseOnly && !d.weaknesses.length && (
-                <p className="mt-2 text-sm text-ash">
-                  Phase {d.phaseOnly.form} only — the other phase resists it, so this is not a
-                  safe pick for the whole fight.
-                </p>
-              )}
-              {!d.weaknesses.length && !d.phaseOnly && d.fastestStatuses.length > 0 && (
                 <p className="mt-2 text-sm text-dim">
-                  Every damage type is negated at 0% or worse. Go after the status effect instead.
+                  Phase {d.phaseOnly.form} only; the other resists it
                 </p>
               )}
             </div>
@@ -131,9 +127,8 @@ export function NightBossDetail({
             )}
 
             {d.formCount > 1 && (
-              <p className="border-t border-ink-500/70 bg-ink-800/60 px-5 py-2.5 text-xs text-ash sm:px-6">
-                {d.formCount} phases or targets — scored on the toughest, so this holds for the
-                whole fight.
+              <p className="border-t border-ink-500/70 bg-ink-800/60 px-5 py-2 text-xs text-dim sm:px-6">
+                Worst case of {d.formCount} forms
               </p>
             )}
           </section>
@@ -152,8 +147,10 @@ export function NightBossDetail({
               ))}
             </div>
             <div className="sm:[grid-column:span_2]">
-              <Heading>Status buildup</Heading>
-              <p className="mb-2 text-xs text-dim">Lower procs faster.</p>
+              <Heading>
+                Status buildup{" "}
+                <span className="normal-case tracking-normal text-dim">lower = faster</span>
+              </Heading>
               <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]">
                 {statuses.map((k) => {
                   const v = d.status[k];
@@ -185,11 +182,8 @@ export function NightBossDetail({
             </div>
           </div>
 
-          {d.source && (
-            <p className="mt-6 text-xs text-dim">
-              Numbers are for {d.source}, the main target of this fight.
-            </p>
-          )}
+          {/* Which of a duo the numbers describe is not visible anywhere else. */}
+          {d.source && <p className="mt-6 text-xs text-dim">Numbers are for {d.source}</p>}
         </>
       )}
 

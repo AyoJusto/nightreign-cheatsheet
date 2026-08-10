@@ -77,9 +77,8 @@ export function BossDetail({
             <NightList n={2} bosses={e.night2} onSelect={onSelect} />
           </div>
 
-          <p className="border-t border-ink-600 pt-4 text-xs leading-relaxed text-dim">
-            The Everdark Sovereign version shares these weaknesses. It opens at phase two with
-            extra attacks, so the damage type and status that work here still work there.
+          <p className="border-t border-ink-600 pt-4 text-xs text-dim">
+            Everdark Sovereign shares these weaknesses.
           </p>
         </aside>
       </div>
