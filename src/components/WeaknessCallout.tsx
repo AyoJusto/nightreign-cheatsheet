@@ -74,10 +74,14 @@ export function WeaknessCallout({ e }: { e: Expedition }) {
       )}
 
       {/* Kept, shortened to a tag. Without it -35 looks wrong next to Gnoster's
-          -40 in the table below, and the reason is not derivable from either. */}
+          -40 in the table below, and the reason is not derivable from either.
+          Sentient Pest is Gnoster and Faurtis at the same time while Night
+          Aspect is two sequential phases, and the form labels are what tell
+          them apart. */}
       {e.forms.length > 1 && (
         <p className="border-t border-ink-500/70 bg-ink-800/60 px-5 py-2 text-xs text-dim sm:px-6">
-          Worst case of {e.forms.length} forms
+          Worst case of {e.forms.length}{" "}
+          {e.forms.every((f) => f.label?.startsWith("Phase")) ? "phases" : "targets"}
         </p>
       )}
     </section>

@@ -1,7 +1,7 @@
 import type { DamageKey, ElemKey, NightBoss, PhysKey, StatusKey } from "../types";
 import { EXPEDITIONS } from "../data/nightlords";
 import { Icon, LABELS, TINT } from "./Icon";
-import { NightBadge } from "./NightBossCard";
+import { NightBadge, partialLabel } from "./NightBossCard";
 
 const PHYS: PhysKey[] = ["standard", "slash", "strike", "pierce"];
 const ELEM: ElemKey[] = ["magic", "fire", "lightning", "holy"];
@@ -102,11 +102,12 @@ export function NightBossDetail({
                 )}
               </div>
 
-              {/* Which phase is not in the number, so it stays. The rest of the
-                  sentence was restating it. */}
+              {/* That this only holds for part of the fight is not in the
+                  number, so it stays. Which part is not something the source
+                  data can tell us, so it is not claimed. */}
               {d.phaseOnly && !d.weaknesses.length && (
                 <p className="mt-2 text-sm text-dim">
-                  Phase {d.phaseOnly.form} only; the other resists it
+                  {partialLabel(boss)}; the rest resist it
                 </p>
               )}
             </div>
@@ -128,7 +129,7 @@ export function NightBossDetail({
 
             {d.formCount > 1 && (
               <p className="border-t border-ink-500/70 bg-ink-800/60 px-5 py-2 text-xs text-dim sm:px-6">
-                Worst case of {d.formCount} forms
+                Worst case of {d.formCount} {partialLabel(boss).startsWith("one target") ? "targets" : "phases"}
               </p>
             )}
           </section>

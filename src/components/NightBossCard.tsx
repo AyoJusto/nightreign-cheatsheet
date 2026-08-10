@@ -2,6 +2,20 @@ import type { NightBoss } from "../types";
 import { Icon, LABELS, TINT } from "./Icon";
 
 /**
+ * A fight with several health bars is either one enemy with phases or several
+ * enemies at once, and the two need different words. Tree Sentinel & Royal
+ * Cavalrymen is three enemies standing in a field; calling the third one
+ * "phase 3" describes a fight that does not exist.
+ *
+ * The number is dropped either way. It is the order the blocks appeared on the
+ * source page, which does not reliably map to a specific enemy or phase, so
+ * naming one would be a guess dressed up as a fact.
+ */
+export function partialLabel(boss: NightBoss): string {
+  return /\s&\s|\bDuo\b/.test(boss.name) ? "one target only" : "one phase only";
+}
+
+/**
  * The weakness summary that fits on one line — used on the search results and
  * on the expedition page's night lists. Says "no damage weakness" out loud
  * rather than showing nothing, because a blank space reads as missing data.
@@ -34,7 +48,7 @@ export function WeaknessLine({ boss, size = 18 }: { boss: NightBoss; size?: numb
           </span>
         ))}
         <span className="tnum text-[13px] text-weak">{d.phaseOnly.value}</span>
-        <span className="text-[13px] text-dim">phase {d.phaseOnly.form} only</span>
+        <span className="text-[13px] text-dim">{partialLabel(boss)}</span>
       </span>
     );
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { search, normalize, ALL_BOSSES, searchAll, searchNightBosses, BY_NAME } from "./search";
 import { EXPEDITIONS } from "./data/nightlords";
+import { partialLabel } from "./components/NightBossCard";
 import { NIGHT_BOSSES } from "./data/nightbosses";
 
 const ids = (q: string) => search(q).map((h) => h.expedition.id).sort();
@@ -245,5 +246,26 @@ describe("night bosses", () => {
   it("matches night bosses through the same punctuation folding", () => {
     expect(searchNightBosses("nights cavalry").map((b) => b.name)).toEqual(["Night's Cavalry"]);
     expect(searchNightBosses("demon").length).toBeGreaterThan(2);
+  });
+});
+
+describe("multi-target wording", () => {
+  // "Tree Sentinel & Royal Cavalrymen" is three enemies in a field, not a boss
+  // with three phases, and the scraper labelled every negation block a "phase".
+  it("calls simultaneous fights targets, not phases", () => {
+    const groups = NIGHT_BOSSES.filter((b) => /\s&\s|\bDuo\b/.test(b.name));
+    expect(groups.length).toBeGreaterThan(4);
+    for (const b of groups) expect(partialLabel(b)).toBe("one target only");
+  });
+
+  it("still calls a genuinely sequential fight a phase", () => {
+    // King of the Storm, then the Nameless King himself.
+    expect(partialLabel(BY_NAME.get("Nameless King")!)).toBe("one phase only");
+  });
+
+  it("never names a specific phase or target number", () => {
+    // The number was the order blocks appeared on the source page, which does
+    // not map to a particular enemy, so it is not claimed anywhere.
+    for (const b of NIGHT_BOSSES) expect(partialLabel(b)).not.toMatch(/\d/);
   });
 });
