@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { search, normalize, ALL_BOSSES } from "./search";
+import { search, normalize, ALL_BOSSES, searchAll, searchNightBosses, BY_NAME } from "./search";
 import { EXPEDITIONS } from "./data/nightlords";
+import { NIGHT_BOSSES } from "./data/nightbosses";
 
 const ids = (q: string) => search(q).map((h) => h.expedition.id).sort();
 const nights = (q: string) => [...new Set(search(q).flatMap((h) => h.via.map((v) => v.night)))];
@@ -162,5 +163,87 @@ describe("search", () => {
     // "who" and "live" were in the small-word list and mangled this name.
     const names = EXPEDITIONS.flatMap((e) => [...e.night1, ...e.night2]);
     expect(names).toContain("Tibia Mariner & Those Who Live in Death");
+  });
+});
+
+describe("night bosses", () => {
+  it("covers every boss named in a schedule, with no orphans either way", () => {
+    const scheduled = new Set(EXPEDITIONS.flatMap((e) => [...e.night1, ...e.night2]));
+    const known = new Set(NIGHT_BOSSES.map((b) => b.name));
+    expect([...scheduled].filter((n) => !known.has(n))).toEqual([]);
+    expect([...known].filter((n) => !scheduled.has(n))).toEqual([]);
+    expect(NIGHT_BOSSES).toHaveLength(35);
+  });
+
+  it("records the night and expeditions each boss belongs to", () => {
+    for (const b of NIGHT_BOSSES) {
+      expect(b.expeditions.length).toBeGreaterThan(0);
+      for (const id of b.expeditions) {
+        const e = EXPEDITIONS.find((x) => x.id === id)!;
+        expect(b.night === 1 ? e.night1 : e.night2).toContain(b.name);
+      }
+    }
+  });
+
+  it("has slugs that are unique and URL-safe", () => {
+    const slugs = NIGHT_BOSSES.map((b) => b.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    for (const s of slugs) expect(s).toMatch(/^[a-z0-9-]+$/);
+  });
+
+  it("never claims a weakness the numbers do not support", () => {
+    for (const b of NIGHT_BOSSES) {
+      if (!b.data) continue;
+      const { weaknesses, weaknessValue, neg } = b.data;
+      if (weaknesses.length) {
+        expect(weaknessValue!).toBeLessThan(0);
+        // Every listed key must actually sit at that value.
+        for (const k of weaknesses) expect(neg[k]).toBe(weaknessValue);
+        expect(Math.min(...Object.values(neg))).toBe(weaknessValue);
+      } else {
+        expect(weaknessValue).toBeNull();
+        expect(Math.min(...Object.values(neg))).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it("only reports a phase-only weakness when the worst case has none", () => {
+    for (const b of NIGHT_BOSSES) {
+      if (!b.data?.phaseOnly) continue;
+      expect(b.data.weaknesses).toEqual([]);
+      expect(b.data.phaseOnly.value).toBeLessThan(0);
+      expect(b.data.formCount).toBeGreaterThan(1);
+    }
+  });
+
+  it("keeps Nameless King's phase 1 lightning rather than hiding it", () => {
+    // Lightning is -31 in phase 1 and +83 in phase 2, so the worst case says
+    // "no weakness". That is true for weapon choice and useless as advice.
+    const nk = BY_NAME.get("Nameless King")!;
+    expect(nk.data!.weaknesses).toEqual([]);
+    expect(nk.data!.phaseOnly).toEqual({ form: 1, value: -31, keys: ["lightning"] });
+  });
+
+  it("leaves Knight Artorias blank rather than importing another boss's numbers", () => {
+    // Its wiki page is largely a copy of the Heolstor page.
+    const art = BY_NAME.get("Knight Artorias")!;
+    expect(art.data).toBeNull();
+    expect(NIGHT_BOSSES.filter((b) => !b.data)).toHaveLength(1);
+  });
+
+  it("finds a night boss by name and returns it alongside its expeditions", () => {
+    const r = searchAll("gaping dragon");
+    expect(r.nightBosses.map((b) => b.name)).toEqual(["Gaping Dragon"]);
+    expect(r.expeditions).toHaveLength(4);
+  });
+
+  it("returns no night bosses for an empty or expedition-only query", () => {
+    expect(searchNightBosses("")).toEqual([]);
+    expect(searchNightBosses("tricephalos")).toEqual([]);
+  });
+
+  it("matches night bosses through the same punctuation folding", () => {
+    expect(searchNightBosses("nights cavalry").map((b) => b.name)).toEqual(["Night's Cavalry"]);
+    expect(searchNightBosses("demon").length).toBeGreaterThan(2);
   });
 });

@@ -1,5 +1,7 @@
-import type { Expedition, Hit, Night } from "./types";
+import type { Expedition, Hit, NightBoss, Results } from "./types";
+import type { Night } from "./types";
 import { EXPEDITIONS } from "./data/nightlords";
+import { NIGHT_BOSSES } from "./data/nightbosses";
 
 /**
  * Fold to a comparable form. Apostrophes and ampersands are the two things a
@@ -19,14 +21,13 @@ export function normalize(s: string): string {
 }
 
 /** Every distinct night boss, for the type-ahead. */
-export const ALL_BOSSES: { name: string; night: Night }[] = (() => {
-  const seen = new Map<string, Night>();
-  for (const e of EXPEDITIONS) {
-    for (const b of e.night1) seen.set(b, 1);
-    for (const b of e.night2) seen.set(b, 2);
-  }
-  return [...seen].map(([name, night]) => ({ name, night })).sort((a, b) => a.name.localeCompare(b.name));
-})();
+export const ALL_BOSSES: { name: string; night: Night }[] = NIGHT_BOSSES.map((b) => ({
+  name: b.name,
+  night: b.night,
+}));
+
+export const BY_SLUG = new Map(NIGHT_BOSSES.map((b) => [b.slug, b]));
+export const BY_NAME = new Map(NIGHT_BOSSES.map((b) => [b.name, b]));
 
 /**
  * One search box, one kind of result: expeditions.
@@ -66,6 +67,21 @@ export function search(query: string, data: Expedition[] = EXPEDITIONS): Hit[] {
   // Naming the Nightlord is a more specific intent than naming a boss it happens
   // to share with three other expeditions, so those surface first.
   return hits.sort((a, b) => Number(b.nameMatch) - Number(a.nameMatch));
+}
+
+/** Night bosses matching the query, for their own section of the results. */
+export function searchNightBosses(query: string, data: NightBoss[] = NIGHT_BOSSES): NightBoss[] {
+  const q = normalize(query);
+  if (!q) return [];
+  return data.filter((b) => normalize(b.name).includes(q));
+}
+
+/**
+ * One query, two questions answered: which expedition am I in, and what is this
+ * thing I am looking at. Both come back from the same box.
+ */
+export function searchAll(query: string): Results {
+  return { expeditions: search(query), nightBosses: searchNightBosses(query) };
 }
 
 /**

@@ -54,6 +54,29 @@ export type Expedition = {
 
 export type Night = 1 | 2;
 
+/** A Night 1 or Night 2 boss. `data` is null when no trustworthy source exists. */
+export type NightBoss = {
+  slug: string;
+  name: string;
+  night: Night;
+  /** Expedition ids this boss can appear in. */
+  expeditions: string[];
+  note?: string;
+  data: {
+    weaknesses: DamageKey[];
+    weaknessValue: number | null;
+    /** A weakness that only holds for one phase, so the worst case cancels it. */
+    phaseOnly: { keys: DamageKey[]; value: number; form: number } | null;
+    fastestStatuses: StatusKey[];
+    fastestStatusValue: number | null;
+    formCount: number;
+    neg: Record<DamageKey, number>;
+    status: Record<StatusKey, Status>;
+    /** Set when the numbers come from one half of a duo fight's wiki page. */
+    source: string | null;
+  } | null;
+};
+
 /** A search hit. Always one row per expedition, never one per matched boss. */
 export type Hit = {
   expedition: Expedition;
@@ -61,4 +84,10 @@ export type Hit = {
   nameMatch: boolean;
   /** Night bosses in this expedition that matched the query. */
   via: { boss: string; night: Night }[];
+};
+
+/** Search returns both kinds of thing: where you are, and what you are fighting. */
+export type Results = {
+  expeditions: Hit[];
+  nightBosses: NightBoss[];
 };

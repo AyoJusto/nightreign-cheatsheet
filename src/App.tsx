@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { EXPEDITIONS, DATA_VERSION } from "./data/nightlords";
-import { ALL_BOSSES, nightAspectIsNoise, search } from "./search";
+import { ALL_BOSSES, BY_SLUG, nightAspectIsNoise, searchAll } from "./search";
 import { BossDetail } from "./components/BossDetail";
+import { NightBossDetail } from "./components/NightBossDetail";
 import { ResultList } from "./components/ResultList";
 
 function useHash() {
@@ -78,23 +79,29 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const autoOpened = useRef<string | null>(null);
 
-  const hits = useMemo(() => search(query), [query]);
+  const results = useMemo(() => searchAll(query), [query]);
+  const hits = results.expeditions;
   const noise = useMemo(() => nightAspectIsNoise(hits), [hits]);
+
   const selected = EXPEDITIONS.find((e) => e.id === id) ?? null;
+  const selectedBoss = id?.startsWith("boss/") ? (BY_SLUG.get(id.slice(5)) ?? null) : null;
+  const showingDetail = selected !== null || selectedBoss !== null;
 
   // A search narrowed to exactly one expedition has already answered the
   // question, so open it rather than making the user tap the only card. Guarded
   // so it fires once per query and never yanks a detail view out from under
-  // someone who is reading it.
+  // someone who is reading it. Skipped when the query also matched a night boss,
+  // since then there are two answers on screen and picking one for the user
+  // would hide the other.
   useEffect(() => {
-    if (!query.trim() || selected) return;
+    if (!query.trim() || showingDetail || results.nightBosses.length) return;
     const only = hits.length === 1 ? hits[0]!.expedition.id : null;
     if (only && autoOpened.current !== only) {
       autoOpened.current = only;
       go(only);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hits, query, selected]);
+  }, [hits, query, showingDetail, results.nightBosses.length]);
 
   useEffect(() => {
     if (!query.trim()) autoOpened.current = null;
@@ -103,9 +110,9 @@ export default function App() {
   return (
     <div className="min-h-full">
       <AnimatePresence mode="wait" initial={false}>
-        {selected ? (
+        {showingDetail ? (
           <motion.div
-            key={selected.id}
+            key={id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -132,7 +139,11 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <BossDetail e={selected} />
+            {selected ? (
+              <BossDetail e={selected} onSelect={go} />
+            ) : (
+              <NightBossDetail boss={selectedBoss!} onSelect={go} />
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -167,11 +178,23 @@ export default function App() {
 
             <p className="pb-3 pt-4 text-xs text-dim">
               {query.trim()
-                ? `${hits.length} ${hits.length === 1 ? "expedition" : "expeditions"}`
+                ? [
+                    results.nightBosses.length &&
+                      `${results.nightBosses.length} night ${results.nightBosses.length === 1 ? "boss" : "bosses"}`,
+                    `${hits.length} ${hits.length === 1 ? "expedition" : "expeditions"}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
                 : "Saw a boss? Type its name to find which expedition you are in."}
             </p>
 
-            <ResultList hits={hits} onSelect={go} noise={noise} />
+            <ResultList
+              hits={hits}
+              nightBosses={results.nightBosses}
+              onSelect={go}
+              noise={noise}
+              searching={Boolean(query.trim())}
+            />
 
             <footer className="mt-10 border-t border-ink-600 pt-5 text-xs leading-relaxed text-dim">
               Negation is a percentage: negative means the boss takes more damage. Status

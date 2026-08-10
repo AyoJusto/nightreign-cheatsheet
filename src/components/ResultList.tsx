@@ -1,19 +1,6 @@
-import type { Hit, Night } from "../types";
+import type { Hit, NightBoss } from "../types";
 import { Icon, LABELS, TINT } from "./Icon";
-
-function NightBadge({ n }: { n: Night }) {
-  return (
-    <span
-      className={`shrink-0 rounded-md border px-2 py-0.5 text-[12px] font-semibold uppercase tracking-wide ${
-        n === 1
-          ? "border-gold-dim/50 bg-gold-dim/10 text-gold"
-          : "border-magic/40 bg-magic/10 text-magic"
-      }`}
-    >
-      Night {n}
-    </span>
-  );
-}
+import { NightBadge, NightBossCard } from "./NightBossCard";
 
 function Card({ hit, onSelect }: { hit: Hit; onSelect: (id: string) => void }) {
   const { expedition: e, via } = hit;
@@ -57,16 +44,33 @@ function Card({ hit, onSelect }: { hit: Hit; onSelect: (id: string) => void }) {
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-2 mt-6 text-[12px] font-semibold uppercase tracking-[0.16em] text-gold-dim first:mt-0">
+      {children}
+    </h2>
+  );
+}
+
+// Columns are driven by available width, not by breakpoint guesses: a card
+// needs about 17rem to hold a name and its weakness, so the grid fits as many
+// as the window allows. One rule that works at 360px and at 3440px.
+const GRID = "grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-3";
+
 export function ResultList({
   hits,
+  nightBosses,
   onSelect,
   noise,
+  searching,
 }: {
   hits: Hit[];
+  nightBosses: NightBoss[];
   onSelect: (id: string) => void;
   noise: boolean;
+  searching: boolean;
 }) {
-  if (!hits.length) {
+  if (!hits.length && !nightBosses.length) {
     return (
       <p className="rounded-2xl border border-ink-600 bg-ink-700/50 px-4 py-8 text-center text-sm text-dim">
         No expedition or night boss by that name.
@@ -76,15 +80,31 @@ export function ResultList({
 
   return (
     <>
-      {/* Columns are driven by available width, not by breakpoint guesses: a
-          card needs about 17rem to hold an expedition name and its weakness, so
-          the grid fits as many of those as the window allows. One rule that
-          works at 360px and at 3440px, with no magic max-width above it. */}
-      <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-3">
-        {hits.map((h) => (
-          <Card key={h.expedition.id} hit={h} onSelect={onSelect} />
-        ))}
-      </ul>
+      {/* Both kinds of answer, labelled, so "4 expeditions" and "the boss
+          itself" are not mixed into one undifferentiated list. */}
+      {nightBosses.length > 0 && (
+        <>
+          <SectionLabel>
+            Night {nightBosses.length === 1 ? "boss" : "bosses"}
+          </SectionLabel>
+          <ul className={GRID}>
+            {nightBosses.map((b) => (
+              <NightBossCard key={b.slug} boss={b} onSelect={onSelect} />
+            ))}
+          </ul>
+        </>
+      )}
+
+      {hits.length > 0 && (
+        <>
+          {searching && nightBosses.length > 0 && <SectionLabel>Expeditions</SectionLabel>}
+          <ul className={GRID}>
+            {hits.map((h) => (
+              <Card key={h.expedition.id} hit={h} onSelect={onSelect} />
+            ))}
+          </ul>
+        </>
+      )}
 
       {noise && (
         <p className="mt-4 rounded-xl border border-ink-600 bg-ink-800/60 px-4 py-3 text-xs leading-relaxed text-dim">
