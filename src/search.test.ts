@@ -3,6 +3,7 @@ import { search, normalize, ALL_BOSSES, searchAll, searchNightBosses, BY_NAME } 
 import { EXPEDITIONS } from "./data/nightlords";
 import { partialLabel } from "./components/NightBossCard";
 import { NIGHT_BOSSES } from "./data/nightbosses";
+import { summaryOf } from "./summary";
 
 const ids = (q: string) => search(q).map((h) => h.expedition.id).sort();
 const nights = (q: string) => [...new Set(search(q).flatMap((h) => h.via.map((v) => v.night)))];
@@ -194,8 +195,9 @@ describe("night bosses", () => {
 
   it("never claims a weakness the numbers do not support", () => {
     for (const b of NIGHT_BOSSES) {
-      if (!b.data) continue;
-      const { weaknesses, weaknessValue, neg } = b.data;
+      const s = summaryOf(b);
+      if (!s) continue;
+      const { weaknesses, weaknessValue, neg } = s;
       if (weaknesses.length) {
         expect(weaknessValue!).toBeLessThan(0);
         // Every listed key must actually sit at that value.
@@ -208,21 +210,54 @@ describe("night bosses", () => {
     }
   });
 
-  it("only reports a phase-only weakness when the worst case has none", () => {
+  it("only reports a form-only weakness when the worst case has none", () => {
     for (const b of NIGHT_BOSSES) {
-      if (!b.data?.phaseOnly) continue;
-      expect(b.data.weaknesses).toEqual([]);
-      expect(b.data.phaseOnly.value).toBeLessThan(0);
-      expect(b.data.formCount).toBeGreaterThan(1);
+      const s = summaryOf(b);
+      if (!s?.formOnly) continue;
+      expect(s.weaknesses).toEqual([]);
+      expect(s.formOnly.value).toBeLessThan(0);
+      expect(s.formCount).toBeGreaterThan(1);
     }
   });
 
   it("keeps Nameless King's phase 1 lightning rather than hiding it", () => {
     // Lightning is -31 in phase 1 and +83 in phase 2, so the worst case says
     // "no weakness". That is true for weapon choice and useless as advice.
-    const nk = BY_NAME.get("Nameless King")!;
-    expect(nk.data!.weaknesses).toEqual([]);
-    expect(nk.data!.phaseOnly).toEqual({ form: 1, value: -31, keys: ["lightning"] });
+    const s = summaryOf(BY_NAME.get("Nameless King")!)!;
+    expect(s.weaknesses).toEqual([]);
+    expect(s.formOnly).toEqual({ label: "Phase 1 (dragon)", value: -31, keys: ["lightning"] });
+  });
+
+  it("lets one immune form veto a status the other form takes", () => {
+    // Both merges that this replaced got exactly this wrong: the summary named
+    // a status that one half of the fight can never be given.
+    const nk = summaryOf(BY_NAME.get("Nameless King")!)!;
+    expect(nk.status.poison).toBe("Immune");
+    expect(nk.fastestStatuses).not.toContain("poison");
+
+    const ck = summaryOf(BY_NAME.get("Crucible Knight & Golden Hippopotamus")!)!;
+    expect(ck.status.sleep).toBe("Immune");
+    expect(ck.fastestStatuses).not.toContain("sleep");
+  });
+
+  it("keeps every form the source page gives numbers for", () => {
+    // The point of the detail page: a duo shows both halves, not their worst case.
+    const forms = (n: string) => BY_NAME.get(n)!.data!.forms.map((f) => f.label);
+    expect(forms("Crucible Knight & Golden Hippopotamus")).toEqual([
+      "Crucible Knight",
+      "Golden Hippopotamus",
+    ]);
+    expect(forms("Tree Sentinel & Royal Cavalrymen")).toHaveLength(3);
+    expect(forms("Gaping Dragon")).toEqual([null]);
+  });
+
+  it("labels every form of a multi-form fight, and none of a single-form one", () => {
+    for (const b of NIGHT_BOSSES) {
+      if (!b.data) continue;
+      const labels = b.data.forms.map((f) => f.label);
+      if (labels.length === 1) expect(labels).toEqual([null]);
+      else for (const l of labels) expect(l).toBeTruthy();
+    }
   });
 
   it("leaves Knight Artorias blank rather than importing another boss's numbers", () => {

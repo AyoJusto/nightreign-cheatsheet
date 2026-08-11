@@ -1,14 +1,16 @@
-// Night 1 and Night 2 bosses. Scraped once from the Fextralife per-boss pages
-// and committed — there is no upstream dataset for these, only the Nightlords.
+// Night 1 and Night 2 bosses, transcribed from the Fextralife per-boss pages —
+// there is no upstream dataset for these, only the Nightlords.
 //
 // Same conventions as nightlords.ts: negation is a percentage where NEGATIVE
 // means the boss takes MORE damage, and status values are buildup thresholds
 // where LOWER procs faster.
 //
-// Multi-phase and duo fights are scored on their WORST form, so the weakness
-// shown works for the whole fight. When a form has a weakness the worst case
-// cancels out — Nameless King takes lightning at -31 in phase 1 and +83 in
-// phase 2 — it is reported separately as phaseOnly rather than hidden.
+// Every form a page gives numbers for is kept, labelled the way that page
+// labels it. Nothing derived lives here: the worst case a fight can put in
+// front of you, and the headline weakness that follows from it, are computed by
+// summarize() in src/summary.ts. Both used to be hand-merged into this file
+// alongside the forms, which is how Nameless King came to advertise a poison
+// proc against a phase that is poison-immune.
 //
 // Knight Artorias has no data: its Fextralife page is largely a copy of the
 // Heolstor page (72 mentions of Heolstor to 31 of Artorias, with negation
@@ -26,35 +28,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 35,
+            "slash": 35,
+            "strike": 35,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 40,
+            "lightning": 80,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 35,
-        "slash": 35,
-        "strike": 35,
-        "pierce": 10,
-        "magic": 40,
-        "fire": 40,
-        "lightning": 80,
-        "holy": 40
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -68,36 +68,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot",
-        "sleep"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 20,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 154,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 35,
-        "strike": 10,
-        "pierce": 0,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 20,
-        "holy": 20
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 154,
-        "frost": 154,
-        "sleep": 154,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -110,36 +107,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "tricephalos"
     ],
     "data": {
-      "weaknesses": [
-        "pierce"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 35,
+            "slash": 35,
+            "strike": 35,
+            "pierce": -10
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 40,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 154,
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "poison",
-        "rot",
-        "sleep"
-      ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 35,
-        "slash": 35,
-        "strike": 35,
-        "pierce": -10,
-        "magic": 40,
-        "fire": 40,
-        "lightning": 20,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": 154,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -154,37 +148,58 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [
-        "magic"
+      "forms": [
+        {
+          "label": "Centipede Demon",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": 0,
+            "strike": -10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": -20,
+            "fire": 80,
+            "lightning": -10,
+            "holy": -10
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Centipede Grub (severed tail)",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": 0,
+            "strike": -10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": -20,
+            "fire": 80,
+            "lightning": -10,
+            "holy": -10
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -20,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot"
-      ],
-      "fastestStatusValue": 252,
-      "formCount": 2,
-      "neg": {
-        "standard": 0,
-        "slash": 0,
-        "strike": -10,
-        "pierce": 0,
-        "magic": -20,
-        "fire": 80,
-        "lightning": -10,
-        "holy": -10
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -198,42 +213,58 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": {
-        "form": 2,
-        "value": -20,
-        "keys": [
-          "fire",
-          "lightning"
-        ]
-      },
-      "fastestStatuses": [
-        "frost",
-        "poison",
-        "rot",
-        "sleep"
+      "forms": [
+        {
+          "label": "Crucible Knight",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 35,
+            "slash": 35,
+            "strike": 35,
+            "pierce": 35
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 20,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": "Immune",
+            "frost": 252,
+            "rot": 252,
+            "poison": 252,
+            "sleep": 252,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Golden Hippopotamus",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": -20,
+            "lightning": -20,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 252,
-      "formCount": 2,
-      "neg": {
-        "standard": 35,
-        "slash": 35,
-        "strike": 35,
-        "pierce": 35,
-        "magic": 40,
-        "fire": 20,
-        "lightning": 20,
-        "holy": 40
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": "Immune",
-        "frost": 252,
-        "sleep": 252,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -245,38 +276,58 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "balancers"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": {
-        "form": 1,
-        "value": -20,
-        "keys": [
-          "slash"
-        ]
-      },
-      "fastestStatuses": [
-        "rot"
+      "forms": [
+        {
+          "label": "Curseblade",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -20,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": 0,
+            "lightning": 0,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 112,
+            "rot": 112,
+            "poison": 112,
+            "sleep": 63,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Divine Beast Warrior",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 40,
+            "slash": 40,
+            "strike": 40,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 20,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 112,
+            "rot": 112,
+            "poison": 112,
+            "sleep": 63,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 1,
-      "formCount": 2,
-      "neg": {
-        "standard": 40,
-        "slash": 40,
-        "strike": 40,
-        "pierce": 0,
-        "magic": 2,
-        "fire": 20,
-        "lightning": 2,
-        "holy": 0
-      },
-      "status": {
-        "poison": 112,
-        "rot": 1,
-        "bleed": 112,
-        "frost": 112,
-        "sleep": 63,
-        "madness": "Immune"
-      },
       "source": "Curseblade"
     }
   },
@@ -289,35 +340,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [
-        "holy"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 20,
+            "slash": 22,
+            "strike": 19,
+            "pierce": 20
+          },
+          "elem": {
+            "magic": 19,
+            "fire": 18,
+            "lightning": 17,
+            "holy": -26
+          },
+          "status": {
+            "bleed": 252,
+            "frost": "Immune",
+            "rot": 252,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -26,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "rot"
-      ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 20,
-        "slash": 22,
-        "strike": 19,
-        "pierce": 20,
-        "magic": 19,
-        "fire": 18,
-        "lightning": 17,
-        "holy": -26
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": 252,
-        "bleed": 252,
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -329,34 +378,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "dreglord"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "frost",
-        "poison",
-        "rot"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 40,
+            "slash": 40,
+            "strike": 40,
+            "pierce": 20
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 20,
+            "lightning": 40,
+            "holy": 0
+          },
+          "status": {
+            "bleed": "Immune",
+            "frost": 252,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 40,
-        "slash": 40,
-        "strike": 40,
-        "pierce": 20,
-        "magic": 40,
-        "fire": 2,
-        "lightning": 40,
-        "holy": 0
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": "Immune",
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -368,35 +416,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "equilibrious-beast"
     ],
     "data": {
-      "weaknesses": [
-        "holy",
-        "strike"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 10,
+            "strike": -40,
+            "pierce": 35
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 40,
+            "holy": -40
+          },
+          "status": {
+            "bleed": "Immune",
+            "frost": "Immune",
+            "rot": 253,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -40,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "rot"
-      ],
-      "fastestStatusValue": 253,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 10,
-        "strike": -40,
-        "pierce": 35,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 40,
-        "holy": -40
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": 253,
-        "bleed": "Immune",
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -409,35 +455,58 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "tricephalos"
     ],
     "data": {
-      "weaknesses": [
-        "fire"
+      "forms": [
+        {
+          "label": "Demi-Human Queen",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": -20,
+            "lightning": 0,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 112,
+            "rot": 84,
+            "poison": 84,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Demi-Human Swordmaster",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -20,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": -20,
+            "lightning": 0,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 112,
+            "rot": 84,
+            "poison": 84,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -20,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "poison",
-        "rot"
-      ],
-      "fastestStatusValue": 84,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -10,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 0,
-        "fire": -20,
-        "lightning": 0,
-        "holy": 0
-      },
-      "status": {
-        "poison": 84,
-        "rot": 84,
-        "bleed": 112,
-        "frost": 112,
-        "sleep": 112,
-        "madness": "Immune"
-      },
       "source": "Demi-Human Queen"
     }
   },
@@ -449,34 +518,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "balancers"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -18,
+            "strike": 1,
+            "pierce": -2
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 78,
+            "lightning": 22,
+            "holy": 17
+          },
+          "status": {
+            "bleed": 252,
+            "frost": "Immune",
+            "rot": 542,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -18,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed"
-      ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -18,
-        "strike": 1,
-        "pierce": -2,
-        "magic": 20,
-        "fire": 78,
-        "lightning": 22,
-        "holy": 17
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": 542,
-        "bleed": 252,
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -488,34 +556,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "balancers"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -18,
+            "strike": 1,
+            "pierce": -2
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 78,
+            "lightning": 22,
+            "holy": 17
+          },
+          "status": {
+            "bleed": 252,
+            "frost": "Immune",
+            "rot": 542,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -18,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed"
-      ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -18,
-        "strike": 1,
-        "pierce": -2,
-        "magic": 20,
-        "fire": 78,
-        "lightning": 22,
-        "holy": 17
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": 542,
-        "bleed": 252,
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -527,33 +594,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "dreglord"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "rot"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 30,
+            "slash": 20,
+            "strike": 30,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 0,
+            "lightning": 40,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 252,
+            "rot": 112,
+            "poison": 154,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 112,
-      "formCount": 1,
-      "neg": {
-        "standard": 30,
-        "slash": 20,
-        "strike": 30,
-        "pierce": 0,
-        "magic": 40,
-        "fire": 0,
-        "lightning": 4,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 112,
-        "bleed": 112,
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -566,40 +633,83 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": {
-        "form": 3,
-        "value": -10,
-        "keys": [
-          "slash"
-        ]
-      },
-      "fastestStatuses": [
-        "poison",
-        "rot",
-        "sleep"
+      "forms": [
+        {
+          "label": "Draconic Tree Sentinel",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 40,
+            "lightning": 40,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 154,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Leyndell Knight",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 40,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 112,
+            "poison": 112,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Leyndell Knight's horse",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": 0,
+            "lightning": 20,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 112,
+            "poison": 112,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 3,
-      "neg": {
-        "standard": 10,
-        "slash": 35,
-        "strike": 10,
-        "pierce": 10,
-        "magic": 20,
-        "fire": 40,
-        "lightning": 40,
-        "holy": 20
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": 154,
-        "madness": "Immune"
-      },
       "source": "Draconic Tree Sentinel"
     }
   },
@@ -613,36 +723,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "gaping-jaw"
     ],
     "data": {
-      "weaknesses": [
-        "strike"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 16,
+            "slash": 7,
+            "strike": -10,
+            "pierce": 30
+          },
+          "elem": {
+            "magic": 50,
+            "fire": 30,
+            "lightning": 50,
+            "holy": 50
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 252,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "rot"
-      ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 16,
-        "slash": 7,
-        "strike": -10,
-        "pierce": 30,
-        "magic": 50,
-        "fire": 30,
-        "lightning": 50,
-        "holy": 50
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": 252,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -655,37 +762,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "tricephalos"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": 0,
+            "lightning": 0,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 252,
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot"
-      ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -10,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 0,
-        "fire": 0,
-        "lightning": 0,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 154,
-        "frost": 154,
-        "sleep": 252,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -698,34 +801,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "poison",
-        "rot"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 35,
+            "slash": 35,
+            "strike": 35,
+            "pierce": 35
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 20,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 252,
+            "frost": "Immune",
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 35,
-        "slash": 35,
-        "strike": 35,
-        "pierce": 35,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 20,
-        "holy": 20
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -740,35 +842,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [
-        "lightning"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": 0,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": -10,
+            "fire": -15,
+            "lightning": -20,
+            "holy": -10
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": "Immune",
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -20,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost"
-      ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": 0,
-        "strike": 0,
-        "pierce": 0,
-        "magic": -10,
-        "fire": -15,
-        "lightning": -20,
-        "holy": -10
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": "Immune",
-        "bleed": 154,
-        "frost": 154,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -782,35 +882,58 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "fissure-in-the-fog"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": "Godskin Apostle",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 40,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Godskin Noble",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 35,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 40,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 112,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "sleep"
-      ],
-      "fastestStatusValue": 112,
-      "formCount": 2,
-      "neg": {
-        "standard": 0,
-        "slash": -10,
-        "strike": 35,
-        "pierce": 0,
-        "magic": 20,
-        "fire": 40,
-        "lightning": 20,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 112,
-        "frost": 154,
-        "sleep": 112,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -824,36 +947,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot",
-        "sleep"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": 0,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 154,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": 0,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 20,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 154,
-        "frost": 154,
-        "sleep": 154,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -865,34 +985,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "dreglord"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": -20,
+            "lightning": 0,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 84,
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "sleep"
-      ],
-      "fastestStatusValue": 84,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -10,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 0,
-        "fire": -2,
-        "lightning": 0,
-        "holy": 0
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": 84,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -905,32 +1024,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "sleep"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 80,
+            "lightning": 40,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 542,
+            "rot": 252,
+            "poison": 252,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 112,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 35,
-        "strike": 10,
-        "pierce": 10,
-        "magic": 40,
-        "fire": 80,
-        "lightning": 40,
-        "holy": 40
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": 542,
-        "sleep": 112,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -941,8 +1061,7 @@ export const NIGHT_BOSSES: NightBoss[] = [
     "expeditions": [
       "dreglord"
     ],
-    "data": null,
-    "note": "source page contaminated"
+    "data": null
   },
   {
     "slug": "lord-of-blood",
@@ -952,32 +1071,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "balancers"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 10,
+            "strike": 10,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 80,
+            "lightning": 40,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 252,
+            "rot": 252,
+            "poison": 252,
+            "sleep": 542,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 10,
-        "strike": 10,
-        "pierce": 10,
-        "magic": 40,
-        "fire": 80,
-        "lightning": 40,
-        "holy": 40
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 154,
-        "frost": 252,
-        "sleep": 542,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -990,38 +1110,58 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": {
-        "form": 1,
-        "value": -31,
-        "keys": [
-          "lightning"
-        ]
-      },
-      "fastestStatuses": [
-        "frost"
+      "forms": [
+        {
+          "label": "Phase 1 (dragon)",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 20,
+            "slash": 21,
+            "strike": 18,
+            "pierce": 2
+          },
+          "elem": {
+            "magic": 10,
+            "fire": 35,
+            "lightning": -31,
+            "holy": 0
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 154,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Phase 2 (Nameless King)",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 21,
+            "slash": 22,
+            "strike": 19,
+            "pierce": 20
+          },
+          "elem": {
+            "magic": 24,
+            "fire": 23,
+            "lightning": 83,
+            "holy": -8
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 252,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 2,
-      "neg": {
-        "standard": 21,
-        "slash": 22,
-        "strike": 19,
-        "pierce": 20,
-        "magic": 24,
-        "fire": 35,
-        "lightning": 83,
-        "holy": 0
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": 154,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1035,33 +1175,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "poison",
-        "rot"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 35,
+            "slash": 35,
+            "strike": 35,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 40,
+            "fire": 40,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 35,
-        "slash": 35,
-        "strike": 35,
-        "pierce": 10,
-        "magic": 40,
-        "fire": 40,
-        "lightning": 20,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1075,34 +1215,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "poison",
-        "rot"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 0,
+            "strike": 10,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 40,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 542,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 252,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 0,
-        "strike": 10,
-        "pierce": 10,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 40,
-        "holy": 20
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": 542,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1115,36 +1254,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "gaping-jaw"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot",
-        "sleep"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 20,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 154,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 35,
-        "strike": 10,
-        "pierce": 0,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 20,
-        "holy": 20
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 154,
-        "frost": 154,
-        "sleep": 154,
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1158,37 +1294,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": 0,
+            "lightning": 0,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 154,
+            "poison": 154,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "poison",
-        "rot"
-      ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -10,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 0,
-        "fire": 0,
-        "lightning": 0,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 154,
-        "frost": 154,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1203,36 +1335,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [
-        "standard",
-        "strike"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": -10,
+            "slash": 6,
+            "strike": -10,
+            "pierce": 8
+          },
+          "elem": {
+            "magic": 30,
+            "fire": 80,
+            "lightning": 30,
+            "holy": 30
+          },
+          "status": {
+            "bleed": "Immune",
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "poison",
-        "rot"
-      ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": -10,
-        "slash": 6,
-        "strike": -10,
-        "pierce": 8,
-        "magic": 30,
-        "fire": 80,
-        "lightning": 30,
-        "holy": 30
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": "Immune",
-        "frost": 252,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1246,35 +1375,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "sentient-pest"
     ],
     "data": {
-      "weaknesses": [
-        "holy",
-        "strike"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 10,
+            "strike": -40,
+            "pierce": 35
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 40,
+            "holy": -40
+          },
+          "status": {
+            "bleed": "Immune",
+            "frost": "Immune",
+            "rot": 154,
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -40,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "rot"
-      ],
-      "fastestStatusValue": 154,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 10,
-        "strike": -40,
-        "pierce": 35,
-        "magic": 20,
-        "fire": 20,
-        "lightning": 40,
-        "holy": -40
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": 154,
-        "bleed": "Immune",
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": "Tibia Mariner"
     }
   },
@@ -1287,40 +1414,83 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "tricephalos"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": {
-        "form": 3,
-        "value": -10,
-        "keys": [
-          "slash"
-        ]
-      },
-      "fastestStatuses": [
-        "poison",
-        "rot",
-        "sleep"
+      "forms": [
+        {
+          "label": "Tree Sentinel",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 10
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 40,
+            "lightning": 0,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 252,
+            "rot": 154,
+            "poison": 154,
+            "sleep": 154,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Leyndell Knight",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 10,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 20,
+            "lightning": 40,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 112,
+            "poison": 112,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        },
+        {
+          "label": "Leyndell Knight's horse",
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": 0,
+            "lightning": 20,
+            "holy": 20
+          },
+          "status": {
+            "bleed": 154,
+            "frost": 154,
+            "rot": 112,
+            "poison": 112,
+            "sleep": 112,
+            "madness": "Immune"
+          }
+        }
       ],
-      "fastestStatusValue": 154,
-      "formCount": 3,
-      "neg": {
-        "standard": 10,
-        "slash": 35,
-        "strike": 10,
-        "pierce": 10,
-        "magic": 20,
-        "fire": 40,
-        "lightning": 40,
-        "holy": 40
-      },
-      "status": {
-        "poison": 154,
-        "rot": 154,
-        "bleed": 252,
-        "frost": 252,
-        "sleep": 154,
-        "madness": "Immune"
-      },
       "source": "Tree Sentinel"
     }
   },
@@ -1332,34 +1502,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "fissure-in-the-fog"
     ],
     "data": {
-      "weaknesses": [
-        "fire"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": 0,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 20,
+            "fire": -20,
+            "lightning": 20,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 252,
+            "frost": 112,
+            "rot": 252,
+            "poison": 252,
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -20,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "frost"
-      ],
-      "fastestStatusValue": 112,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": 0,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 20,
-        "fire": -20,
-        "lightning": 20,
-        "holy": 40
-      },
-      "status": {
-        "poison": 252,
-        "rot": 252,
-        "bleed": 252,
-        "frost": 112,
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
       "source": null
     }
   },
@@ -1373,30 +1542,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "night-aspect"
     ],
     "data": {
-      "weaknesses": [],
-      "weaknessValue": null,
-      "phaseOnly": null,
-      "fastestStatuses": [],
-      "fastestStatusValue": null,
-      "formCount": 1,
-      "neg": {
-        "standard": 10,
-        "slash": 35,
-        "strike": 0,
-        "pierce": 35,
-        "magic": 20,
-        "fire": 40,
-        "lightning": 40,
-        "holy": 40
-      },
-      "status": {
-        "poison": "Immune",
-        "rot": "Immune",
-        "bleed": "Immune",
-        "frost": "Immune",
-        "sleep": "Immune",
-        "madness": "Immune"
-      },
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 10,
+            "slash": 35,
+            "strike": 0,
+            "pierce": 35
+          },
+          "elem": {
+            "magic": 20,
+            "fire": 40,
+            "lightning": 40,
+            "holy": 40
+          },
+          "status": {
+            "bleed": "Immune",
+            "frost": "Immune",
+            "rot": "Immune",
+            "poison": "Immune",
+            "sleep": "Immune",
+            "madness": "Immune"
+          }
+        }
+      ],
       "source": null
     }
   },
@@ -1410,37 +1582,33 @@ export const NIGHT_BOSSES: NightBoss[] = [
       "gaping-jaw"
     ],
     "data": {
-      "weaknesses": [
-        "slash"
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": {
+            "standard": 0,
+            "slash": -10,
+            "strike": 0,
+            "pierce": 0
+          },
+          "elem": {
+            "magic": 0,
+            "fire": 0,
+            "lightning": 0,
+            "holy": 40
+          },
+          "status": {
+            "bleed": 231,
+            "frost": 231,
+            "rot": 231,
+            "poison": 308,
+            "sleep": 231,
+            "madness": "Immune"
+          }
+        }
       ],
-      "weaknessValue": -10,
-      "phaseOnly": null,
-      "fastestStatuses": [
-        "bleed",
-        "frost",
-        "rot",
-        "sleep"
-      ],
-      "fastestStatusValue": 231,
-      "formCount": 1,
-      "neg": {
-        "standard": 0,
-        "slash": -10,
-        "strike": 0,
-        "pierce": 0,
-        "magic": 0,
-        "fire": 0,
-        "lightning": 0,
-        "holy": 40
-      },
-      "status": {
-        "poison": 308,
-        "rot": 231,
-        "bleed": 231,
-        "frost": 231,
-        "sleep": 231,
-        "madness": "Immune"
-      },
       "source": null
     }
   }

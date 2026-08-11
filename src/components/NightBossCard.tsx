@@ -1,4 +1,5 @@
 import type { NightBoss } from "../types";
+import { summaryOf } from "../summary";
 import { Icon, LABELS, TINT } from "./Icon";
 
 /**
@@ -21,7 +22,7 @@ export function partialLabel(boss: NightBoss): string {
  * rather than showing nothing, because a blank space reads as missing data.
  */
 export function WeaknessLine({ boss, size = 18 }: { boss: NightBoss; size?: number }) {
-  const d = boss.data;
+  const d = summaryOf(boss);
   if (!d) return <span className="text-[13px] text-dim">No reliable data</span>;
 
   if (d.weaknesses.length) {
@@ -38,16 +39,18 @@ export function WeaknessLine({ boss, size = 18 }: { boss: NightBoss; size?: numb
     );
   }
 
-  if (d.phaseOnly) {
+  if (d.formOnly) {
     return (
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        {d.phaseOnly.keys.map((k) => (
+        {d.formOnly.keys.map((k) => (
           <span key={k} className="flex items-center gap-1.5">
             <Icon name={k} size={size} />
             <span className={`text-[13px] ${TINT[k] ?? "text-bone"}`}>{LABELS[k]}</span>
           </span>
         ))}
-        <span className="tnum text-[13px] text-weak">{d.phaseOnly.value}</span>
+        <span className="tnum text-[13px] text-weak">{d.formOnly.value}</span>
+        {/* The row is one line in a list, so it keeps the short wording even
+            though the boss page can now name the phase outright. */}
         <span className="text-[13px] text-dim">{partialLabel(boss)}</span>
       </span>
     );

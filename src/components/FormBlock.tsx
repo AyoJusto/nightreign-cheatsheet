@@ -72,23 +72,29 @@ export function FormBlock({ form }: { form: Form }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[13px] text-ash">
-        {form.hp && (
-          <span className="tnum">
-            HP <span className="text-bone">{form.hp.solo.toLocaleString()}</span>
-            <span className="text-dim"> solo</span>
-            <span className="mx-1.5 text-ink-400">/</span>
-            <span className="text-bone">{form.hp.duo.toLocaleString()}</span>
-            <span className="text-dim"> duo</span>
-            <span className="mx-1.5 text-ink-400">/</span>
-            <span className="text-bone">{form.hp.trio.toLocaleString()}</span>
-            <span className="text-dim"> trio</span>
-          </span>
-        )}
-        <span className="tnum">
-          Poise <span className="text-bone">{form.poise}</span>
-        </span>
-      </div>
+      {/* Night bosses carry neither number, and an empty bar above the tables
+          reads as data that failed to load. */}
+      {(form.hp || form.poise !== null) && (
+        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[13px] text-ash">
+          {form.hp && (
+            <span className="tnum">
+              HP <span className="text-bone">{form.hp.solo.toLocaleString()}</span>
+              <span className="text-dim"> solo</span>
+              <span className="mx-1.5 text-ink-400">/</span>
+              <span className="text-bone">{form.hp.duo.toLocaleString()}</span>
+              <span className="text-dim"> duo</span>
+              <span className="mx-1.5 text-ink-400">/</span>
+              <span className="text-bone">{form.hp.trio.toLocaleString()}</span>
+              <span className="text-dim"> trio</span>
+            </span>
+          )}
+          {form.poise !== null && (
+            <span className="tnum">
+              Poise <span className="text-bone">{form.poise}</span>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Same auto-fit idea as the card grid. A negation column needs about
           13rem before the label and its number drift apart, so the row packs

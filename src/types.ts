@@ -11,7 +11,8 @@ export type Form = {
   /** null when the fight has a single stat block. */
   label: string | null;
   hp: { solo: number; duo: number; trio: number } | null;
-  poise: number;
+  /** null on night bosses — the wiki lists it, we have not transcribed it. */
+  poise: number | null;
   /** Percentage negation. NEGATIVE means the boss takes MORE damage. */
   phys: Record<PhysKey, number>;
   elem: Record<ElemKey, number>;
@@ -54,7 +55,12 @@ export type Expedition = {
 
 export type Night = 1 | 2;
 
-/** A Night 1 or Night 2 boss. `data` is null when no trustworthy source exists. */
+/**
+ * A Night 1 or Night 2 boss. `data` is null when no trustworthy source exists.
+ *
+ * Only the per-form numbers are stored; the worst case and the headline weakness
+ * come from `summarize()`. Storing both let them disagree, and they did.
+ */
 export type NightBoss = {
   slug: string;
   name: string;
@@ -63,16 +69,9 @@ export type NightBoss = {
   expeditions: string[];
   note?: string;
   data: {
-    weaknesses: DamageKey[];
-    weaknessValue: number | null;
-    /** A weakness that only holds for one phase, so the worst case cancels it. */
-    phaseOnly: { keys: DamageKey[]; value: number; form: number } | null;
-    fastestStatuses: StatusKey[];
-    fastestStatusValue: number | null;
-    formCount: number;
-    neg: Record<DamageKey, number>;
-    status: Record<StatusKey, Status>;
-    /** Set when the numbers come from one half of a duo fight's wiki page. */
+    /** One entry per phase or per simultaneous enemy, labelled as the wiki labels it. */
+    forms: Form[];
+    /** Set when a duo's wiki page only gives numbers for one of the two. */
     source: string | null;
   } | null;
 };

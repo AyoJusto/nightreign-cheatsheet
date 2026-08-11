@@ -193,9 +193,9 @@ export const EXPEDITIONS: Expedition[] = [
       {
         "label": "Faurtis (Scorpion)",
         "hp": {
-          "solo": 13027,
-          "duo": 26054,
-          "trio": 39081
+          "solo": 12234,
+          "duo": 24468,
+          "trio": 36702
         },
         "poise": 150,
         "phys": {
@@ -449,9 +449,9 @@ export const EXPEDITIONS: Expedition[] = [
       {
         "label": null,
         "hp": {
-          "solo": 12008,
-          "duo": 24016,
-          "trio": 36024
+          "solo": 12007,
+          "duo": 24014,
+          "trio": 36021
         },
         "poise": 160,
         "phys": {
@@ -496,13 +496,13 @@ export const EXPEDITIONS: Expedition[] = [
     "listed": {
       "key": "holy",
       "kind": "damage",
-      "value": -30,
+      "value": -20,
       "derived": false
     },
     "weaknesses": [
       "holy"
     ],
-    "weaknessValue": -30,
+    "weaknessValue": -20,
     "fastestStatuses": [
       "rot"
     ],
@@ -511,9 +511,9 @@ export const EXPEDITIONS: Expedition[] = [
       {
         "label": "Phase 1",
         "hp": {
-          "solo": 4985,
-          "duo": 9970,
-          "trio": 14955
+          "solo": 4984,
+          "duo": 9968,
+          "trio": 14952
         },
         "poise": 130,
         "phys": {
@@ -540,9 +540,9 @@ export const EXPEDITIONS: Expedition[] = [
       {
         "label": "Phase 2",
         "hp": {
-          "solo": 10196,
-          "duo": 20392,
-          "trio": 30588
+          "solo": 11214,
+          "duo": 22428,
+          "trio": 33642
         },
         "poise": 130,
         "phys": {
@@ -555,7 +555,7 @@ export const EXPEDITIONS: Expedition[] = [
           "magic": 0,
           "fire": 0,
           "lightning": -20,
-          "holy": -30
+          "holy": -20
         },
         "status": {
           "bleed": "Immune",
