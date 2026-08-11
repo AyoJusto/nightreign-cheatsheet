@@ -41,7 +41,12 @@ function SearchField({
         list="boss-names"
         placeholder="Expedition, or a boss you saw"
         aria-label="Search expeditions and night bosses"
-        className="h-12 w-full rounded-xl border border-ink-500 bg-ink-800 pl-10 pr-3 text-[15px] text-bone placeholder:text-dim focus:border-gold-dim focus:outline-none focus:ring-1 focus:ring-gold-dim/60"
+        /* 16px is load-bearing, not a design choice. iOS Safari zooms the page
+           when you focus an input smaller than that, and it does not zoom back
+           out — which is where the sideways scroll on a phone came from. The
+           other fix, maximum-scale=1 on the viewport, buys the same thing by
+           disabling pinch-zoom for everyone. */
+        className="h-12 w-full rounded-xl border border-ink-500 bg-ink-800 pl-10 pr-3 text-base text-bone placeholder:text-dim focus:border-gold-dim focus:outline-none focus:ring-1 focus:ring-gold-dim/60"
       />
       <svg
         className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-dim"

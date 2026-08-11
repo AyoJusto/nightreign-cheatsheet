@@ -74,6 +74,16 @@ if (!detail.includes("Dreglord")) fail.push("detail is missing its expedition ti
 await page.goto("about:blank");
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector('input[type="search"]');
+
+// Anything under 16px makes iOS Safari zoom the page on focus and stay zoomed,
+// which shows up as the page scrolling sideways on a phone. No emulator
+// reproduces it, so the size is asserted here. Checked before the search below,
+// which narrows to one expedition and unmounts the field.
+const inputPx = await page.evaluate(() =>
+  parseFloat(getComputedStyle(document.querySelector('input[type="search"]')).fontSize),
+);
+if (inputPx < 16) fail.push(`search input is ${inputPx}px; iOS zooms anything under 16px`);
+
 await page.fill('input[type="search"]', "heolstor");
 await page.waitForTimeout(300);
 if (!(await page.evaluate(() => document.body.innerText)).includes("Night Aspect")) {
