@@ -18,10 +18,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # 22 is what this is developed against locally. 20 went end-of-life in
+          # April 2026, so CI was building on an unpatched runtime.
+          node-version: 22
           cache: npm
       - run: npm ci
       # The dataset is committed, so the tests are what keep it honest.
@@ -40,7 +42,7 @@ jobs:
           npx wait-on http://localhost:5177/nightreign-cheatsheet/ -t 60000
           node tools/verify.mjs http://localhost:5177/nightreign-cheatsheet
           node tools/audit.mjs http://localhost:5177/nightreign-cheatsheet
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -52,4 +54,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
