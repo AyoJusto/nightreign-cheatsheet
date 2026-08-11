@@ -19,7 +19,16 @@ function useHash() {
     if (next) window.location.hash = `/${next}`;
     else if (window.location.hash) window.history.back();
   };
-  return [id, go] as const;
+  /**
+   * One step is not the same as all the way out. An expedition can lead to a
+   * night boss, so go(null) from there lands on the expedition — and it leaves
+   * the site entirely when someone opened the boss link directly, because there
+   * is no list entry behind it to go back to.
+   */
+  const home = () => {
+    window.location.hash = "";
+  };
+  return [id, go, home] as const;
 }
 
 function SearchField({
@@ -80,7 +89,7 @@ function SearchField({
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [id, go] = useHash();
+  const [id, go, home] = useHash();
   const inputRef = useRef<HTMLInputElement>(null);
   const autoOpened = useRef<string | null>(null);
 
@@ -124,7 +133,11 @@ export default function App() {
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             <div className="ground sticky top-0 z-10 border-b border-ink-600">
-              <div className="w-full px-4 pt-[max(0.25rem,env(safe-area-inset-top))] sm:px-6 lg:px-8 2xl:px-12">
+              {/* Two different intents, so two controls. An expedition leads to
+                  a night boss, and from there you either want the expedition
+                  again or a clean search — one button cannot be both, which is
+                  how "All expeditions" ended up needing two taps. */}
+              <div className="flex w-full items-center justify-between gap-3 px-4 pt-[max(0.25rem,env(safe-area-inset-top))] sm:px-6 lg:px-8 2xl:px-12">
                 <button
                   type="button"
                   onClick={() => go(null)}
@@ -140,7 +153,29 @@ export default function App() {
                   >
                     <path d="M12 4 6 10l6 6" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  All expeditions
+                  Back
+                </button>
+
+                <button
+                  type="button"
+                  onClick={home}
+                  className="flex min-h-11 items-center gap-1.5 text-[15px] text-ash hover:text-bone"
+                >
+                  <svg
+                    className="size-4"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden
+                  >
+                    <path
+                      d="M3 8.5 10 3l7 5.5V16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Home
                 </button>
               </div>
             </div>

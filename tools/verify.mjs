@@ -90,6 +90,22 @@ if (!(await page.evaluate(() => document.body.innerText)).includes("Night Aspect
   fail.push("searching a Nightlord name no longer finds its expedition");
 }
 
+// Two deep — expedition, then one of its night bosses — is where the header's
+// second button used to need two taps, because it was history.back() wearing a
+// label that promised the list.
+await page.goto("about:blank");
+await page.goto(`${BASE}/#/dreglord`, { waitUntil: "networkidle" });
+await page.click("text=Great Red Bear");
+await page.waitForTimeout(250);
+if (!(await page.evaluate(() => document.body.innerText)).includes("Great Red Bear")) {
+  fail.push("could not reach a night boss from its expedition");
+}
+await page.click('button:has-text("Home")');
+await page.waitForTimeout(250);
+if (!(await page.$('input[type="search"]'))) {
+  fail.push("Home from two deep did not reach the list in one tap");
+}
+
 await browser.close();
 
 if (fail.length) {
