@@ -5,6 +5,8 @@ import { ALL_BOSSES, BY_SLUG, nightAspectIsNoise, searchAll } from "./search";
 import { BossDetail } from "./components/BossDetail";
 import { NightBossDetail } from "./components/NightBossDetail";
 import { ResultList } from "./components/ResultList";
+import { EffectsDirectory, EffectsPage } from "./components/Effects";
+import { GROUPS, searchEffects } from "./effects";
 
 function useHash() {
   const [id, setId] = useState(() => window.location.hash.replace(/^#\/?/, "") || null);
@@ -48,8 +50,8 @@ function SearchField({
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         list="boss-names"
-        placeholder="Expedition, or a boss you saw"
-        aria-label="Search expeditions and night bosses"
+        placeholder="Expedition, boss, or relic text"
+        aria-label="Search expeditions, night bosses, and relic and weapon effects"
         /* 16px is load-bearing, not a design choice. iOS Safari zooms the page
            when you focus an input smaller than that, and it does not zoom back
            out — which is where the sideways scroll on a phone came from. The
@@ -94,12 +96,18 @@ export default function App() {
   const autoOpened = useRef<string | null>(null);
 
   const results = useMemo(() => searchAll(query), [query]);
+  // Kept out of searchAll: effects.ts already imports normalize from search.ts,
+  // and having search.ts reach back for effects would make that a cycle.
+  const effects = useMemo(() => searchEffects(query), [query]);
   const hits = results.expeditions;
   const noise = useMemo(() => nightAspectIsNoise(hits), [hits]);
 
   const selected = EXPEDITIONS.find((e) => e.id === id) ?? null;
   const selectedBoss = id?.startsWith("boss/") ? (BY_SLUG.get(id.slice(5)) ?? null) : null;
-  const showingDetail = selected !== null || selectedBoss !== null;
+  const selectedGroup = id?.startsWith("effects/")
+    ? (GROUPS.find((g) => g.id === id.slice(8))?.id ?? null)
+    : null;
+  const showingDetail = selected !== null || selectedBoss !== null || selectedGroup !== null;
 
   // A search narrowed to exactly one expedition has already answered the
   // question, so open it rather than making the user tap the only card. Guarded
@@ -108,14 +116,14 @@ export default function App() {
   // since then there are two answers on screen and picking one for the user
   // would hide the other.
   useEffect(() => {
-    if (!query.trim() || showingDetail || results.nightBosses.length) return;
+    if (!query.trim() || showingDetail || results.nightBosses.length || effects.length) return;
     const only = hits.length === 1 ? hits[0]!.expedition.id : null;
     if (only && autoOpened.current !== only) {
       autoOpened.current = only;
       go(only);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hits, query, showingDetail, results.nightBosses.length]);
+  }, [hits, query, showingDetail, results.nightBosses.length, effects.length]);
 
   useEffect(() => {
     if (!query.trim()) autoOpened.current = null;
@@ -181,8 +189,10 @@ export default function App() {
             </div>
             {selected ? (
               <BossDetail e={selected} onSelect={go} />
+            ) : selectedBoss ? (
+              <NightBossDetail boss={selectedBoss} onSelect={go} />
             ) : (
-              <NightBossDetail boss={selectedBoss!} onSelect={go} />
+              <EffectsPage group={selectedGroup!} />
             )}
           </motion.div>
         ) : (
@@ -222,6 +232,7 @@ export default function App() {
                     results.nightBosses.length &&
                       `${results.nightBosses.length} night ${results.nightBosses.length === 1 ? "boss" : "bosses"}`,
                     `${hits.length} ${hits.length === 1 ? "expedition" : "expeditions"}`,
+                    effects.length && `${effects.length} ${effects.length === 1 ? "effect" : "effects"}`,
                   ]
                     .filter(Boolean)
                     .join(" · ")
@@ -231,14 +242,23 @@ export default function App() {
             <ResultList
               hits={hits}
               nightBosses={results.nightBosses}
+              effects={effects}
               onSelect={go}
               noise={noise}
               searching={Boolean(query.trim())}
             />
 
+            {/* Below the expeditions, not above them: the question this page opens
+                with is still which expedition you are in. */}
+            {!query.trim() && <EffectsDirectory onSelect={go} />}
+
             <footer className="mt-10 border-t border-ink-600 pt-5 text-xs leading-relaxed text-dim">
               Negation is a percentage: negative means the boss takes more damage. Status
-              values are buildup thresholds, so lower procs faster.
+              values are buildup thresholds, so lower procs faster. Stacking answers say
+              whether an effect stacks with a second copy of itself.
+              <br />
+              Effect data transcribed from the community sheet by Slay, Unlined-Betters,
+              Emerald Wolf and Penumbra.
             </footer>
           </motion.div>
         )}

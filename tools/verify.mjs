@@ -106,6 +106,42 @@ if (!(await page.$('input[type="search"]'))) {
   fail.push("Home from two deep did not reach the list in one tap");
 }
 
+// Effects. The numbers below are the point of the whole section, so the check is
+// that a real one reaches the screen — not that a heading rendered.
+await page.goto("about:blank");
+await page.goto(`${BASE}/#/effects/weapons`, { waitUntil: "networkidle" });
+await page.waitForTimeout(250);
+const weapons = await page.evaluate(() => document.body.innerText);
+if (!weapons.includes("Weapon effects")) fail.push("effects page is missing its title");
+// Dormant powers and Deep weapon effects share this title with different numbers,
+// which is the reason the two pools share a page instead of each getting their own.
+if (!weapons.includes("Increased Maximum HP")) fail.push("effects page is missing a known row");
+for (const tag of ["Deep", "Dormant"]) {
+  if (!weapons.includes(tag)) fail.push(`effects page is missing the ${tag} tag`);
+}
+if (!/Stacks|No stack/.test(weapons)) fail.push("effects page renders no stacking answer");
+
+// Filtering is the browse affordance; without it the page is a 184-row scroll.
+await page.click('button:has-text("Dormant")');
+await page.waitForTimeout(250);
+const filtered = await page.evaluate(() => document.body.innerText);
+if (!filtered.includes("52 of 184")) fail.push("filtering by a pool did not narrow the count");
+
+// Nothing in game says "bleed" — it says Blood Loss — so "blood" is the query
+// that has to reach the four rows that do it.
+await page.goto("about:blank");
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.waitForSelector('input[type="search"]');
+await page.fill('input[type="search"]', "blood");
+await page.waitForTimeout(300);
+const blood = await page.evaluate(() => document.body.innerText);
+if (!blood.includes("Power of the Blood Lord")) {
+  fail.push('searching "blood" no longer finds the effects that say Blood Loss');
+}
+if (!blood.includes("Lord of Blood")) {
+  fail.push('searching "blood" stopped finding the night boss — effects crowded it out');
+}
+
 await browser.close();
 
 if (fail.length) {
@@ -113,4 +149,4 @@ if (fail.length) {
   for (const f of fail) console.error(`  ${f}`);
   process.exit(1);
 }
-console.log("Content verify passed: expedition names only, Nightlord names still searchable.");
+console.log("Content verify passed: expeditions, night bosses and effects all reachable.");

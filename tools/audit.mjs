@@ -37,6 +37,10 @@ const ROUTES = [
   { name: "detail", hash: "#/tricephalos" },
   { name: "detail-2form", hash: "#/sentient-pest" },
   { name: "detail-nodmg", hash: "#/gaping-jaw" },
+  // The longest list in the app by a wide margin, and the only one with a filter
+  // row that wraps. Weapons carries the three-pool case.
+  { name: "effects-relics", hash: "#/effects/relics" },
+  { name: "effects-weapons", hash: "#/effects/weapons" },
 ];
 
 const browser = await chromium.launch();
