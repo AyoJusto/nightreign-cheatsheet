@@ -18,8 +18,14 @@ function useHash() {
   const go = (next: string | null) => {
     // Pushing a real history entry is what makes the phone's back gesture and
     // the browser back button return to the list instead of leaving the site.
-    if (next) window.location.hash = `/${next}`;
-    else if (window.location.hash) window.history.back();
+    if (next) {
+      window.location.hash = `/${next}`;
+      // Same-document navigation keeps the old scroll offset, so opening a page
+      // from the bottom of the list drops you into the middle of it — past the
+      // title, the count and the filter row. Only on the way in: history.back()
+      // restores its own position, and clobbering that loses your place.
+      window.scrollTo(0, 0);
+    } else if (window.location.hash) window.history.back();
   };
   /**
    * One step is not the same as all the way out. An expedition can lead to a
@@ -245,7 +251,7 @@ export default function App() {
               effects={effects}
               onSelect={go}
               noise={noise}
-              searching={Boolean(query.trim())}
+              query={query}
             />
 
             {/* Below the expeditions, not above them: the question this page opens

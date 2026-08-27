@@ -64,15 +64,16 @@ export function ResultList({
   effects,
   onSelect,
   noise,
-  searching,
+  query,
 }: {
   hits: Hit[];
   nightBosses: NightBoss[];
   effects: Effect[];
   onSelect: (id: string) => void;
   noise: boolean;
-  searching: boolean;
+  query: string;
 }) {
+  const searching = Boolean(query.trim());
   if (!hits.length && !nightBosses.length && !effects.length) {
     return (
       <p className="rounded-2xl border border-ink-600 bg-ink-700/50 px-4 py-8 text-center text-sm text-dim">
@@ -116,7 +117,7 @@ export function ResultList({
       {effects.length > 0 && (
         <>
           <SectionLabel>Effects</SectionLabel>
-          <EffectsSection effects={effects} />
+          <EffectsSection key={query} effects={effects} />
         </>
       )}
 

@@ -8,6 +8,7 @@ import {
   byCategory,
   effectsIn,
   filtersFor,
+  poolsBlurb,
   stackLabel,
 } from "../effects";
 
@@ -74,15 +75,14 @@ export function EffectRow({ effect: e, showGroup = false }: { effect: Effect; sh
         </span>
       </div>
 
-      {e.effect ? (
-        <p className="whitespace-pre-line text-[13px] leading-[1.55] text-ash">
-          {/* Only search mixes relics and weapons, so only search has to place a row. */}
-          {showGroup && <span className="text-dim">{GROUP_SHORT[e.group]} &middot; </span>}
-          {e.effect}
-        </p>
-      ) : (
-        <p className="text-[13px] leading-[1.55] text-dim">No effect data in the sheet</p>
-      )}
+      {/* Only search mixes relics and weapons, so only search has to place a row —
+          and a row with no effect text still needs placing, arguably more. */}
+      <p
+        className={`whitespace-pre-line text-[13px] leading-[1.55] ${e.effect ? "text-ash" : "text-dim"}`}
+      >
+        {showGroup && <span className="text-dim">{GROUP_SHORT[e.group]} &middot; </span>}
+        {e.effect || "No effect data in the sheet"}
+      </p>
 
       {e.notes && <p className="text-xs leading-[1.55] text-dim">{e.notes}</p>}
     </li>
@@ -178,8 +178,7 @@ export function EffectsPage({ group }: { group: EffectGroup }) {
           </>
         ) : (
           <>
-            <span className="tnum">{all.length}</span> effects &middot; base and Deep of Night
-            together
+            <span className="tnum">{all.length}</span> effects &middot; {poolsBlurb(group)}
           </>
         )}
       </p>

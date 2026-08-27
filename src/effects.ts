@@ -58,6 +58,21 @@ export const GROUP_SHORT: Record<EffectGroup, string> = {
   weapons: "Weapons",
 };
 
+/**
+ * How a page is made up: "116 base, 78 Deep". The subtitle used to say "base and
+ * Deep of Night together" on both pages, which told a reader of the weapons page
+ * that the 52 dormant rows they were scrolling past did not exist. Counts rather
+ * than prose, because the composition is the useful part.
+ */
+export function poolsBlurb(group: EffectGroup): string {
+  const counts = new Map<EffectPool, number>();
+  for (const e of effectsIn(group)) counts.set(e.pool, (counts.get(e.pool) ?? 0) + 1);
+  return (["base", "deep", "dormant"] as EffectPool[])
+    .filter((pool) => counts.has(pool))
+    .map((pool) => `${counts.get(pool)} ${POOL_TAG[pool] ?? "base"}`)
+    .join(", ");
+}
+
 export function effectsIn(group: EffectGroup): Effect[] {
   return EFFECTS.filter((e) => e.group === group);
 }

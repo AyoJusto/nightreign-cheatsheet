@@ -6,6 +6,7 @@ import {
   byCategory,
   effectsIn,
   filtersFor,
+  poolsBlurb,
   searchEffects,
   stackLabel,
 } from "./effects";
@@ -81,9 +82,27 @@ describe("searchEffects", () => {
     expect(hits.slice(0, 5)).toContain(hits[lord]);
   });
 
+  it("finds the row the sheet misspelled", () => {
+    // The source says "Stating armament inflicts \"x\" status". Titles are the whole
+    // index, so left as written the row was unreachable by any spelling a player
+    // would try, and it was the one placeholder row with no keywords.
+    expect(searchEffects("starting armament").map((e) => e.title)).toEqual([
+      "Starting armament inflicts [Status]",
+    ]);
+    expect(searchEffects("blood loss").some((e) => e.title === "Starting armament inflicts [Status]")).toBe(true);
+  });
+
   it("returns nothing for an empty query rather than everything", () => {
     expect(searchEffects("")).toEqual([]);
     expect(searchEffects("   ")).toEqual([]);
+  });
+});
+
+describe("poolsBlurb", () => {
+  it("names every pool a page actually holds", () => {
+    expect(poolsBlurb("relics")).toBe("116 base, 78 Deep");
+    // The weapons page is the three-pool case; a blurb naming two would deny 52 rows.
+    expect(poolsBlurb("weapons")).toBe("78 base, 54 Deep, 52 Dormant");
   });
 });
 
