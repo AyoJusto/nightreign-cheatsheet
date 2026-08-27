@@ -32,11 +32,20 @@ const VIEWPORTS = [
   { name: "ultrawide-3440", width: 3440, height: 1440 },
 ];
 
+// `ready` is not decoration. Hash navigation is same-document, so networkidle
+// resolves immediately and the only thing still in flight is the 180ms exit plus
+// 180ms enter of the view transition. A fixed wait landed on that boundary and
+// measured the *previous* page: the same run passed and failed on alternate
+// attempts, and the saved screenshots were of whatever was leaving.
 const ROUTES = [
-  { name: "list", hash: "" },
-  { name: "detail", hash: "#/tricephalos" },
-  { name: "detail-2form", hash: "#/sentient-pest" },
-  { name: "detail-nodmg", hash: "#/gaping-jaw" },
+  { name: "list", hash: "", ready: 'input[type="search"]' },
+  { name: "detail", hash: "#/tricephalos", ready: 'h1:text-is("Tricephalos")' },
+  { name: "detail-2form", hash: "#/sentient-pest", ready: 'h1:text-is("Sentient Pest")' },
+  { name: "detail-nodmg", hash: "#/gaping-jaw", ready: 'h1:text-is("Gaping Jaw")' },
+  // The longest list in the app by a wide margin, and the only one with a filter
+  // row that wraps. Weapons carries the three-pool case.
+  { name: "effects-relics", hash: "#/effects/relics", ready: 'h1:text-is("Relic effects")' },
+  { name: "effects-weapons", hash: "#/effects/weapons", ready: 'h1:text-is("Weapon effects")' },
 ];
 
 const browser = await chromium.launch();
@@ -47,7 +56,10 @@ for (const vp of VIEWPORTS) {
   const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
   for (const route of ROUTES) {
     await page.goto(`${BASE}/${route.hash}`, { waitUntil: "networkidle" });
-    await page.waitForTimeout(200);
+    await page.waitForSelector(route.ready, { state: "visible" });
+    // The element is present; this is the tail of the fade so nothing is measured
+    // mid-transform.
+    await page.waitForTimeout(250);
 
     const m = await page.evaluate(
       ({ MIN_TAP_TARGET, MIN_FONT_PX }) => {
