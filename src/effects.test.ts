@@ -92,6 +92,23 @@ describe("searchEffects", () => {
     expect(searchEffects("blood loss").some((e) => e.title === "Starting armament inflicts [Status]")).toBe(true);
   });
 
+  it("leads with the title that opens with what you typed", () => {
+    expect(searchEffects("vigor")[0]!.title).toBe("Vigor +1/2/3");
+    expect(searchEffects("blood")[0]!.title).toBe("Blood Loss in Vicinity Increases Attack Power");
+  });
+
+  it("breaks ties alphabetically rather than by data order", () => {
+    const hits = searchEffects("attack boost").map((e) => e.title);
+    expect(hits).toEqual([...hits].sort((a, b) => a.localeCompare(b, "en")));
+  });
+
+  it("is not plain alphabetical, which buries the row you asked for", () => {
+    // 68 titles start with a bracketed character name and "[" sorts ahead of
+    // letters, so A-Z alone put four [Character] rows above "Vigor +1/2/3".
+    const titles = searchEffects("vigor").map((e) => e.title);
+    expect(titles).not.toEqual([...titles].sort((a, b) => a.localeCompare(b, "en")));
+  });
+
   it("returns nothing for an empty query rather than everything", () => {
     expect(searchEffects("")).toEqual([]);
     expect(searchEffects("   ")).toEqual([]);

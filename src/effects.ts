@@ -27,17 +27,33 @@ const KEYWORDS = EFFECTS.map((e) => (e.keywords ? normalize(e.keywords) : ""));
  * row because blood loss is one of the statuses those rows stand for. Left in
  * data order the templates come first, sit at the top of a capped list, and hide
  * the row the player was actually looking at.
+ *
+ * Within each tier, earliest match wins and alphabetical breaks the tie — the
+ * same tiebreak summarize() uses on equal weaknesses, for the same reason: data
+ * order reads as an arbitrary jumble.
+ *
+ * Alphabetical alone is worse than no sort here. 68 titles begin with a bracketed
+ * character name, and `[` sorts ahead of letters, so "vigor" led with four
+ * [Character] rows and pushed "Vigor +1/2/3" off the top entirely. Where the word
+ * falls in the title is the cheap, honest relevance signal: a title that opens
+ * with what you typed is the one you meant.
  */
 export function searchEffects(query: string): Effect[] {
   const q = normalize(query);
   if (!q) return [];
-  const titled: Effect[] = [];
+  const titled: { e: Effect; at: number }[] = [];
   const implied: Effect[] = [];
   EFFECTS.forEach((e, i) => {
-    if (TITLES[i]!.includes(q)) titled.push(e);
+    const at = TITLES[i]!.indexOf(q);
+    if (at >= 0) titled.push({ e, at });
     else if (KEYWORDS[i]!.includes(q)) implied.push(e);
   });
-  return [...titled, ...implied];
+  const byTitle = (a: Effect, b: Effect) => a.title.localeCompare(b.title, "en");
+  titled.sort((a, b) => a.at - b.at || byTitle(a.e, b.e));
+  // A keyword hit has no meaningful position — the row matched a vocabulary, not
+  // a phrase — so these are alphabetical outright.
+  implied.sort(byTitle);
+  return [...titled.map((t) => t.e), ...implied];
 }
 
 /** The tag shown beside the stacking answer. Base rows carry none. */
