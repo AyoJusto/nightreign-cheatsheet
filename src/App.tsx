@@ -265,6 +265,46 @@ export default function App() {
               <br />
               Effect data transcribed from the community sheet by Slay, Unlined-Betters,
               Emerald Wolf and Penumbra.
+              {/* Last line on the page, and the smallest. The stamp is something to
+                  quote back when a number looks wrong — it says exactly which build
+                  you were reading — and it doubles as the way in for anyone curious
+                  enough to want the data.
+
+                  min-h-11 on both links is the tap target, not the type size: the
+                  text stays 12px and the touch area is 44px, which is what
+                  tools/audit.mjs holds every control to. */}
+              <span className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-ink-600/60">
+                <a
+                  href={
+                    __REVISION__ === "local" ? __REPO__ : `${__REPO__}/commit/${__REVISION__}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Build ${__REVISION__} — open this commit on GitHub`}
+                  className="tnum inline-flex min-h-11 items-center tracking-[0.12em] text-gold-dim transition-colors hover:text-gold"
+                >
+                  {__REVISION__}
+                </a>
+                <a
+                  href={__REPO__}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center gap-1.5 text-dim transition-colors hover:text-bone"
+                >
+                  Source on GitHub
+                  <svg
+                    className="size-3"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden
+                  >
+                    <path d="M4.5 2.5h5v5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M9.5 2.5 3 9" strokeLinecap="round" />
+                  </svg>
+                </a>
+              </span>
             </footer>
           </motion.div>
         )}

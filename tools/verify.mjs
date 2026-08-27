@@ -6,6 +6,7 @@
  *   node tools/verify.mjs [baseUrl]
  */
 import { chromium } from "playwright";
+import { execSync } from "node:child_process";
 
 const BASE = process.argv[2] ?? "http://localhost:5177";
 const browser = await chromium.launch();
@@ -196,6 +197,34 @@ await page.waitForSelector('h1:text-is("Weapon effects")', { state: "visible" })
 const subtitle = await page.evaluate(() => document.body.innerText);
 if (!subtitle.includes("52 Dormant")) {
   fail.push("the weapons subtitle does not account for the dormant pool");
+}
+
+// The footer stamp, checked against the commit this working tree is actually on.
+//
+// This is the sharpest form of the check at the top of this file: a stale server
+// no longer merely fails an assertion for a confusing reason, it names the build
+// it is serving and the mismatch says so outright.
+await page.goto("about:blank");
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.waitForSelector("footer a");
+const stamp = await page.evaluate(() =>
+  [...document.querySelectorAll("footer a")].map((a) => ({ text: a.innerText.trim(), href: a.href })),
+);
+
+const head = (
+  process.env.GITHUB_SHA ?? execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString()
+)
+  .trim()
+  .slice(0, 7);
+const rev = stamp.find((a) => a.href.includes("/commit/"));
+if (!rev) fail.push("footer has no revision link");
+else if (rev.text !== head) {
+  fail.push(`footer says build ${rev.text} but this tree is on ${head} — stale bundle?`);
+} else if (!rev.href.endsWith(`/commit/${head}`)) {
+  fail.push(`revision link points at ${rev.href}, not this commit`);
+}
+if (!stamp.some((a) => /github\.com\/[^/]+\/[^/]+$/.test(a.href))) {
+  fail.push("footer has no link to the repository");
 }
 
 await browser.close();
