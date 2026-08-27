@@ -1,6 +1,7 @@
-import type { Hit, NightBoss } from "../types";
+import type { Effect, Hit, NightBoss } from "../types";
 import { Icon, LABELS, TINT } from "./Icon";
 import { NightBadge, NightBossCard } from "./NightBossCard";
+import { EffectsSection } from "./Effects";
 
 function Card({ hit, onSelect }: { hit: Hit; onSelect: (id: string) => void }) {
   const { expedition: e, via } = hit;
@@ -60,20 +61,23 @@ const GRID = "grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap
 export function ResultList({
   hits,
   nightBosses,
+  effects,
   onSelect,
   noise,
-  searching,
+  query,
 }: {
   hits: Hit[];
   nightBosses: NightBoss[];
+  effects: Effect[];
   onSelect: (id: string) => void;
   noise: boolean;
-  searching: boolean;
+  query: string;
 }) {
-  if (!hits.length && !nightBosses.length) {
+  const searching = Boolean(query.trim());
+  if (!hits.length && !nightBosses.length && !effects.length) {
     return (
       <p className="rounded-2xl border border-ink-600 bg-ink-700/50 px-4 py-8 text-center text-sm text-dim">
-        No expedition or night boss by that name.
+        Nothing by that name — no expedition, night boss, or relic and weapon text.
       </p>
     );
   }
@@ -97,12 +101,23 @@ export function ResultList({
 
       {hits.length > 0 && (
         <>
-          {searching && nightBosses.length > 0 && <SectionLabel>Expeditions</SectionLabel>}
+          {/* Labelled once there is a second kind of answer on screen to tell it
+              apart from. A lone list of expeditions needs no heading. */}
+          {searching && (nightBosses.length > 0 || effects.length > 0) && (
+            <SectionLabel>Expeditions</SectionLabel>
+          )}
           <ul className={GRID}>
             {hits.map((h) => (
               <Card key={h.expedition.id} hit={h} onSelect={onSelect} />
             ))}
           </ul>
+        </>
+      )}
+
+      {effects.length > 0 && (
+        <>
+          <SectionLabel>Effects</SectionLabel>
+          <EffectsSection key={query} effects={effects} />
         </>
       )}
 

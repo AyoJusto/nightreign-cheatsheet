@@ -90,3 +90,35 @@ export type Results = {
   expeditions: Hit[];
   nightBosses: NightBoss[];
 };
+
+/** Which of the two effect pages a row lives on. */
+export type EffectGroup = "relics" | "weapons";
+
+/**
+ * Where the effect comes from. Deep of Night has its own pool of both relic and
+ * weapon effects, and dormant powers are a third weapon pool with their own
+ * numbers — 13 titles exist in more than one of them, which is exactly why the
+ * pools share a page instead of each getting their own.
+ */
+export type EffectPool = "base" | "deep" | "dormant";
+
+export type Effect = {
+  group: EffectGroup;
+  pool: EffectPool;
+  /** The sheet's Category column. A list because three rows are "Offensive/Defensive". */
+  cats: string[];
+  /**
+   * Verbatim from "Stackable with self?", ragged answers included: "Yes", "No",
+   * "N/A", "See Notes", "Yes?", "-", or "" when the sheet left it blank. Kept as
+   * the source wrote it — flattening 26 uncertain rows into a Yes or a No would
+   * invent an answer for the one question people open this page to ask.
+   */
+  stack: string;
+  /** The text the game shows. The only thing search matches, alongside `keywords`. */
+  title: string;
+  /** What it actually does. Never indexed: it is the answer, not the question. */
+  effect: string;
+  notes?: string;
+  /** Never displayed. Search-only — see the note on the index in effects.ts. */
+  keywords?: string;
+};
