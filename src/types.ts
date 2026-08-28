@@ -122,3 +122,45 @@ export type Effect = {
   /** Never displayed. Search-only — see the note on the index in effects.ts. */
   keywords?: string;
 };
+
+/**
+ * One recommended effect on one relic.
+ *
+ * `effect` is the canonical title from data/effects.ts, which is what makes the
+ * description lookup possible at all — the source spreadsheet writes the same
+ * effect a dozen different ways. `as` carries the spreadsheet's own wording when
+ * that wording says something the canonical title does not: the effect is
+ * "Improved [Spell School] Sorcery/Incantation", the advice is "Improved Carian
+ * Sword Sorcery", and only one of those tells you what to look for.
+ */
+export type BuildLine = {
+  effect: string;
+  as?: string;
+  /** Drawbacks the effect drags along. Deep relic effects can carry two. */
+  curses?: string[];
+};
+
+/**
+ * One relic. `label` is either the relic's name or, when two slots share `n`,
+ * the name of the variant — the spreadsheet uses one syntax for both and they
+ * are told apart by whether they collide.
+ */
+export type BuildSlot = {
+  n: 1 | 2 | 3;
+  label?: string;
+  /** Three, or four where the sheet offered a choice between two effects. */
+  lines: BuildLine[];
+};
+
+/** Relics and depth relics are separate loadouts: depth only applies in Deep of Night. */
+export type Build = {
+  name: string;
+  relics: BuildSlot[];
+  deep: BuildSlot[];
+};
+
+export type CharacterBuilds = {
+  slug: string;
+  name: string;
+  builds: Build[];
+};
