@@ -46,6 +46,9 @@ const ROUTES = [
   // row that wraps. Weapons carries the three-pool case.
   { name: "effects-relics", hash: "#/effects/relics", ready: 'h1:text-is("Relic effects")' },
   { name: "effects-weapons", hash: "#/effects/weapons", ready: 'h1:text-is("Weapon effects")' },
+  // The densest page in the app: two columns of cards whose rows are buttons,
+  // plus a chip row and a variant toggle. Duchess has the most builds.
+  { name: "builds", hash: "#/builds/duchess", ready: 'h1:text-is("Duchess")' },
 ];
 
 const browser = await chromium.launch();
