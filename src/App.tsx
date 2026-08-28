@@ -6,7 +6,9 @@ import { BossDetail } from "./components/BossDetail";
 import { NightBossDetail } from "./components/NightBossDetail";
 import { ResultList } from "./components/ResultList";
 import { EffectsDirectory, EffectsPage } from "./components/Effects";
+import { BuildsDirectory, BuildsPage } from "./components/Builds";
 import { GROUPS, searchEffects } from "./effects";
+import { BY_CHARACTER } from "./builds";
 
 function useHash() {
   const [id, setId] = useState(() => window.location.hash.replace(/^#\/?/, "") || null);
@@ -113,7 +115,14 @@ export default function App() {
   const selectedGroup = id?.startsWith("effects/")
     ? (GROUPS.find((g) => g.id === id.slice(8))?.id ?? null)
     : null;
-  const showingDetail = selected !== null || selectedBoss !== null || selectedGroup !== null;
+  // Builds are reachable only from the home directory, never from search: the
+  // page answers "what should I build", and the search box answers "what am I
+  // looking at" — mixing them puts nine lines of advice under a boss lookup.
+  const selectedCharacter = id?.startsWith("builds/")
+    ? (BY_CHARACTER.get(id.slice(7))?.slug ?? null)
+    : null;
+  const showingDetail =
+    selected !== null || selectedBoss !== null || selectedGroup !== null || selectedCharacter !== null;
 
   // A search narrowed to exactly one expedition has already answered the
   // question, so open it rather than making the user tap the only card. Guarded
@@ -197,8 +206,10 @@ export default function App() {
               <BossDetail e={selected} onSelect={go} />
             ) : selectedBoss ? (
               <NightBossDetail boss={selectedBoss} onSelect={go} />
+            ) : selectedGroup ? (
+              <EffectsPage group={selectedGroup} />
             ) : (
-              <EffectsPage group={selectedGroup!} />
+              <BuildsPage slug={selectedCharacter!} />
             )}
           </motion.div>
         ) : (
@@ -256,7 +267,12 @@ export default function App() {
 
             {/* Below the expeditions, not above them: the question this page opens
                 with is still which expedition you are in. */}
-            {!query.trim() && <EffectsDirectory onSelect={go} />}
+            {!query.trim() && (
+              <>
+                <EffectsDirectory onSelect={go} />
+                <BuildsDirectory onSelect={go} />
+              </>
+            )}
 
             <footer className="mt-10 border-t border-ink-600 pt-5 text-xs leading-relaxed text-dim">
               Negation is a percentage: negative means the boss takes more damage. Status
