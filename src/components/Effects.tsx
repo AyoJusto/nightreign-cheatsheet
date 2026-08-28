@@ -31,7 +31,7 @@ const GRID =
  * to overflow — which rendered as "Mad" / "ness". A <wbr> after each slash lets
  * it break where a reader already sees a seam.
  */
-function withBreaks(title: string) {
+export function withBreaks(title: string) {
   const parts = title.split("/");
   return parts.map((part, i) => (
     <Fragment key={i}>

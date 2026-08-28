@@ -199,6 +199,26 @@ if (!subtitle.includes("52 Dormant")) {
   fail.push("the weapons subtitle does not account for the dormant pool");
 }
 
+// The builds page rests on a hand-written mapping from the spreadsheet's wording
+// to canonical effect titles. The unit test proves every title resolves; this
+// proves the page then renders both halves of a loadout and the curse under the
+// effect that causes it.
+await page.goto("about:blank");
+await page.goto(`${BASE}/#/builds/duchess`, { waitUntil: "networkidle" });
+await page.waitForSelector('h1:text-is("Duchess")', { state: "visible" });
+// Lowercased on both sides: the column headings are uppercased in CSS, and
+// innerText reports what is rendered rather than what the source says.
+const builds = (await page.evaluate(() => document.body.innerText)).toLowerCase();
+for (const want of [
+  "Carian Sword Sorcery",
+  "Relics",
+  "Depth relics",
+  "Improved Carian Sword Sorcery",
+  "Reduced Strength and Faith",
+]) {
+  if (!builds.includes(want.toLowerCase())) fail.push(`builds page does not render: ${want}`);
+}
+
 // The footer stamp, checked against the commit this working tree is actually on.
 //
 // This is the sharpest form of the check at the top of this file: a stale server
@@ -234,4 +254,4 @@ if (fail.length) {
   for (const f of fail) console.error(`  ${f}`);
   process.exit(1);
 }
-console.log("Content verify passed: expeditions, night bosses and effects all reachable.");
+console.log("Content verify passed: expeditions, night bosses, effects and builds all reachable.");
