@@ -1,5 +1,5 @@
-// Relic and weapon effects, transcribed from the community sheet by Slay,
-// Unlined-Betters, Emerald Wolf and Penumbra. Edit this file directly.
+// Relic and weapon effects, transcribed from the community sheet. Edit this
+// file directly.
 //
 // Conventions that are easy to get backwards:
 //   title     the text the game shows. What a player types, so what search indexes.
