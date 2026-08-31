@@ -275,12 +275,6 @@ export default function App() {
             )}
 
             <footer className="mt-10 border-t border-ink-600 pt-5 text-xs leading-relaxed text-dim">
-              Negation is a percentage: negative means the boss takes more damage. Status
-              values are buildup thresholds, so lower procs faster. Stacking answers say
-              whether an effect stacks with a second copy of itself.
-              <br />
-              Effect data transcribed from the community sheet by Slay, Unlined-Betters,
-              Emerald Wolf and Penumbra.
               {/* Last line on the page, and the smallest. The stamp is something to
                   quote back when a number looks wrong — it says exactly which build
                   you were reading — and it doubles as the way in for anyone curious
@@ -289,7 +283,7 @@ export default function App() {
                   min-h-11 on both links is the tap target, not the type size: the
                   text stays 12px and the touch area is 44px, which is what
                   tools/audit.mjs holds every control to. */}
-              <span className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-ink-600/60">
+              <span className="flex flex-wrap items-center gap-x-4">
                 <a
                   href={
                     __REVISION__ === "local" ? __REPO__ : `${__REPO__}/commit/${__REVISION__}`
