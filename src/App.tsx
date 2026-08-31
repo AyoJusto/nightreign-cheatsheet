@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { EXPEDITIONS, DATA_VERSION } from "./data/nightlords";
+import { EXPEDITIONS } from "./data/nightlords";
 import { ALL_BOSSES, BY_SLUG, nightAspectIsNoise, searchAll } from "./search";
 import { BossDetail } from "./components/BossDetail";
 import { NightBossDetail } from "./components/NightBossDetail";
@@ -231,7 +231,7 @@ export default function App() {
                     Nightreign
                   </h1>
                   <p className="mt-1 hidden text-xs text-dim sm:block">
-                    Boss weaknesses, negation and status buildup · {DATA_VERSION}
+                    Boss weaknesses, negation and status buildup
                   </p>
                 </div>
 
