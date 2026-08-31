@@ -16,8 +16,6 @@
 // src/search.test.ts asserts all of the above, so a bad hand-edit fails the tests.
 import type { Expedition } from "../types";
 
-export const DATA_VERSION = "v1.03.2 + DLC";
-
 export const EXPEDITIONS: Expedition[] = [
   {
     "id": "tricephalos",
