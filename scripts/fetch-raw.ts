@@ -5,6 +5,10 @@ import sharp from 'sharp'
 
 const OBSERVER = 'https://raw.githubusercontent.com/stockholm754-source/nightreign-seed-observer/main'
 const OLD_APP = 'https://raw.githubusercontent.com/abhishek-nerella/Nightreign-Seed-Finder/main/public'
+// The old app repo (abhishek-nerella/Nightreign-Seed-Finder) was deleted from GitHub on or
+// before 2026-09-23. Its font and per-Nightlord portraits in data/raw/assets were instead
+// copied by hand from a local clone taken that day, before the deletion — this fetch script
+// will skip-and-warn on the now-dead URLs below rather than reproduce those two outputs.
 
 const files: Record<string, string> = {
   'data/raw/observer.json': `${OBSERVER}/data/nightreign-data.json`,
