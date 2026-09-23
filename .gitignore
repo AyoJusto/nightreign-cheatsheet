@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# Design specs and plans stay local, never committed
+docs/specs/
