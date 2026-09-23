@@ -1,0 +1,28 @@
+{
+  "nightlordByNumber": {
+    "1": "tricephalos", "2": "gaping-jaw", "3": "sentient-pest", "4": "augur", "5": "equilibrious-beast",
+    "6": "darkdrift-knight", "7": "fissure-in-the-fog", "8": "night-aspect", "9": "balancers", "10": "dreglord"
+  },
+  "internalNightlordNames": ["Gladius", "Adel", "Gnoster", "Maris", "Libra", "Fulghor", "Caligo", "Heolstor", "Harmonia", "Straghess", "Greg"],
+  "eventNameOverrides": {
+    "gladiusRaid": "Tricephalos Raid",
+    "caligoRaid": "Fissure in the Fog Raid",
+    "gnosterplague": "Sentient Pest Plague",
+    "libracurse": "Equilibrious Beast Curse"
+  },
+  "bossNameOverrides": {},
+  "structureKinds": {
+    "church": "church", "greatchurch": "great-church", "fort": "fort", "mainencampment": "main-encampment",
+    "ruins": "ruins", "sorcerers": "sorcerers-rise", "diff_sorcerers": "ruined-rise",
+    "township": "township", "forge": "blacksmith-village", "marsh": "marsh", "WUF": "western-underground-fort", "EUF": "eastern-underground-fort",
+    "ScaleBearingMerchant": "scale-bearing-merchant"
+  },
+  "elements": {
+    "fire": "fire", "holy": "holy", "magic": "magic", "eletric": "lightning", "frostbite": "frostbite",
+    "poison": "poison", "bleed": "bleed", "blight": "blight", "madness": "madness", "sleep": "sleep", "rot": "rot"
+  },
+  "earths": {
+    "Normal": "default", "Crater": "crater", "Mountaintop": "mountaintop", "Rotted": "rotted-woods",
+    "Noklateo": "noklateo", "Great Hollow": "great-hollow"
+  }
+}
