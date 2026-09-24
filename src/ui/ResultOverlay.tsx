@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { motion, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
@@ -29,6 +29,21 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 }) {
   const wide = useWide()
   const pillRef = useMeasure(topInset, pillBottom)
+  const chips = useRef<HTMLDivElement>(null)
+  // Fades an edge only when there is more to scroll that way, same approach as the strip (StructureStrip.tsx).
+  const fadeChips = useCallback(() => {
+    const el = chips.current
+    if (!el) return
+    el.toggleAttribute('data-more-left', el.scrollLeft > 1)
+    el.toggleAttribute('data-more-right', el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+  useEffect(() => {
+    const el = chips.current!
+    const observer = new ResizeObserver(fadeChips)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [fadeChips])
+  useEffect(fadeChips)
   const [detent, setDetent] = useState<Detent>('peek')
   const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
   const [toast, setToast] = useState<string | null>(null)
@@ -133,7 +148,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     <>
       <Glass className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={back}><Icon name="back" /></button>
-        <div className="chips" role="group" aria-label="Map layers">
+        <div className="chips" ref={chips} onScroll={fadeChips} role="group" aria-label="Map layers">
           {available.map((l) => (
             <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
           ))}

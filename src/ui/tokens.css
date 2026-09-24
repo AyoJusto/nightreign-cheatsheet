@@ -210,14 +210,16 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 }
 .strip-variant { position: relative; flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; box-sizing: border-box; border-radius: 26px; font-size: 15px; font-weight: 600; white-space: nowrap; background: var(--fill-2); }
 
-/* Result pill: layer toggles. Each is a 44px target around a smaller capsule, so the row reads light. */
+/* Result pill: layer toggles. Each is a 44px target around a smaller capsule, so the row reads light.
+   Fades only the edges that have more to scroll to, same approach as the strip (StructureStrip.tsx). */
 .chips {
-  /* The last 12px are fully clear, so a clipped chip fades out instead of leaving a sliver of its first letter
-     at the edge; the 20px end padding keeps a row that fits clear of the fade. */
+  --fade-left: 0px; --fade-right: 0px;
   display: flex; flex: 1; min-width: 0; gap: 2px; overflow-x: auto; scrollbar-width: none; padding-right: 20px;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 32px), transparent calc(100% - 12px));
-  mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 32px), transparent calc(100% - 12px));
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
 }
+.chips[data-more-left] { --fade-left: 8px; }
+.chips[data-more-right] { --fade-right: 32px; }
 .chips::-webkit-scrollbar { display: none; }
 .pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 12px; border-radius: 22px; font-size: 15px; font-weight: 500; color: var(--label-2); background: none; }
 .pill .chip::before { content: ''; position: absolute; inset: 6px 0; border-radius: 16px; z-index: -1; }
