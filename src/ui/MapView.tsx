@@ -14,7 +14,6 @@ const MAX_ZOOM = 4
 // How far (CSS px on screen) a tap may land from a slot and still count as that slot.
 const TAP_REACH = 32
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
-const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(1, s))
 
 /** What the active mode (finder or result) shows on the map. */
 export interface MapContent {
@@ -30,8 +29,11 @@ export interface MapContent {
 
 export function MapView(props: MapContent & {
   earth: EarthId
-  /** Screen y of the top overlay's bottom edge, and the height covered at the bottom: the map frames itself between them. */
+  /** Screen y of the top overlay's bottom edge. */
   topInset: MotionValue<number>
+  /** Height covered at the bottom by the overlay at rest (strip, or sheet at peek): the map frames itself above it. */
+  restInset: MotionValue<number>
+  /** Height covered at the bottom right now, including an open sheet: pins are kept above it. */
   bottomInset: MotionValue<number>
 }) {
   const frame = useRef<HTMLDivElement>(null)
@@ -49,10 +51,12 @@ export function MapView(props: MapContent & {
   const move = reduce ? { duration: 0 } : snap
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
-  // The image always covers the frame; its bottom edge may rise to whatever covers the bottom of the screen.
+  // Per axis, an image larger than the frame keeps covering it and a smaller one (zoomed out to fit
+  // the playable area) stays inside it, so the playable area is always reachable. The bottom edge may
+  // also rise to whatever covers the bottom of the screen.
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
   const bounds = (axis: 'x' | 'y', s = scale.get()) => {
-    const slack = Math.max(0, (side(s) - (axis === 'x' ? size.get().w : size.get().h)) / 2)
+    const slack = Math.abs(side(s) - (axis === 'x' ? size.get().w : size.get().h)) / 2
     return { min: axis === 'x' ? -slack : -slack - props.bottomInset.get(), max: slack }
   }
   const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
@@ -73,13 +77,23 @@ export function MapView(props: MapContent & {
     const visibleBottom = h - props.bottomInset.get() - 56
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
   }
-  // Fit the playable area into the space between the top and bottom overlays, as far as covering the frame allows.
+  // The scale that fits the playable area into the space between the top and resting bottom overlays.
+  // Resting, so a rising sheet neither reframes the map nor changes how far it zooms out.
+  const fitScale = () => {
+    const { w, h } = size.get()
+    if (!w || !h) return 1
+    const free = h - props.topInset.get() - props.restInset.get()
+    return Math.min(w / (((box.x1 - box.x0) / 1000) * side(1)), free / (((box.y1 - box.y0) / 1000) * side(1)))
+  }
+  // Zooming out stops at covering the frame, or further where needed to show the whole playable area.
+  const minScale = () => Math.min(1, fitScale())
+  const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(minScale(), s))
   const fit = () => {
     const { w, h } = size.get()
     if (!w || !h) return
     const top = props.topInset.get()
-    const bottom = h - props.bottomInset.get()
-    const s = boundScale(Math.min(w / (((box.x1 - box.x0) / 1000) * side(1)), (bottom - top) / (((box.y1 - box.y0) / 1000) * side(1))))
+    const bottom = h - props.restInset.get()
+    const s = boundScale(fitScale())
     const centerX = ((box.x0 + box.x1) / 2000 - 0.5) * side(s)
     const centerY = ((box.y0 + box.y1) / 2000 - 0.5) * side(s)
     scale.jump(s)
@@ -168,7 +182,7 @@ export function MapView(props: MapContent & {
         },
       },
       pinch: {
-        scaleBounds: { min: 1, max: MAX_ZOOM },
+        scaleBounds: () => ({ min: minScale(), max: MAX_ZOOM }),
         rubberband: true,
         from: (): [number, number] => {
           grab('pinch')
@@ -184,14 +198,17 @@ export function MapView(props: MapContent & {
     if (props.selected) touched.current = true
     const target = reveal()
     if (target !== undefined) animate(y, target, move)
-    // The frame or the overlays around it changed size.
-    const onResize = () => {
-      if (!touched.current) fit()
-      else if (!active.current.drag && !active.current.pinch) settle()
+    const onInset = () => {
+      if (!active.current.drag && !active.current.pinch) settle()
     }
-    const offs = [size, props.topInset, props.bottomInset].map((v) => v.on('change', onResize))
+    // The frame or the resting overlays changed size: reframe until the user has moved the map.
+    const onFrame = () => (touched.current ? onInset() : fit())
+    const offs = [
+      ...[size, props.topInset, props.restInset].map((v) => v.on('change', onFrame)),
+      props.bottomInset.on('change', onInset),
+    ]
     return () => offs.forEach((off) => off())
-  }, [props.topInset, props.bottomInset, props.selected, props.pins])
+  }, [props.topInset, props.restInset, props.bottomInset, props.selected, props.pins])
 
   // A tap goes to the nearest tappable slot within reach, not to whichever overlapping hit area is on top.
   const tapAt = (clientX: number, clientY: number) => {

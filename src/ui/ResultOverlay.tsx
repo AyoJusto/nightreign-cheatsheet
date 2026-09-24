@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useState } from 'react'
 import type { MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
-import { Sheet, type Detent } from './Sheet'
+import { Sheet, PEEK, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
@@ -23,12 +23,15 @@ const LAYER_NAMES: Record<Layer, string> = {
 const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
-export function ResultOverlay({ seed, go, bottomInset, topInset, setMap }: {
-  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>
+export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setMap }: {
+  seed: Seed; go: (path: string, replace?: boolean) => void
+  bottomInset: MotionValue<number>; topInset: MotionValue<number>; restInset: MotionValue<number>
   setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
   const pillRef = useMeasure(topInset, pillBottom)
+  // At rest the sheet sits at peek.
+  useLayoutEffect(() => restInset.set(PEEK), [restInset])
   const [detent, setDetent] = useState<Detent>('peek')
   const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
   const [toast, setToast] = useState<string | null>(null)

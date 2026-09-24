@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
+import { motion, AnimatePresence, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
@@ -15,14 +15,13 @@ import { Scouting, type Sighting } from '../domain/scouting'
 
 export function FinderOverlay(props: {
   pool: readonly Seed[]; nightlord: NightlordId; earth: EarthId
-  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>
+  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>; restInset: MotionValue<number>
   setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
   const pillRef = useMeasure(props.topInset, pillBottom)
-  const stripInset = useMotionValue(0)
   // The strip's height plus its offset from the bottom edge; a hidden (empty) strip covers nothing.
-  const stripRef = useMeasure(stripInset, (el) => (el.offsetHeight ? el.offsetHeight + parseFloat(getComputedStyle(el).bottom) : 0))
+  const stripRef = useMeasure(props.restInset, (el) => (el.offsetHeight ? el.offsetHeight + parseFloat(getComputedStyle(el).bottom) : 0))
   const [scouting, setScouting] = useSightings(props.pool)
   const [selected, setSelected] = useState<SlotId | null>(null)
   const [focus, setFocus] = useState<StructureKey | null>(null)
@@ -59,9 +58,9 @@ export function FinderOverlay(props: {
   // With the sheet closed, only the strip covers the bottom of the map. The map springs to the new inset itself.
   useEffect(() => {
     if (selected) return
-    props.bottomInset.set(stripInset.get())
-    return stripInset.on('change', (v) => props.bottomInset.set(v))
-  }, [selected, props.bottomInset, stripInset])
+    props.bottomInset.set(props.restInset.get())
+    return props.restInset.on('change', (v) => props.bottomInset.set(v))
+  }, [selected, props.bottomInset, props.restInset])
 
   const apply = (next: Scouting) => { setScouting(next); close() }
   // Memoized: MapView re-reveals the selected pin whenever the pins array changes identity.

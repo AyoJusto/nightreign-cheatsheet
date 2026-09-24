@@ -14,6 +14,7 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, r
   const bottomInset = useMotionValue(96)
   const noInset = useMotionValue(0) // desktop: the side panel never covers the map
   const topInset = useMotionValue(0) // bottom edge of the overlay's top pill, measured by the overlay
+  const restInset = useMotionValue(96) // what the overlay covers at the bottom when no sheet is open
   // One map for both modes: the overlays hand it their pins, so finder to result keeps the map in place.
   const [content, setContent] = useState<MapContent>({ pins: [], onPin: () => {} })
   // parseRoute only yields a seed route for ids that exist.
@@ -22,11 +23,11 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, r
   const pool = useMemo(() => catalog.seedsFor(nightlord, earth), [nightlord, earth])
   return (
     <>
-      <MapView key={earth} earth={earth} {...content} topInset={topInset} bottomInset={wide ? noInset : bottomInset} />
+      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} />
       {seed
-        ? <ResultOverlay seed={seed} go={go} bottomInset={bottomInset} topInset={topInset} setMap={setContent} />
+        ? <ResultOverlay seed={seed} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />
         // Keyed by pool so a pool change on a mounted screen starts a fresh Scouting.
-        : <FinderOverlay key={`${nightlord}/${earth}`} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} setMap={setContent} />}
+        : <FinderOverlay key={`${nightlord}/${earth}`} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />}
     </>
   )
 }

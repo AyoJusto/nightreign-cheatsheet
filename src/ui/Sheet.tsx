@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, type MotionValue, type PanInfo } from 'motion/react'
 
 export type Detent = 'peek' | 'half' | 'full'
-const PEEK = 96
+export const PEEK = 96
 const heights = (vh: number): Record<Detent, number> => ({ peek: PEEK, half: Math.round(vh * 0.5), full: Math.round(vh * 0.92) })
 const sheetSpring = { type: 'spring', visualDuration: 0.5, bounce: 0 } as const
 
