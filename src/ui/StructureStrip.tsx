@@ -8,10 +8,15 @@ import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureK
 const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
 
 /** One button per kind. A kind with several variants expands in place into one chip per element, named. */
-export function StructureButtons({ groups, open, focus, onKind, onVariant }: {
+export function StructureButtons({ groups, open, focus, onKind, onVariant, onName }: {
   groups: KindGroup[]; open: string | null; focus: StructureKey | null
   onKind: (kind: string) => void; onVariant: (structure: StructureKey) => void
+  /** Desktop: the name of the art-only tile under the mouse or keyboard focus, or null when it leaves. */
+  onName?: (name: string | null) => void
 }) {
+  const naming = (name: string) => onName && {
+    onPointerEnter: () => onName(name), onPointerLeave: () => onName(null), onFocus: () => onName(name), onBlur: () => onName(null),
+  }
   return groups.flatMap(({ kind, variants }) => {
     if (variants.length === 1) {
       const [only] = variants
@@ -19,7 +24,7 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant }: {
       // An elemental kind with one variant names its element, like the expanded chips do.
       return [
         <motion.button key={kind} layout className={element ? 'strip-variant' : 'strip-item'} data-kind={kind}
-          data-name={structureName(only)} aria-label={`Find ${structureName(only)}`}
+          {...naming(structureName(only))} aria-label={`Find ${structureName(only)}`}
           aria-pressed={focus === only} onClick={() => onVariant(only)}>
           <StructureIcon structure={only} size={element ? 36 : 44} />
           {element && <span>{ELEMENT_NAMES[element]}</span>}
@@ -28,7 +33,7 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant }: {
     }
     const expanded = open === kind
     return [
-      <motion.button key={kind} layout className="strip-item" data-kind={kind} data-name={kindName(kind)} aria-label={`${kindName(kind)}, ${variants.length} types`}
+      <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(kindName(kind))} aria-label={`${kindName(kind)}, ${variants.length} types`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />
         {/* Stacked dots in its elements' colours say "comes in elements"; a number read as a count or an order. */}

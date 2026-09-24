@@ -32,6 +32,8 @@ export function FinderOverlay(props: {
   const [open, setOpen] = useState<string | null>(null)
   // Desktop: the site under the mouse, previewed in the side panel until the pointer leaves it.
   const [hover, setHover] = useState<SlotId | null>(null)
+  // Desktop: the structure tile under the mouse or focus, named beside the grid's heading.
+  const [tileName, setTileName] = useState<string | null>(null)
   const [detent, setDetent] = useState<Detent>('peek')
   const coords = catalog.slotsOf(props.earth)
   const count = scouting.candidates().length
@@ -55,7 +57,7 @@ export function FinderOverlay(props: {
   }, [scouting, props.go])
 
   // Also drops the hover preview: a sighting can remove the hovered pin, and a removed pin never reports leaving.
-  const close = useCallback(() => { setFocus(null); setOpen(null); setHover(null); setSelected(null); setDetent('peek') }, [])
+  const close = useCallback(() => { setFocus(null); setOpen(null); setHover(null); setTileName(null); setSelected(null); setDetent('peek') }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
@@ -132,7 +134,8 @@ export function FinderOverlay(props: {
         setSelected(null)
         setFocus(focus === v ? null : v)
         if (splitStructure(v).kind !== open) setOpen(null)
-      }} />
+      }}
+      onName={wide ? setTileName : undefined} />
   )
   const choicesTitle = atSpawn ? 'Spawn point' : "What's here?"
   // Read-only: the same rows as the choices, but nothing to click until the site itself is clicked.
@@ -182,7 +185,10 @@ export function FinderOverlay(props: {
           ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : 'Tap where you spawned on the map.'}</p>)}
           {groups.length > 0 && (
             <section>
-              <h3 className="side-heading">Structures still possible</h3>
+              {/* The tile's name goes here, not in a tooltip that would cover the tiles around it. */}
+              <h3 className="side-heading structure-heading">
+                Structures still possible<span className="structure-name" aria-hidden>{tileName}</span>
+              </h3>
               {/* The heading above names it; a matching aria-label would be announced twice. */}
               <div className="structure-grid">{structureButtons}</div>
             </section>
