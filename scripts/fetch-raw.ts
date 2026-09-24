@@ -4,7 +4,8 @@ import { dirname } from 'node:path'
 import sharp from 'sharp'
 
 const OBSERVER = 'https://raw.githubusercontent.com/stockholm754-source/nightreign-seed-observer/main'
-const OLD_APP = 'https://raw.githubusercontent.com/abhishek-nerella/Nightreign-Seed-Finder/main/public'
+const OLD_REPO = 'https://raw.githubusercontent.com/abhishek-nerella/Nightreign-Seed-Finder'
+const OLD_APP = `${OLD_REPO}/main/public`
 // The old app repo (abhishek-nerella/Nightreign-Seed-Finder) was deleted from GitHub on or
 // before 2026-09-23. Its font and per-Nightlord portraits in data/raw/assets were instead
 // copied by hand from a local clone taken that day, before the deletion — this fetch script
@@ -49,7 +50,7 @@ try {
   const tree = await (await fetch('https://api.github.com/repos/abhishek-nerella/Nightreign-Seed-Finder/git/trees/main?recursive=1')).json()
   for (const entry of tree.tree as { path: string }[]) {
     const match = entry.path.match(/^public\/Images\/nightlordIcons\/(\d+)_[^/]+\.webp$/)
-    if (match) files[`data/raw/assets/nightlords/${match[1]}.webp`] = `https://raw.githubusercontent.com/abhishek-nerella/Nightreign-Seed-Finder/main/${entry.path}`
+    if (match) files[`data/raw/assets/nightlords/${match[1]}.webp`] = `${OLD_REPO}/main/${entry.path}`
   }
 } catch (err) {
   console.warn('skipped nightlord portrait discovery:', err instanceof Error ? err.message : err)
@@ -58,8 +59,13 @@ try {
 for (const [out, url] of Object.entries(files)) {
   const res = await fetch(url)
   if (!res.ok) {
-    console.warn('skipped', out, `(${res.status} ${url})`)
-    continue
+    // Only the dead old-app repo is allowed to fail quietly; every other source (OBSERVER,
+    // artimuz) is expected to be live, so a failure there is a real problem and must throw.
+    if (url.startsWith(OLD_REPO)) {
+      console.warn('skipped', out, `(${res.status} ${url})`)
+      continue
+    }
+    throw new Error(`${res.status} ${url}`)
   }
   await mkdir(dirname(out), { recursive: true })
   await writeFile(out, Buffer.from(await res.arrayBuffer()))
