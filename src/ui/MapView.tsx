@@ -76,7 +76,6 @@ export function MapView(props: MapContent & {
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
   const reduce = useReducedMotion()
   const fade = useMotionValue(1)
-  const fading = useRef(false)
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
   // Per axis, an image larger than the frame keeps covering it and a smaller one (zoomed out to fit
@@ -130,6 +129,8 @@ export function MapView(props: MapContent & {
   }
   // Which gestures own the motion values right now; the sheet-driven settle must not fight them.
   const active = useRef({ drag: false, pinch: false })
+  // Reduced motion: the moves waiting for the running crossfade's jump, or null when none is running.
+  const queued = useRef<(() => [MotionValue<number>, number][])[] | null>(null)
   // MotionValue.set does not stop a running animation, so a new gesture must stop the glide or
   // settle spring itself. use-gesture calls `from` at pointer-down, before any handler runs,
   // so stopping here freezes the map exactly where the finger landed.
@@ -142,17 +143,20 @@ export function MapView(props: MapContent & {
   }
   // Springs each value to its target. With reduced motion a far move crossfades instead; `targets` is read
   // again when the map is faded out, so the jump lands where things are by then, not where they were.
+  // Moves that arrive during a crossfade wait for its jump, and each is read again there, in order.
   type Targets = () => [MotionValue<number>, number][]
   const moveTo = (targets: Targets) => {
+    if (reduce && queued.current) return void queued.current.push(targets)
     const now = targets()
     if (!reduce) return now.forEach(([v, t]) => { if (v !== scale || t !== v.get()) animate(v, t, snap) })
     const far = now.some(([v, t]) => Math.abs(v === scale ? side(t) - side() : t - v.get()) > NUDGE)
     if (!far) return now.forEach(([v, t]) => v.jump(t))
-    if (fading.current) return
-    fading.current = true
+    const batch = [targets]
+    queued.current = batch
     crossfade(fade, () => {
-      targets().forEach(([v, t]) => v.jump(t))
-      fading.current = false
+      if (queued.current !== batch) return // a gesture took over the map meanwhile (grab)
+      queued.current = null
+      batch.forEach((read) => read().forEach(([v, t]) => v.jump(t)))
     })
   }
   const settle = () => moveTo(() => {
