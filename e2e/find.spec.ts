@@ -40,3 +40,33 @@ test('a shared seed link opens directly', async ({ page }) => {
   await page.goto(`/seed/${targets[0].id}`)
   await expect(page.getByRole('heading', { name: `Seed ${targets[0].id}` })).toBeVisible()
 })
+
+// Focus or scrollIntoView on an off-screen pin must not scroll the map frame: taps are resolved
+// from the frame's geometry, so a scrolled frame would send them to the wrong slot.
+test('the map frame never scrolls under the map, so taps still land', async ({ page }) => {
+  const target = targets[0]
+  await page.goto(`/find/${target.nightlord}/${target.earth}`)
+  const frame = page.locator('.map-frame')
+  // Zoom in so some pins sit off-screen.
+  await frame.evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    el.dispatchEvent(new WheelEvent('wheel', { deltaY: -500, clientX: r.width / 2, clientY: r.height / 2, bubbles: true, cancelable: true }))
+  })
+  await page.waitForTimeout(600)
+  await frame.evaluate((el) => el.querySelectorAll<HTMLElement>('.pin').forEach((pin) => { pin.scrollIntoView(); pin.focus() }))
+  expect(await frame.evaluate((el) => [el.scrollLeft, el.scrollTop])).toEqual([0, 0])
+
+  // Tap the first spawn option that is on screen, by its point, and expect that exact spawn.
+  const viewport = page.viewportSize()!
+  for (const pin of await page.getByRole('button', { name: /^Spawn point, slot / }).all()) {
+    const box = (await pin.boundingBox())!
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    if (x < 30 || y < 90 || x > viewport.width - 30 || y > viewport.height - 110) continue
+    const slot = (await pin.getAttribute('aria-label'))!.match(/slot (\d+)/)![1]
+    await page.mouse.click(x, y)
+    await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}$`))
+    return
+  }
+  throw new Error('no spawn option on screen')
+})
