@@ -24,7 +24,7 @@ const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-b
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
 export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setMap }: {
-  seed: Seed; go: (path: string, replace?: boolean) => void
+  seed: Seed; go: (path: string, back?: boolean) => void
   bottomInset: MotionValue<number>; topInset: MotionValue<number>; restInset: MotionValue<number>
   setMap: (content: MapContent) => void
 }) {
@@ -99,9 +99,9 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   // A shared link has no sightings and goes home.
   const back = () => {
     const q = new URLSearchParams(location.search).get('s')
-    if (q === null) return go('/')
+    if (q === null) return go('/', true)
     const rest = encodeSightings(decodeSightings(q).slice(0, -1))
-    go(`/find/${seed.nightlord}/${seed.earth}${rest ? `?${new URLSearchParams({ s: rest })}` : ''}`)
+    go(`/find/${seed.nightlord}/${seed.earth}${rest ? `?${new URLSearchParams({ s: rest })}` : ''}`, true)
   }
   const toggle = (l: Layer) =>
     setOn((s) => {

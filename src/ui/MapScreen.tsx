@@ -9,7 +9,7 @@ import { useWide } from './useWide'
 
 type MapRoute = Extract<Route, { name: 'find' | 'seed' }>
 
-export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, replace?: boolean) => void }) {
+export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, back?: boolean) => void }) {
   const wide = useWide()
   const bottomInset = useMotionValue(0)
   const noInset = useMotionValue(0) // desktop: the side panel never covers the map

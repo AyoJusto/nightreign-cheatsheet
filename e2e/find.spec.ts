@@ -433,3 +433,49 @@ test('a failed share falls back to copying the link', async ({ page, isMobile })
   await expect(page.getByRole('status')).toHaveText('Link copied')
   expect(await page.evaluate(() => (window as any).copied)).toMatch(new RegExp(`/seed/${targets[0].id}$`))
 })
+
+// In-app Back steps back through history instead of pushing, so the browser's Back and Forward agree with it
+// afterwards and never re-enter the screen just left (final m2).
+test('in-app Back from a result steps back through history', async ({ page }) => {
+  const target = targets[0]
+  // The fewest sightings that single out the seed, in order: the finder solves it on load.
+  const pool = data.seeds.filter((s: any) => s.nightlord === target.nightlord && s.earth === target.earth)
+  let left = pool.filter((s: any) => s.spawn === target.spawn)
+  const sightings = [`spawn@${target.spawn}`]
+  for (const [slot, key] of Object.entries<string | null>(target.slots)) {
+    if (left.length === 1) break
+    const next = left.filter((s: any) => s.slots[slot] === key)
+    if (next.length === left.length) continue
+    left = next
+    sightings.push(`${slot}@${key ?? 'none'}`)
+  }
+  const rest = sightings.slice(0, -1).join(',')
+  const finder = new RegExp(`/find/${target.nightlord}/${target.earth}\\?s=`)
+
+  await page.goto('/')
+  await page.getByRole('button', { name: new RegExp(`^${nightlordName(target.nightlord)}`) }).click()
+  await page.getByRole('button', { name: new RegExp(`^${earthName(target.earth)}`) }).click()
+  await expect(page).toHaveURL(new RegExp(`/find/${target.nightlord}/${target.earth}$`))
+  // Stand in for tapping the sightings: set them on this entry and let the finder replay them.
+  await page.evaluate((s) => { history.replaceState(history.state, '', `?s=${s}`) }, sightings.join(','))
+  await page.reload()
+  await expect(page).toHaveURL(new RegExp(`/seed/${target.id}`))
+  const length = await page.evaluate(() => history.length)
+
+  await page.getByRole('button', { name: 'Back' }).click()
+  await expect(page).toHaveURL(finder)
+  expect(new URL(page.url()).searchParams.get('s')).toBe(rest)
+  expect(await page.evaluate(() => history.length)).toBe(length)
+
+  await page.goForward()
+  await expect(page.getByRole('heading', { name: `Seed ${target.id}` })).toBeVisible()
+  await page.goBack()
+  await expect(page).toHaveURL(finder)
+
+  // The finder's own Back lands on the home it came from, the same entry browser Back would.
+  await page.getByRole('button', { name: 'Back' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  expect(await page.evaluate(() => history.length)).toBe(length)
+  await page.goForward()
+  await expect(page).toHaveURL(finder)
+})

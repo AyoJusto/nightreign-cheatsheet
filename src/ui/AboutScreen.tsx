@@ -1,9 +1,9 @@
 import { Icon } from './Icon'
 
-export function AboutScreen({ go }: { go: (path: string) => void }) {
+export function AboutScreen({ go }: { go: (path: string, back?: boolean) => void }) {
   return (
     <main className="home about">
-      <button className="about-back" onClick={() => go('/')}><Icon name="back" />Back</button>
+      <button className="about-back" onClick={() => go('/', true)}><Icon name="back" />Back</button>
       <h1 className="home-title">About</h1>
       <p>Bonfire Buddy helps you work out your Nightreign seed mid-run and see its full layout.</p>
       <h2>Data</h2>

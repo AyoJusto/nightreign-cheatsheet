@@ -46,7 +46,7 @@ export function useSightings(pool: readonly Seed[]): { scouting: Scouting; updat
     const url = new URL(location.href)
     if (t.now.sightings.length) url.searchParams.set('s', encodeSightings(t.now.sightings))
     else url.searchParams.delete('s')
-    history.replaceState(null, '', url)
+    history.replaceState(history.state, '', url)
     setTimeline(t)
   }, [])
   const update = useCallback((next: Scouting) => show(record(timeline, next)), [timeline, show])

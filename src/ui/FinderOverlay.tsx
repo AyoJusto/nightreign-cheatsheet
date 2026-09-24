@@ -18,7 +18,7 @@ import { Scouting, type Sighting } from '../domain/scouting'
 
 export function FinderOverlay(props: {
   pool: readonly Seed[]; nightlord: NightlordId; earth: EarthId
-  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>; restInset: MotionValue<number>
+  go: (path: string, back?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>; restInset: MotionValue<number>
   setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
@@ -48,13 +48,14 @@ export function FinderOverlay(props: {
     if (!seed) return
     const t = setTimeout(() => {
       // Leave the finder entry one step back, so browser Back lands on a finder that is not already
-      // solved (and so does not bounce straight back here), then push the result.
+      // solved (and so does not bounce straight back here), then push the result. The entry keeps its state,
+      // which records where it was pushed from (router.ts).
       const full = location.search
       const back = new URL(location.href)
       const rest = scouting.sightings.slice(0, -1)
       if (rest.length) back.searchParams.set('s', encodeSightings(rest))
       else back.searchParams.delete('s')
-      history.replaceState(null, '', back)
+      history.replaceState(history.state, '', back)
       props.go(`/seed/${seed.id}${full}`)
     }, 350)
     return () => clearTimeout(t)
@@ -197,7 +198,7 @@ export function FinderOverlay(props: {
           desktop carries the count in the side panel, so its pill is a plain flex row, a tight control group. */}
       <Glass className={`pill${wide ? '' : ' pill-titled'}`} ref={pillRef}>
         <div className="pill-leading">
-          <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
+          <button className="pill-back" aria-label="Back" onClick={() => props.go('/', true)}><Icon name="back" /></button>
         </div>
         {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
         {!wide && (
