@@ -282,7 +282,7 @@ export function MapView(props: MapContent & {
           </motion.button>
         ))}
         {/* After the pins, so a label is never under a structure; MapMarker also places it off every pin. */}
-        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} pinScale={pinScale} artScale={artScale} dotScale={dotScale} />)}
+        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} bottomInset={props.bottomInset} pinScale={pinScale} artScale={artScale} dotScale={dotScale} />)}
       </motion.div>
     </div>
   )
@@ -298,13 +298,14 @@ const MARK_RADIUS = 6
  * A glyph on the exact point, with its label beside it: below, above, right or left, whichever covers no
  * pin (structures stay visible), kept inside the frame. Placement is live through pan and zoom (transform only).
  */
-function MapMarker({ marker, pins, x, y, scale, size, pinScale, artScale, dotScale }: {
+function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, artScale, dotScale }: {
   marker: Marker
   pins: Pin[]
   x: MotionValue<number>
   y: MotionValue<number>
   scale: MotionValue<number>
   size: MotionValue<{ w: number; h: number }>
+  bottomInset: MotionValue<number>
   pinScale: MotionValue<number>
   artScale: MotionValue<number>
   dotScale: MotionValue<number>
@@ -329,7 +330,9 @@ function MapMarker({ marker, pins, x, y, scale, size, pinScale, artScale, dotSca
       const r = p.structure ? (ART_SIZE / 2 + 4) * artScale.get() : 10 * dotScale.get()
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
-    const spot = placeLabel(point, box.get(), { w, h }, obstacles, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
+    // The visible frame stops at whatever covers the bottom right now (the sheet at half), so no label is sliced by it.
+    const visible = { w, h: h - bottomInset.get() }
+    const spot = placeLabel(point, box.get(), visible, obstacles, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
     return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear }
   })
   const labelX = useTransform(offset, (o) => o.x)
