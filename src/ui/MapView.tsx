@@ -140,6 +140,9 @@ export function MapView(props: MapContent & {
     x.stop()
     y.stop()
     scale.stop()
+    // A reduced-motion crossfade in flight is dropped: the finger owns the map now, so its jump must not land.
+    queued.current = null
+    fade.jump(1)
   }
   // Springs each value to its target. With reduced motion a far move crossfades instead; `targets` is read
   // again when the map is faded out, so the jump lands where things are by then, not where they were.
