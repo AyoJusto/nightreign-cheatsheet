@@ -5,7 +5,7 @@ import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
-import { useSightings } from './useSightings'
+import { useSightings, encodeSightings } from './useSightings'
 import { useWide } from './useWide'
 import { catalog } from '../data/catalog'
 import { structureName, nightlordName, earthName, type EarthId, type NightlordId, type SlotId, type StructureKey } from '../domain/names'
@@ -29,7 +29,17 @@ export function FinderOverlay(props: {
   useEffect(() => {
     const seed = scouting.identifiedSeed()
     if (!seed) return
-    const t = setTimeout(() => props.go(`/seed/${seed.id}${location.search}`, true), 350)
+    const t = setTimeout(() => {
+      // Leave the finder entry one step back, so browser Back lands on a finder that is not already
+      // solved (and so does not bounce straight back here), then push the result.
+      const full = location.search
+      const back = new URL(location.href)
+      const rest = scouting.sightings.slice(0, -1)
+      if (rest.length) back.searchParams.set('s', encodeSightings(rest))
+      else back.searchParams.delete('s')
+      history.replaceState(null, '', back)
+      props.go(`/seed/${seed.id}${full}`)
+    }, 350)
     return () => clearTimeout(t)
   }, [scouting, props.go])
 
@@ -63,7 +73,8 @@ export function FinderOverlay(props: {
   const sightedHere = selected ? scouting.sightings.find((s) => s.type !== 'spawn' && s.slot === selected) : undefined
   // The spawn pin holds the spawn sighting, not a structure question.
   const options = selected && !atSpawn ? scouting.possibilitiesAt(selected) : []
-  const inPlay = scouting.structuresInPlay()
+  // Sorted by key so kinds group together and icons keep their place between sightings.
+  const inPlay = [...scouting.structuresInPlay()].sort((a, b) => a.structure.localeCompare(b.structure))
 
   const choices = selected && (
     <ul className="options" aria-label={`Slot ${selected}`}>
@@ -89,6 +100,13 @@ export function FinderOverlay(props: {
       ))}
     </ul>
   )
+  const structureButtons = inPlay.map(({ structure }) => (
+    <motion.button key={structure} layout className="strip-item" aria-label={`Find ${structureName(structure)}`}
+      aria-pressed={focus === structure}
+      onClick={() => { setSelected(null); setFocus(focus === structure ? null : structure) }}>
+      <StructureIcon structure={structure} size={32} />
+    </motion.button>
+  ))
   const choicesTitle = atSpawn ? 'Spawn point' : "What's here?"
 
   return (
@@ -107,15 +125,9 @@ export function FinderOverlay(props: {
         <button aria-label="Reset" disabled={!scouting.sightings.length}
           onClick={() => apply(Scouting.start(props.pool))}>⟲</button>
       </Glass>
-      <Glass className="strip" role="toolbar" aria-label="Structures still possible">
-        {inPlay.map(({ structure }) => (
-          <motion.button key={structure} layout className="strip-item" aria-label={`Find ${structureName(structure)}`}
-            aria-pressed={focus === structure}
-            onClick={() => { setSelected(null); setFocus(focus === structure ? null : structure) }}>
-            <StructureIcon structure={structure} size={32} />
-          </motion.button>
-        ))}
-      </Glass>
+      {!wide && (
+        <Glass className="strip" role="toolbar" aria-label="Structures still possible">{structureButtons}</Glass>
+      )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
           <h2 className="title side-title">{nightlordName(props.nightlord)} · {earthName(props.earth)}</h2>
@@ -126,6 +138,12 @@ export function FinderOverlay(props: {
               {choices}
             </section>
           ) : <p className="hint">Select a slot or a structure.</p>}
+          {inPlay.length > 0 && (
+            <section>
+              <h3 className="side-heading">Structures still possible</h3>
+              <div className="structure-grid" role="toolbar" aria-label="Structures still possible">{structureButtons}</div>
+            </section>
+          )}
           {scouting.sightings.length > 0 && (
             <section>
               <h3 className="side-heading">Sightings</h3>
@@ -161,7 +179,6 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
   const sighted = new Map(scouting.sightings.flatMap((s) => (s.type === 'spawn' ? [] : [[s.slot, s] as const])))
   const certain = scouting.certainSlots()
   const focusSlots = new Set(focus ? scouting.structuresInPlay().find((p) => p.structure === focus)?.slots ?? [] : [])
-  const candidates = scouting.candidates()
 
   if (!spawn) {
     for (const { slot, remaining } of scouting.spawnOptions()) {
@@ -182,7 +199,7 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
       pins.push({ slot, ...coords[slot], state: 'candidate', structure: known, label: known ? `Slot ${slot}, ${structureName(known)}` : `Slot ${slot}` })
     } else if (known) {
       pins.push({ slot, ...coords[slot], state: 'certain', structure: known, label: `Slot ${slot}, ${structureName(known)}` })
-    } else if (candidates.some((seed) => seed.slots[slot])) {
+    } else if (scouting.possibilitiesAt(slot).some((p) => p.option !== 'nothing')) {
       pins.push({ slot, ...coords[slot], state: focus ? 'dimmed' : 'open', structure: null, label: `Slot ${slot}` })
     }
   }

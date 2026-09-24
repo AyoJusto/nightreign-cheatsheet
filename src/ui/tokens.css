@@ -102,7 +102,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 @media (min-width: 900px) {
   .map-frame { right: 360px; }
   .pill { left: calc(50% - 180px); }
-  .strip { right: 368px; }
 }
 /* Hit areas overlap at low zoom; the pins the current step asks for win the tap. */
 .pin-spawn-option, .pin-candidate { z-index: 1; }
+.structure-grid { display: flex; flex-wrap: wrap; gap: 4px; }
