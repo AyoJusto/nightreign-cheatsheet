@@ -108,3 +108,25 @@ test('the result sheet steps with the keyboard and opens fully below the pill', 
   const [pill, sheet] = await page.evaluate(() => ['.pill', '.sheet'].map((s) => document.querySelector(s)!.getBoundingClientRect()))
   expect(sheet.top).toBeGreaterThanOrEqual(pill.bottom + 7.5)
 })
+
+// A tap selects a site; the sheet then rises over the lower part of the map, and the map must lift the
+// selected pin above it. (A tap once left the map thinking a drag was still under way, so it never lifted.)
+test('a low site stays in sight above its sheet', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the sheet is phone only')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  await expect(page.getByRole('button', { name: 'Unknown site', exact: true }).first()).toBeVisible()
+  await page.waitForTimeout(700) // let the map frame itself
+  const viewport = page.viewportSize()!
+  let lowest = null
+  let lowestY = 0
+  for (const pin of await page.getByRole('button', { name: 'Unknown site', exact: true }).all()) {
+    const box = (await pin.boundingBox())!
+    // On screen and above the strip, but low enough that the half sheet would cover it.
+    if (box.y > lowestY && box.y + box.height < viewport.height - 110) { lowest = pin; lowestY = box.y }
+  }
+  await lowest!.click()
+  await page.waitForTimeout(900) // the sheet rises, then the map follows
+  const [pin, sheet] = await page.evaluate(() => ['.pin-selected', '.sheet'].map((s) => document.querySelector(s)!.getBoundingClientRect()))
+  expect(lowestY + 22).toBeGreaterThan(sheet.top) // the sheet would have covered it
+  expect(pin.top + pin.height / 2).toBeLessThan(sheet.top)
+})
