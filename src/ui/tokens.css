@@ -116,6 +116,8 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .pin-candidate .open-dot { width: 12px; height: 12px; background: var(--accent); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55), 0 0 0 5px var(--accent-halo), 0 1px 4px rgba(0, 0, 0, 0.6); }
 /* The chosen spawn: a white "you are here" puck with a black rim and a pale halo. */
 .spawn-dot { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--label); box-shadow: 0 0 0 3px var(--bg), 0 0 0 7px var(--label-3), 0 2px 8px rgba(0, 0, 0, 0.6); }
+.pin-spawn .pin-body > span { position: relative; }
+.spawn-badge { position: absolute; left: -5px; bottom: -5px; transform: scale(0.75); transform-origin: 0 100%; }
 /* The site whose sheet is open: a gold reticle around the dot, clear of both spawn shapes. */
 .pin-selected .open-dot { position: relative; }
 .pin-selected .open-dot::after { content: ''; position: absolute; inset: -7px; border: 2.5px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.35); }

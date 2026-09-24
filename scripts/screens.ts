@@ -8,6 +8,8 @@ mkdirSync(out, { recursive: true })
 const base = 'http://localhost:4173'
 const seed = JSON.parse(readFileSync('src/data/seeds.json', 'utf8')).seeds.find((s: any) => s.nightlord === 'tricephalos' && s.earth === 'default')
 
+const spawnChurch = JSON.parse(readFileSync('src/data/seeds.json', 'utf8')).seeds.find((s: any) => s.slots[s.spawn] === 'church')
+
 type Shot = (page: Page) => Promise<void>
 
 // Step the result sheet with its keyboard-operable grab handle: detent heights are measured
@@ -56,6 +58,19 @@ const shots: [string, Shot][] = [
     // The busiest marker set a player turns on: labels must stay clear of each other and of every glyph.
     await p.goto(`${base}/seed/000`)
     for (const layer of ['Bosses', 'Chests']) await p.getByRole('button', { name: layer, exact: true }).click()
+  }],
+  ['result-spawn-church', async (p) => {
+    // A Church at the spawn point: the puck draws over it and both stay visible (final m1).
+    await p.goto(`${base}/seed/${spawnChurch.id}`)
+  }],
+  ['finder-spawn-church-sheet', async (p) => {
+    // The spawn pin's sheet offers the Church that can stand there.
+    await p.goto(`${base}/find/${spawnChurch.nightlord}/${spawnChurch.earth}?s=spawn@${spawnChurch.spawn}`)
+    await p.getByRole('button', { name: 'Your spawn point', exact: true }).click()
+  }],
+  ['finder-spawn-church', async (p) => {
+    // Recorded, the Church shows on the spawn pin as the result map draws it.
+    await p.goto(`${base}/find/${spawnChurch.nightlord}/${spawnChurch.earth}?s=spawn@${spawnChurch.spawn},${spawnChurch.spawn}@church`)
   }],
   ['about', async (p) => { await p.goto(`${base}/about`) }],
   ['great-hollow', async (p) => { await p.goto(`${base}/find/dreglord/great-hollow`) }],

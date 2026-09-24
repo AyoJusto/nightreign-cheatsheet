@@ -479,3 +479,29 @@ test('in-app Back from a result steps back through history', async ({ page }) =>
   await page.goForward()
   await expect(page).toHaveURL(finder)
 })
+
+// 65 seeds have a Church at the spawn point: the result shows both, and the spawn pin's sheet can record it (final m1).
+test.describe('a Church at the spawn point', () => {
+  const churchSeed = data.seeds.find((s: any) => s.slots[s.spawn] === 'church')
+
+  test('shows on the result map with the spawn puck on it', async ({ page }) => {
+    await page.goto(`/seed/${churchSeed.id}`)
+    const spawn = page.locator(`.pin[data-slot="${churchSeed.spawn}"]`)
+    await expect(spawn).toHaveAccessibleName('Spawn point, Church')
+    await expect(spawn.locator('.structure-art')).toBeVisible()
+    await expect(spawn.locator('.spawn-badge')).toBeVisible()
+    // Either layer alone still shows its part.
+    await page.getByRole('button', { name: 'Spawn', exact: true }).click()
+    await expect(spawn).toHaveAccessibleName('Church')
+    await page.getByRole('button', { name: 'Spawn', exact: true }).click()
+    await page.getByRole('button', { name: 'Structures', exact: true }).click()
+    await expect(spawn).toHaveAccessibleName('Spawn point')
+  })
+
+  test('can be recorded from the spawn pin', async ({ page }) => {
+    await page.goto(`/find/${churchSeed.nightlord}/${churchSeed.earth}?s=spawn@${churchSeed.spawn}`)
+    await page.getByRole('button', { name: 'Your spawn point', exact: true }).click()
+    await page.locator(`.options[data-slot="${churchSeed.spawn}"]`).getByRole('button', { name: /^Church, leaves \d+$/ }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('s')).toMatch(new RegExp(`(^|,)${churchSeed.spawn}@church(,|$)`))
+  })
+})

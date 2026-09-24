@@ -130,8 +130,10 @@ export function FinderOverlay(props: {
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
   const atSpawn = selected !== null && spawn?.slot === selected
   const sightedHere = selected ? scouting.sightings.find((s) => s.type !== 'spawn' && s.slot === selected) : undefined
-  // The spawn pin holds the spawn sighting, not a structure question.
-  const options = selected && !atSpawn ? scouting.possibilitiesAt(selected) : []
+  // The spawn pin holds the spawn sighting; it asks what stands there only when some seed has a structure
+  // (a Church) at that spawn point.
+  const possible = selected ? scouting.possibilitiesAt(selected) : []
+  const options = atSpawn && possible.every((p) => p.option === 'nothing') ? [] : possible
   // What was recorded at a sighted site, marked in its list like an iOS selected row.
   const current = sightedHere && (sightedHere.type === 'structure' ? sightedHere.structure : 'nothing')
   const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
@@ -293,7 +295,12 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
   // map (a spawn option that could hold the structure is a candidate), and a tap on one cancels, recording nothing.
   const spawnOptions = new Map(spawn ? [] : scouting.spawnOptions().map(({ slot, remaining }) => [slot, remaining]))
   if (spawn) {
-    pins.push({ slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: null, label: 'Your spawn point' })
+    const here = sighted.get(spawn.slot)
+    // A Church recorded at the spawn point shows on the spawn pin, as the result map draws it.
+    pins.push({
+      slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: here?.type === 'structure' ? here.structure : null,
+      label: here ? `Your spawn point, ${sightingLabel(here)}` : 'Your spawn point',
+    })
   } else if (!focus) {
     for (const [slot, remaining] of spawnOptions) {
       pins.push({ slot, ...coords[slot], state: 'spawn-option', structure: null, label: `Possible spawn point, leaves ${remaining}` })

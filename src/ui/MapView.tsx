@@ -354,7 +354,9 @@ export function MapView(props: MapContent & {
           >
             <motion.span className="pin-body" style={{ scale: p.structure ? artScale : dotScale }}>
               <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
-                {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
+                {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' && !p.structure ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
+                {/* A Church at the spawn point: the art stays whole and the puck rides on its corner, so both show. */}
+                {p.state === 'spawn' && p.structure && <span className="spawn-dot spawn-badge" />}
               </motion.span>
             </motion.span>
             {/* The 44px target lies over the art as a sibling, so art and pin stay mounted when the result drops it. */}
