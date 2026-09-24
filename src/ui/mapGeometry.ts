@@ -55,3 +55,45 @@ export function rubberband(v: number, min: number, max: number, dimension: numbe
   if (v > max) return max + resist(v - max, dimension)
   return v
 }
+
+export interface Rect { x0: number; y0: number; x1: number; y1: number }
+
+/**
+ * Where a label goes around a point, as its top-left corner in frame px: below, above, right or left of
+ * the point, then the four diagonals, kept `edge` px inside the frame. The first spot that covers none of `obstacles` wins;
+ * if every spot covers something, the one covering the least area, with `clear: false`.
+ */
+export function placeLabel(
+  point: { x: number; y: number },
+  label: { w: number; h: number },
+  frame: { w: number; h: number },
+  obstacles: Rect[],
+  gap: number,
+  edge: number,
+): { x: number; y: number; clear: boolean } {
+  const keepIn = (v: number, size: number, room: number) => Math.max(edge, Math.min(room - edge - size, v))
+  const spots = [
+    { x: point.x - label.w / 2, y: point.y + gap },
+    { x: point.x - label.w / 2, y: point.y - gap - label.h },
+    { x: point.x + gap, y: point.y - label.h / 2 },
+    { x: point.x - gap - label.w, y: point.y - label.h / 2 },
+    { x: point.x + gap * 0.7, y: point.y + gap * 0.7 },
+    { x: point.x - gap * 0.7 - label.w, y: point.y + gap * 0.7 },
+    { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
+    { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
+  ].map((s) => ({ x: keepIn(s.x, label.w, frame.w), y: keepIn(s.y, label.h, frame.h) }))
+  const covered = (s: { x: number; y: number }) =>
+    obstacles.reduce((sum, o) => {
+      const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
+      const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
+      return sum + (w > 0 && h > 0 ? w * h : 0)
+    }, 0)
+  let best = spots[0]
+  let least = Infinity
+  for (const spot of spots) {
+    const area = covered(spot)
+    if (area === 0) return { ...spot, clear: true }
+    if (area < least) { least = area; best = spot }
+  }
+  return { ...best, clear: false }
+}

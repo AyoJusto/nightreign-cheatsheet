@@ -5,7 +5,7 @@ import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
-import { nearestPin, playableBox, rubberband } from './mapGeometry'
+import { nearestPin, placeLabel, playableBox, rubberband } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
@@ -281,38 +281,67 @@ export function MapView(props: MapContent & {
             </motion.span>
           </motion.button>
         ))}
-        {/* After the pins, so a circle or boss label is never hidden under a structure. */}
-        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} x={x} scale={scale} size={size} pinScale={pinScale} />)}
+        {/* After the pins, so a label is never under a structure; MapMarker also places it off every pin. */}
+        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} pinScale={pinScale} artScale={artScale} dotScale={dotScale} />)}
       </motion.div>
     </div>
   )
 }
 
-// Gap kept between a marker label and the frame's side edges.
+// Gap kept between a marker label and the frame's edges; distance from the point to the label.
 const LABEL_EDGE = 8
+const LABEL_GAP = 9
 
-/** A dot on the exact point, with its label below it, slid inward so it never runs off the side of the frame. */
-function MapMarker({ marker, x, scale, size, pinScale }: {
+/**
+ * A glyph on the exact point, with its label beside it: below, above, right or left, whichever covers no
+ * pin (structures stay visible), kept inside the frame. Placement is live through pan and zoom (transform only).
+ */
+function MapMarker({ marker, pins, x, y, scale, size, pinScale, artScale, dotScale }: {
   marker: Marker
+  pins: Pin[]
   x: MotionValue<number>
+  y: MotionValue<number>
   scale: MotionValue<number>
   size: MotionValue<{ w: number; h: number }>
   pinScale: MotionValue<number>
+  artScale: MotionValue<number>
+  dotScale: MotionValue<number>
 }) {
   const label = useRef<HTMLSpanElement>(null)
-  const width = useMotionValue(0)
-  useLayoutEffect(() => width.set(label.current!.offsetWidth), [marker.label, width])
+  // A circle is a short chip: a two-line "Night 1: boss" label had nowhere to go on a busy phone map without
+  // covering a structure. The run card names each night's boss.
+  const text = marker.layer === 'circle' && marker.night ? `Night ${marker.night}` : marker.label
+  const box = useMotionValue({ w: 0, h: 0 })
   // Screen px equal the label's own px here: the marker counter-scales the map's zoom.
-  const shift = useTransform(() => {
+  const offset = useTransform(() => {
     const { w, h } = size.get()
-    const point = w / 2 + x.get() + (marker.x / 1000 - 0.5) * Math.max(w, h) * scale.get()
-    const left = Math.max(LABEL_EDGE, Math.min(w - LABEL_EDGE - width.get(), point - width.get() / 2))
-    return left - point
+    const side = Math.max(w, h) * scale.get()
+    const toScreen = (px: number, py: number) => ({
+      x: w / 2 + x.get() + (px / 1000 - 0.5) * side,
+      y: h / 2 + y.get() + (py / 1000 - 0.5) * side,
+    })
+    const point = toScreen(marker.x, marker.y)
+    const obstacles = pins.map((p) => {
+      const c = toScreen(p.x, p.y)
+      // Art plus its badge's overhang, or a dot with its halo.
+      const r = p.structure ? (ART_SIZE / 2 + 4) * artScale.get() : 10 * dotScale.get()
+      return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
+    })
+    const spot = placeLabel(point, box.get(), { w, h }, obstacles, LABEL_GAP, LABEL_EDGE)
+    return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear }
   })
+  const labelX = useTransform(offset, (o) => o.x)
+  const labelY = useTransform(offset, (o) => o.y)
+  // A night's circle always keeps its short chip. Other labels (field bosses, evergaols…) step aside when
+  // there is no free spot, leaving the glyph: their names are listed in the sheet, and a structure matters more.
+  const labelOpacity = useTransform(offset, (o) => (o.clear || marker.layer === 'circle' ? 1 : 0))
+  // Measured after the transforms above: Motion re-subscribes them in its own layout effects, and a write
+  // made before that in the same commit would be missed, leaving the label placed as if it had no size.
+  useLayoutEffect(() => box.set({ w: label.current!.offsetWidth, h: label.current!.offsetHeight }), [text, box])
   return (
     <motion.span className={`marker marker-${marker.layer}`} style={{ left: `${marker.x / 10}%`, top: `${marker.y / 10}%`, scale: pinScale }}>
       <span className="marker-dot" />
-      <motion.span ref={label} className="marker-label" style={{ x: shift }}>{marker.label}</motion.span>
+      <motion.span ref={label} className="marker-label" style={{ x: labelX, y: labelY, opacity: labelOpacity }}>{text}</motion.span>
     </motion.span>
   )
 }

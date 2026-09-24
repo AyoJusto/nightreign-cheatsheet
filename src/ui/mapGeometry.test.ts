@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel } from './mapGeometry'
 import { catalog } from '../data/catalog'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
@@ -46,5 +46,31 @@ describe('panning past the edge', () => {
     expect(first).toBeLessThan(50)
     expect(next).toBeLessThan(first)
     expect(rubberband(-150, -100, 100, 400)).toBe(-rubberband(150, -100, 100, 400))
+  })
+})
+
+describe('placeLabel', () => {
+  const frame = { w: 400, h: 600 }
+  const label = { w: 100, h: 30 }
+
+  it('hangs the label below the point when nothing is there', () => {
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 150, y: 309, clear: true })
+  })
+
+  it('moves the label to a side that covers no pin', () => {
+    const pinBelow = { x0: 195, y0: 310, x1: 205, y1: 330 }
+    const pinAbove = { x0: 195, y0: 270, x1: 205, y1: 290 }
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [pinBelow], 9, 8)).toEqual({ x: 150, y: 261, clear: true })
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [pinBelow, pinAbove], 9, 8)).toEqual({ x: 209, y: 285, clear: true })
+  })
+
+  it('says when no spot is clear, and takes the one covering least', () => {
+    const everywhere = { x0: 0, y0: 0, x1: 400, y1: 600 }
+    const nearly = { x0: 150, y0: 309, x1: 160, y1: 339 }
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [everywhere, nearly], 9, 8)).toMatchObject({ clear: false })
+  })
+
+  it('keeps the label inside the frame', () => {
+    expect(placeLabel({ x: 10, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 8, y: 309, clear: true })
   })
 })
