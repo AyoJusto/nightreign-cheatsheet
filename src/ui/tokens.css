@@ -163,13 +163,14 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 
 /* ---------- Floating controls ---------- */
 
-.pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 4px; height: 52px; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter)); }
+/* Phone: the pill and the strip span one column, 8px in from each edge, so the two floating controls line up. */
+.pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: var(--gutter); right: var(--gutter); display: flex; align-items: center; gap: 2px; padding: 4px; height: 52px; box-sizing: border-box; }
 .pill button { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; }
 .pill button:not(:disabled):hover { background: var(--fill-2); }
 .pill button:disabled { opacity: 0.3; cursor: default; }
-.pill-text { padding: 0 6px; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Hugs its items, centred; at most the screen width less the 8px gutters, and then the row scrolls. */
-.strip { position: fixed; z-index: 10; left: var(--gutter); right: var(--gutter); bottom: calc(var(--safe-bottom) + var(--gutter)); margin: 0 auto; width: fit-content; max-width: calc(100% - 2 * var(--gutter)); display: flex; overflow: hidden; }
+.pill-text { flex: 1; min-width: 0; padding: 0 6px; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The pill's column; items sit centred in it, and a row too long for it scrolls. */
+.strip { position: fixed; z-index: 10; left: var(--gutter); right: var(--gutter); bottom: calc(var(--safe-bottom) + var(--gutter)); display: flex; overflow: hidden; }
 /* The fade sits on the scrolling row, not the glass, so the capsule itself keeps a crisp edge. */
 .strip-scroll {
   --fade-left: 0px; --fade-right: 0px;
@@ -178,6 +179,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
   mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
 }
 .strip-scroll::-webkit-scrollbar { display: none; }
+/* Centres a row that fits; unlike justify-content, auto margins still let an overflowing row scroll to its start. */
+.strip-scroll > :first-child { margin-left: auto; }
+.strip-scroll > :last-child { margin-right: auto; }
 .strip-scroll[data-more-left] { --fade-left: 28px; }
 .strip-scroll[data-more-right] { --fade-right: 28px; }
 .strip-item { position: relative; flex: 0 0 auto; width: 52px; height: 52px; border-radius: 26px; display: grid; place-items: center; }
@@ -191,7 +195,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .chips {
   /* The last 12px are fully clear, so a clipped chip fades out instead of leaving a sliver of its first letter
      at the edge; the 20px end padding keeps a row that fits clear of the fade. */
-  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: calc(100vw - 80px); padding-right: 20px;
+  display: flex; flex: 1; min-width: 0; gap: 2px; overflow-x: auto; scrollbar-width: none; padding-right: 20px;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 32px), transparent calc(100% - 12px));
   mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 32px), transparent calc(100% - 12px));
 }
@@ -276,7 +280,9 @@ li.run-row .run-value { font-weight: 400; }
 }
 @media (min-width: 900px) {
   .map-frame { right: 360px; }
-  .pill { left: calc(50% - 180px); max-width: calc(100% - 360px - 2 * var(--gutter)); }
+  /* Desktop: the pill hugs its content, centred over the map. */
+  .pill { left: calc(50% - 180px); right: auto; transform: translateX(-50%); max-width: calc(100% - 360px - 2 * var(--gutter)); }
+  .pill-text { flex: 0 1 auto; }
   .chips { max-width: calc(100vw - 360px - 96px); }
   .toast { left: calc(50% - 180px); }
 }
