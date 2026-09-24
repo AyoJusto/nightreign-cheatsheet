@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
-import { motion, useMotionValue, useTransform, animate, useDragControls, type MotionValue, type PanInfo } from 'motion/react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, type MotionValue, type PanInfo } from 'motion/react'
 
 export type Detent = 'peek' | 'half' | 'full'
 const PEEK = 96
@@ -23,9 +23,11 @@ export function Sheet(props: {
   const h = heights(vh)
   const y = useMotionValue(h.full - h[props.detent])
   const controls = useDragControls()
+  // MotionConfig does not reach imperative animate(); with reduced motion the sheet jumps between detents.
+  const move = useReducedMotion() ? { duration: 0 } : sheetSpring
 
   useEffect(() => {
-    animate(y, h.full - h[props.detent], sheetSpring)
+    animate(y, h.full - h[props.detent], move)
   }, [props.detent, vh])
   // Publish the visible height, including the starting value, so the map can inset itself.
   useEffect(() => {
@@ -42,7 +44,7 @@ export function Sheet(props: {
     const projected = y.get() + info.velocity.y * 0.2
     const visible = h.full - projected
     const nearest = (Object.keys(h) as Detent[]).reduce((a, b) => (Math.abs(h[a] - visible) < Math.abs(h[b] - visible) ? a : b))
-    if (nearest === props.detent) animate(y, h.full - h[nearest], sheetSpring)
+    if (nearest === props.detent) animate(y, h.full - h[nearest], move)
     else props.onDetent(nearest)
   }
 

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, animate, type MotionValue } from 'motion/react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
@@ -44,6 +44,9 @@ export function MapView(props: MapContent & {
   const y = useMotionValue(0)
   const scale = useMotionValue(1)
   const pinScale = useTransform(scale, (s) => 1 / s)
+  // MotionConfig only reaches declarative animations; imperative ones jump when motion is reduced.
+  const reduce = useReducedMotion()
+  const move = reduce ? { duration: 0 } : snap
 
   const side = (s = scale.get()) => Math.max(size.current.w, size.current.h) * s
   // The image always covers the frame; its bottom edge may rise to whatever covers the bottom of the screen.
@@ -97,9 +100,9 @@ export function MapView(props: MapContent & {
   }
   const settle = () => {
     const s = boundScale(scale.get())
-    if (s !== scale.get()) animate(scale, s, snap)
-    animate(x, clamp(x.get(), 'x', s), snap)
-    animate(y, reveal(s) ?? clamp(y.get(), 'y', s), snap)
+    if (s !== scale.get()) animate(scale, s, move)
+    animate(x, clamp(x.get(), 'x', s), move)
+    animate(y, reveal(s) ?? clamp(y.get(), 'y', s), move)
   }
 
   useGesture(
@@ -113,8 +116,8 @@ export function MapView(props: MapContent & {
       onDragEnd: ({ velocity: [vx, vy], direction: [dx, dy], tap, canceled }) => {
         active.current.drag = false
         if (canceled) return
-        // A tap can stop a glide mid-bounce, out of bounds; settle puts it back.
-        if (tap) return settle()
+        // A tap can stop a glide mid-bounce, out of bounds; settle puts it back. Reduced motion skips the glide.
+        if (tap || reduce) return settle()
         // use-gesture reports speed in px/ms with a separate sign; Motion wants signed px/s.
         const velocityX = vx * dx * 1000
         const velocityY = vy * dy * 1000
@@ -180,7 +183,7 @@ export function MapView(props: MapContent & {
   useEffect(() => {
     if (props.selected) touched.current = true
     const target = reveal()
-    if (target !== undefined) animate(y, target, snap)
+    if (target !== undefined) animate(y, target, move)
     const onInset = () => {
       if (!touched.current) fit()
       else if (!active.current.drag && !active.current.pinch) settle()
