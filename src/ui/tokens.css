@@ -283,6 +283,9 @@ li.run-row .run-value { font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { .run-chevron { transition: none; } }
 /* Inset to meet the row text below it (iOS grouped-list header inset), not the card edge. */
 .result-list h3, .side-heading { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--label-2); margin: 24px 16px 8px; }
+/* The desktop panel stacks tiles, hints and cards in one column: there one shared left edge, the panel's content
+   edge, reads cleaner than a grouped-list inset on some headings and not on others. */
+.side-panel h3 { margin-left: 0; margin-right: 0; }
 .result-list .run-card { margin-top: 0; }
 
 /* ---------- Result header ---------- */
@@ -311,9 +314,8 @@ li.run-row .run-value { font-weight: 400; }
 .sightings > li + li { background: linear-gradient(var(--separator), var(--separator)) no-repeat 52px 0 / 100% 0.5px; }
 .sighting-glyph { flex: 0 0 28px; height: 28px; display: grid; place-items: center; }
 .hint { color: var(--label-2); font-size: 15px; line-height: 20px; margin: 8px 4px 0; }
-/* Structures as tiles; the hovered or focused one is named at the end of the heading above them.
-   The tiles are not a grouped card, so the heading drops the card-text inset and lines up with the tiles and the hint. */
-.structure-heading { display: flex; justify-content: space-between; gap: 12px; margin-left: 0; margin-right: 0; }
+/* Structures as tiles; the hovered or focused one is named at the end of the heading above them. */
+.structure-heading { display: flex; justify-content: space-between; gap: 12px; }
 .structure-name { min-width: 0; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .structure-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .structure-grid .strip-item { width: 64px; height: 64px; border-radius: 16px; background: var(--surface-2); }
