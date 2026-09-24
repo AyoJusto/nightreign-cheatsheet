@@ -420,3 +420,16 @@ test('a tapped layer chip shows one capsule', async ({ page, isMobile }) => {
   await expect(chip).toHaveAttribute('aria-pressed', 'true')
   await expect(chip).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
 })
+
+// A share sheet that fails for any reason but the user closing it still gets the link out, by copying (final m5).
+test('a failed share falls back to copying the link', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the native share sheet is phone only')
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { value: () => Promise.reject(new DOMException('denied', 'NotAllowedError')) })
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (text: string) => { (window as any).copied = text } } })
+  })
+  await page.goto(`/seed/${targets[0].id}`)
+  await page.getByRole('button', { name: 'Share' }).click()
+  await expect(page.getByRole('status')).toHaveText('Link copied')
+  expect(await page.evaluate(() => (window as any).copied)).toMatch(new RegExp(`/seed/${targets[0].id}$`))
+})

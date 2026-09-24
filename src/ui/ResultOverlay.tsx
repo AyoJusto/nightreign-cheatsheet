@@ -69,14 +69,25 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const shownMarkers = useMemo(() => markers.filter((m) => on.has(m.layer)), [markers, on])
   useLayoutEffect(() => setMap({ pins, markers: shownMarkers }), [pins, shownMarkers, setMap])
 
+  // One timer for the one toast: a new toast restarts it, so the old timer cannot cut the new one short.
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
   const flash = (text: string) => {
+    clearTimeout(toastTimer.current)
     setToast(text)
-    setTimeout(() => setToast(null), 1500)
+    toastTimer.current = setTimeout(() => setToast(null), 1500)
   }
   // Native share sheet on phone; on desktop the OS share dialog is a detour, so copy the link.
   const share = async () => {
     const url = `${location.origin}/seed/${seed.id}`
-    if (!wide && navigator.share) return navigator.share({ title: `Seed ${seed.id}`, url }).catch(() => {})
+    if (!wide && navigator.share) {
+      try {
+        return await navigator.share({ title: `Seed ${seed.id}`, url })
+      } catch (e) {
+        // The user closing the sheet is an answer; any other failure (e.g. NotAllowedError) falls back to copying.
+        if ((e as Error | null)?.name === 'AbortError') return
+      }
+    }
     try {
       await navigator.clipboard.writeText(url)
       flash('Link copied')
