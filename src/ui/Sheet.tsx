@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, type MotionValue, type PanInfo } from 'motion/react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, usePresence, type MotionValue, type PanInfo } from 'motion/react'
 import { crossfade } from './crossfade'
 import { detentHeights, type Detent, type SheetMeasure } from './sheetDetents'
 
@@ -77,9 +77,26 @@ export function Sheet(props: {
   const fade = useMotionValue(reduce ? 0 : 1)
   const moveTo = (target: number) => (reduce ? crossfade(fade, () => y.jump(target)) : animate(y, target, sheetSpring))
 
+  // Inside AnimatePresence, closing keeps the sheet mounted until it has left: it slides off the bottom on the
+  // same spring it rose on (from wherever it is, so a drag-down close carries on from the finger), or under
+  // reduced motion fades out. Re-opened before it has gone, it turns around from where it is.
+  const [present, safeToRemove] = usePresence()
   useEffect(() => {
-    if (measured) moveTo(h.full - h[props.detent])
-  }, [props.detent, h.peek, h.half, h.full, measured])
+    if (present) {
+      if (measured) moveTo(h.full - h[props.detent])
+      return
+    }
+    let cancelled = false
+    const gone = () => {
+      if (cancelled) return
+      // Below the screen, so the map's inset follows it down (under reduced motion, in one step once faded).
+      y.jump(m.frame)
+      safeToRemove?.()
+    }
+    if (reduce) animate(fade, 0, { duration: 0.2, ease: 'easeOut' }).then(gone)
+    else animate(y, m.frame, sheetSpring).then(gone)
+    return () => { cancelled = true }
+  }, [present, props.detent, h.peek, h.half, h.full, measured])
 
   // 0 at half and above, 1 at peek: drives the float inset, the radius, the glass crossfade and the body fade.
   const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
@@ -124,7 +141,10 @@ export function Sheet(props: {
       className="sheet"
       role="dialog"
       aria-label={props.label}
-      style={{ y, left: insetLeft, right: insetRight, bottom: inset, height: h.full, borderRadius: radius }}
+      // A leaving sheet shows options for a site that is no longer selected; a tap on one would record a stale sighting.
+      // Taps pass through it to the map, so the next site can be picked while it slides away.
+      inert={!present}
+      style={{ y, left: insetLeft, right: insetRight, bottom: inset, height: h.full, borderRadius: radius, pointerEvents: present ? undefined : 'none' }}
       drag="y"
       dragListener={false}
       dragControls={controls}

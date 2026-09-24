@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, type MotionValue } from 'motion/react'
+import { AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
@@ -84,12 +84,15 @@ export function FinderOverlay(props: {
     }
   }, [selected, wide])
 
-  // With the sheet closed, only the strip covers the bottom of the map. The map springs to the new inset itself.
+  // The map's bottom inset is whichever covers more: the strip, or the slot sheet as it rises and, once
+  // closed, slides away (it keeps publishing until it has left). The map springs to the new inset itself.
+  const sheetCover = useMotionValue(0)
   useEffect(() => {
-    if (selected) return
-    props.bottomInset.set(props.restInset.get())
-    return props.restInset.on('change', (v) => props.bottomInset.set(v))
-  }, [selected, props.bottomInset, props.restInset])
+    const sync = () => props.bottomInset.set(Math.max(sheetCover.get(), props.restInset.get()))
+    sync()
+    const offs = [sheetCover.on('change', sync), props.restInset.on('change', sync)]
+    return () => offs.forEach((off) => off())
+  }, [sheetCover, props.bottomInset, props.restInset])
 
   const apply = (next: Scouting) => { setScouting(next); close() }
   // Memoized: MapView re-reveals the selected pin whenever the pins array changes identity.
@@ -237,9 +240,10 @@ export function FinderOverlay(props: {
         </aside>
       ) : (
         <AnimatePresence>
+          {/* One sheet for every site: re-opened while it is still leaving, it turns around and takes the new site's options. */}
           {selected && (
-            <Sheet detent={detent} onDetent={(d) => (d === 'peek' ? setSelected(null) : setDetent(d))}
-              height={props.bottomInset} top={props.topInset} label={choicesTitle}
+            <Sheet key="slot-sheet" detent={detent} onDetent={(d) => (d === 'peek' ? setSelected(null) : setDetent(d))}
+              height={sheetCover} top={props.topInset} label={choicesTitle}
               header={<h2 className="sheet-title">{choicesTitle}</h2>}>
               {choices}
             </Sheet>

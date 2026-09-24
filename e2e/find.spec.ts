@@ -134,6 +134,50 @@ test('a low site stays in sight above its sheet', async ({ page, isMobile }) => 
   expect(pin.top + pin.height / 2).toBeLessThan(sheet.top)
 })
 
+// Closing the slot sheet slides it off on its spring (or fades it, under reduced motion); it once
+// vanished in a single frame (iter-6 M1). Sampled in the page, per frame, from the moment of the close.
+for (const reduced of [false, true]) {
+  test(`the slot sheet leaves on close, not in one frame${reduced ? ' (reduced motion)' : ''}`, async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'the sheet is phone only')
+    if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+    await page.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
+    await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
+    await page.waitForTimeout(900) // let the sheet rise and settle
+    const samples = await page.evaluate(() => new Promise<{ t: number; top: number | null; opacity: number | null }[]>((resolve) => {
+      const out: { t: number; top: number | null; opacity: number | null }[] = []
+      const sample = (t: number) => {
+        const sheet = document.querySelector('.sheet')
+        const layer = sheet?.querySelector<HTMLElement>('.sheet-solid')
+        out.push({ t, top: sheet ? sheet.getBoundingClientRect().top : null, opacity: layer ? parseFloat(getComputedStyle(layer).opacity) : null })
+      }
+      sample(0)
+      dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      const start = performance.now()
+      const tick = () => {
+        const t = performance.now() - start
+        sample(t)
+        if (t < 1500) requestAnimationFrame(tick)
+        else resolve(out)
+      }
+      requestAnimationFrame(tick)
+    }))
+    const at = (ms: number) => samples.find((s) => s.t >= ms)!
+    const open = samples[0]
+    // Still there and on its way out about 100ms after the close...
+    expect(at(100).top).not.toBeNull()
+    if (reduced) {
+      expect(at(100).top).toBe(open.top) // opacity only, it does not slide
+      expect(at(100).opacity!).toBeLessThan(open.opacity!)
+    } else {
+      expect(at(100).top!).toBeGreaterThan(open.top! + 5)
+      expect(at(100).top!).toBeLessThan(page.viewportSize()!.height)
+    }
+    // ...and gone once its spring has settled (about 1s; it is off-screen well before).
+    expect(at(1300).top).toBeNull()
+  })
+}
+
 // Desktop: selecting a site should not force a keyboard user to tab past every other pin to reach its
 // options, and closing it should not drop focus to the document body (m5).
 test('desktop: selecting a site focuses its first option, and Escape returns focus to the pin', async ({ page, isMobile }) => {
