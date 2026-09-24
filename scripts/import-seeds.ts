@@ -1,6 +1,6 @@
 // One-time anticorruption layer: source vocabulary stops here.
 // Run with `npm run import`. Never part of the build.
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
@@ -28,6 +28,35 @@ export function toStructureKey(raw: string): string | null {
   const element = aliases.elements[value.slice(cut + 1)]
   if (!kind || !element) throw new Error(`unknown structure: ${raw}`)
   return `${kind}:${element}`
+}
+
+type Crop = { left: number; top: number; width: number; height: number }
+// The game's square element emblem baked into a variant's art (300x300, bottom right): the picture inside its
+// stone frame. Measured by diffing every variant against its plain kind art; all 21 share the layout, give
+// or take 2px, and this box sits inside the frame on every one of them.
+const VARIANT_EMBLEM: Crop = { left: 186, top: 155, width: 56, height: 56 }
+// A status icon (100x100) has a soft 4px transparent edge; the same picture sits inside it.
+const STATUS_EMBLEM: Crop = { left: 5, top: 5, width: 90, height: 90 }
+
+/**
+ * Where each element's emblem comes from: the first variant art that carries it (`icons`, file names from
+ * data/raw/assets/icons), or else the game's status icon of that name (`statuses`, from
+ * data/raw/assets/elements). Rot is the one element no variant carries. Throws if any element has neither.
+ */
+export function emblemSources(icons: string[], statuses: string[]): Record<string, { file: string; box: Crop }> {
+  const sources: Record<string, { file: string; box: Crop }> = {}
+  for (const file of [...icons].sort()) {
+    const raw = file.replace(/\.webp$/, '')
+    if (raw.endsWith('_spawn')) continue
+    const element = aliases.elements[raw.slice(raw.lastIndexOf('_') + 1)]
+    if (element && !sources[element]) sources[element] = { file: `data/raw/assets/icons/${file}`, box: VARIANT_EMBLEM }
+  }
+  for (const [rawElement, element] of Object.entries<string>(aliases.elements)) {
+    if (sources[element]) continue
+    if (statuses.includes(`${rawElement}.png`)) sources[element] = { file: `data/raw/assets/elements/${rawElement}.png`, box: STATUS_EMBLEM }
+    else throw new Error(`no emblem for element ${element}: neither variant art nor data/raw/assets/elements/${rawElement}.png`)
+  }
+  return sources
 }
 
 export function toNightlord(raw: string): string {
@@ -223,7 +252,7 @@ function reportCoverage(seeds: any[], bossNotes: Record<string, string>) {
   const keys = new Set<string>(seeds.flatMap((s) => Object.values(s.slots).filter((k): k is string => k !== null)))
   const noIcon = [...keys].filter((key) => {
     const kind = key.split(':')[0]
-    return !existsSync(`public/structures/${key.replace(':', '--')}.webp`) && !existsSync(`public/structures/${kind}.webp`)
+    return !existsSync(`public/structures/${kind}.webp`)
   })
   console.log('structure keys without any icon:', noIcon.length ? noIcon.sort().join(', ') : 'none')
 }
@@ -344,13 +373,25 @@ async function copyAssets() {
     await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
       .resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
   }
+  // Emptied first, so art the app no longer uses (the old per-element variant art) does not linger.
+  rmSync('public/structures', { recursive: true, force: true })
   mkdirSync('public/structures', { recursive: true })
-  for (const file of readdirSync('data/raw/assets/icons')) {
+  const icons = readdirSync('data/raw/assets/icons')
+  for (const file of icons) {
     const raw = file.replace(/\.webp$/, '')
     if (raw.endsWith('_spawn')) continue
     const key = toStructureKey(raw)!
+    // Plain kind art only: an elemental structure draws its kind's art with the element's emblem as a badge.
+    if (key.includes(':')) continue
     // The art sits in wide transparent margins; trimmed, it fills the box it is drawn in.
-    await sharp(`data/raw/assets/icons/${file}`).trim().webp({ quality: 90 }).toFile(`public/structures/${key.replace(':', '--')}.webp`)
+    await sharp(`data/raw/assets/icons/${file}`).trim().webp({ quality: 90 }).toFile(`public/structures/${key}.webp`)
+  }
+  // No trim here: the crop sits inside the emblem's own frame, so there is no margin to trim, and a trim
+  // keyed on the corner colour would eat into dark emblems (bleed, blight).
+  rmSync('public/elements', { recursive: true, force: true })
+  mkdirSync('public/elements', { recursive: true })
+  for (const [element, { file, box }] of Object.entries(emblemSources(icons, readdirSync('data/raw/assets/elements')))) {
+    await sharp(file).extract(box).resize(64, 64).webp({ quality: 90 }).toFile(`public/elements/${element}.webp`)
   }
   mkdirSync('public/nightlords', { recursive: true })
   for (const file of readdirSync('data/raw/assets/nightlords')) {

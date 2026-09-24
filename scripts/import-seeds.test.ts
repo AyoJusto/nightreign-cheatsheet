@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources } from './import-seeds.ts'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
@@ -158,5 +158,32 @@ describe('map background keying: streaks', () => {
     const out = keyBackground(rgba, w, h, oceanCoverage(OCEAN), { feather: 0, streak: 3 })
     expect(out[(5 * w + 9) * 4 + 3]).toBe(0)
     expect(out[(5 * w + 4) * 4 + 3]).toBe(255)
+  })
+})
+
+describe('element emblems', () => {
+  const icons = readdirSync('data/raw/assets/icons')
+  const statuses = readdirSync('data/raw/assets/elements')
+  const elements = [...new Set(Object.values<string>(aliases.elements))]
+
+  it('finds an emblem for every element the app knows', () => {
+    const sources = emblemSources(icons, statuses)
+    expect(Object.keys(sources).sort()).toEqual(elements.sort())
+    expect(elements).toHaveLength(11)
+  })
+  it('reads lightning from the source files spelled "eletric"', () => {
+    expect(emblemSources(icons, statuses).lightning.file).toMatch(/_eletric\.webp$/)
+  })
+  it('takes rot, which no variant art carries, from its status icon', () => {
+    expect(emblemSources(icons, statuses).rot.file).toBe('data/raw/assets/elements/rot.png')
+  })
+  it('crops every variant emblem with one box, and never uses spawn art', () => {
+    const sources = Object.values(emblemSources(icons, statuses)).filter((s) => s.file.includes('/icons/'))
+    expect(new Set(sources.map((s) => JSON.stringify(s.box))).size).toBe(1)
+    expect(sources.every((s) => !s.file.includes('_spawn'))).toBe(true)
+  })
+  it('fails loudly when an element has no emblem', () => {
+    expect(() => emblemSources(icons.filter((f) => !f.endsWith('_sleep.webp')), statuses)).toThrow(/sleep/)
+    expect(() => emblemSources(icons, [])).toThrow(/rot/)
   })
 })

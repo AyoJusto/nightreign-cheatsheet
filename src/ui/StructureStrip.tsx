@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, type ReactNode, type Ref } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { StructureIcon, ELEMENT_COLORS } from './StructureIcon'
+import { StructureIcon, ElementEmblem } from './StructureIcon'
 import { Glass } from './Glass'
 import type { KindGroup } from './structureGroups'
-import { ELEMENT_BADGES, ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
+import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
 
 const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
 
@@ -50,19 +50,17 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
     const expanded = open === kind
     const elements = variants.flatMap((v) => splitStructure(v).element ?? [])
     const typeNames = variants.map((v) => { const { element } = splitStructure(v); return element ? ELEMENT_NAMES[element] : 'no element' })
-    // Three codes fit the tile; past that, one code and how many more, so the chip never outgrows the art.
+    // Three emblems fit the tile; past that, one emblem and how many more, so the chip never outgrows the art.
     const shown = elements.length > 3 ? elements.slice(0, 1) : elements
     return [
       <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(kindName(kind))}
         aria-label={`${kindName(kind)}, ${variants.length} types: ${typeNames.join(', ')}`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />
-        {/* "Comes in elements", named by the map badges' two-letter codes: never by colour alone. */}
+        {/* "Comes in elements", shown by the same emblems the map's badges use; the button's name lists them. */}
         {elements.length > 0 && (
           <span className="element-codes" aria-hidden>
-            {shown.map((element) => (
-              <span key={element} style={{ color: ELEMENT_COLORS[element] }}>{ELEMENT_BADGES[element]}</span>
-            ))}
+            {shown.map((element) => <ElementEmblem key={element} element={element} size={14} />)}
             {elements.length > shown.length && <span>+{elements.length - shown.length}</span>}
           </span>
         )}

@@ -1,11 +1,9 @@
+import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { ELEMENT_BADGES, ELEMENT_NAMES } from './names'
+import { ELEMENT_NAMES } from './names'
 
-describe('element badges', () => {
-  it('give every element its own short badge, so no two elements share one', () => {
-    const badges = Object.values(ELEMENT_BADGES)
-    expect(Object.keys(ELEMENT_BADGES).sort()).toEqual(Object.keys(ELEMENT_NAMES).sort())
-    expect(new Set(badges.map((b) => b.toLowerCase())).size).toBe(badges.length)
-    for (const b of badges) expect(b).toMatch(/^[A-Z][a-z]$/)
+describe('element emblems', () => {
+  it('ship for every element the app knows, since badges show the emblem, not a colour or code', () => {
+    for (const element of Object.keys(ELEMENT_NAMES)) expect(existsSync(`public/elements/${element}.webp`), element).toBe(true)
   })
 })

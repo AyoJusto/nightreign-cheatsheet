@@ -1,5 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionStyle, type MotionValue } from 'motion/react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import { splitStructure, type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
@@ -18,8 +18,9 @@ const MAX_ZOOM = 4
 // Dots only grow, from DOT_FULL_SIDE up to DOT_MAX.
 const ART_FULL_SIDE = 800
 const ART_MIN = 0.7
-// Elemental art keeps more of its size: its badge holds 11px letters, and on smaller art it would outweigh the art.
-const ELEMENTAL_ART_MIN = 0.9
+// Elemental art never shrinks below a size whose emblem badge (14px on the 32px art, StructureIcon) is 16px on screen,
+// the least that reads on a phone; the art is kept at a bit over twice the emblem's width, so it stays the louder of the two.
+const ELEMENTAL_ART_MIN = 1.15
 const ART_MAX = 1.3
 const ART_SIZE = 32
 const DOT_FULL_SIDE = 900
@@ -70,9 +71,6 @@ export function MapView(props: MapContent & {
   const elementalArtScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ELEMENTAL_ART_MIN, ART_MAX))
   const artOf = (p: Pin) => (p.structure && splitStructure(p.structure).element ? elementalArtScale : artScale)
   const dotScale = useTransform(mapWidth, (m) => clampTo(m / DOT_FULL_SIDE, 1, DOT_MAX))
-  // Element badges scale with the art, except that their letters never go under 11px: below full-size art
-  // they hold at that floor (a CSS transform, see .pin .element-badge), and no larger.
-  const badgeHold = useTransform(elementalArtScale, (f) => Math.max(1, 1 / f))
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
   const reduce = useReducedMotion()
   const fade = useMotionValue(1)
@@ -304,7 +302,7 @@ export function MapView(props: MapContent & {
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade, '--badge-hold': badgeHold } as MotionStyle}>
+      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.pins.map((p) => (

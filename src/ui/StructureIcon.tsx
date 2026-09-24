@@ -1,37 +1,29 @@
-import { useState, type CSSProperties } from 'react'
-import { splitStructure, structureName, ELEMENT_BADGES, type StructureKey } from '../domain/names'
+import { useState } from 'react'
+import { splitStructure, structureName, type ElementId, type StructureKey } from '../domain/names'
 
-export const ELEMENT_COLORS: Record<string, string> = {
-  fire: '#ff7a45', holy: '#f5d76e', magic: '#6aa9ff', lightning: '#ffd84d', frostbite: '#9fe3ff', poison: '#8fd46b',
-  bleed: '#e0455a', blight: '#9b8cff', madness: '#ffb347', sleep: '#c49bff', rot: '#e05a3c',
+/** The game's own emblem for an element: a small square picture, told apart by its shape, not only its colour. */
+export function ElementEmblem({ element, className = 'element-emblem', size }: { element: ElementId; className?: string; size?: number }) {
+  return <img className={className} src={`/elements/${element}.webp`} alt="" width={size} height={size} draggable={false} aria-hidden />
 }
 
-// Fallback chain: variant art (`kind--element`), then kind art, then a text glyph.
-// Many kinds only ship kind art, so the badge carries the element either way.
-type Stage = 'variant' | 'kind' | 'glyph'
-
-/** Icon plus an element badge, so element never relies on the icon's color alone. */
+/**
+ * The kind's plain art, with the element's emblem as a badge in the corner (where the game puts it), so every
+ * kind and element pair reads the same way. Kind art that fails to load falls back to a text glyph.
+ */
 export function StructureIcon({ structure, size = 36 }: { structure: StructureKey | null; size?: number }) {
-  // Failures are remembered per structure so a reused icon starts fresh when its structure changes.
-  const [failure, setFailure] = useState<{ structure: StructureKey | null; stage: Stage } | null>(null)
+  // Remembered per structure, so a reused icon starts fresh when its structure changes.
+  const [failed, setFailed] = useState<StructureKey | null>(null)
   if (!structure) return <span className="icon-empty" style={{ width: size, height: size }} aria-hidden />
   const { kind, element } = splitStructure(structure)
-  const firstStage: Stage = element ? 'variant' : 'kind'
-  const stage = failure?.structure === structure ? failure.stage : firstStage
-  const src = stage === 'variant' ? `/structures/${kind}--${element}.webp` : `/structures/${kind}.webp`
-  const onError = () => setFailure({ structure, stage: stage === 'variant' ? 'kind' : 'glyph' })
   return (
     <span className="structure-icon" style={{ width: size, height: size }} title={structureName(structure)}>
-      {stage === 'glyph' ? (
+      {failed === structure ? (
         <span className="icon-glyph" aria-hidden>{kind.split('-').map((w) => w[0]).join('').toUpperCase()}</span>
       ) : (
-        <img key={src} src={src} alt="" width={size} height={size} onError={onError} draggable={false} />
+        <img key={kind} className="structure-art" src={`/structures/${kind}.webp`} alt="" width={size} height={size} onError={() => setFailed(structure)} draggable={false} />
       )}
-      {element && (
-        <span className="element-badge" style={{ '--element': ELEMENT_COLORS[element] } as CSSProperties} aria-hidden>
-          {ELEMENT_BADGES[element]}
-        </span>
-      )}
+      {/* Under half the art's width (the game's own ratio is about 0.4): legible, and smaller than the art it marks. */}
+      {element && <ElementEmblem element={element} className="element-badge" size={Math.round(size * 0.45)} />}
     </span>
   )
 }
