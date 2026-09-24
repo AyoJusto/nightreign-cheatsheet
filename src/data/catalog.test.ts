@@ -32,7 +32,7 @@ describe('seed data', () => {
   })
   it('never contains internal nightlord names or non-English text', () => {
     for (const name of aliases.internalNightlordNames) expect(raw).not.toMatch(new RegExp(`\\b${name}\\b`, 'i'))
-    expect(raw).not.toMatch(/[　-鿿＀-￯]/)
+    expect(raw).not.toMatch(/[\u3000-\u9FFF\uFF00-\uFFEF]/)
   })
   it('offers every nightlord at least one shifting earth', () => {
     for (const n of NIGHTLORDS) expect(catalog.earthsFor(n.id).length).toBeGreaterThan(0)

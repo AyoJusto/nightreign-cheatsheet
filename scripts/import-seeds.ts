@@ -6,7 +6,7 @@ import sharp from 'sharp'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
-export const hasCjk = (s: string) => /[　-鿿＀-￯]/.test(s)
+export const hasCjk = (s: string) => /[\u3000-\u9FFF\uFF00-\uFFEF]/.test(s)
 
 export function toStructureKey(raw: string): string | null {
   if (raw === '' || raw === 'empty_spawn') return null
@@ -197,7 +197,10 @@ async function copyAssets() {
     const image = sharp(`data/raw/assets/maps/${file}`)
     const { width, height } = await image.metadata()
     if (width !== height) throw new Error(`${file} is ${width}x${height}; the 1000-unit coordinate space assumes a square map`)
-    await image.resize(2000, 2000).webp({ quality: 78 }).toFile(`public/maps/${earth}.webp`)
+    // Great Hollow's source encodes far less cleanly than the others (878 KB at 2000px/q78, over the
+    // 500 KB budget); the slot grid is percentage-based, so a smaller image is a safe way to shrink it.
+    const [size, quality] = earth === 'great-hollow' ? [1400, 70] : [2000, 78]
+    await image.resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
   }
   mkdirSync('public/structures', { recursive: true })
   for (const file of readdirSync('data/raw/assets/icons')) {
