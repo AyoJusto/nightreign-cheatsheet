@@ -198,7 +198,15 @@ export function FinderOverlay(props: {
             <section>
               <h3 className="side-heading">Sightings</h3>
               <ul className="sightings">
-                {scouting.sightings.map((s) => <li key={targetOf(s)}>{sightingLabel(s)}</li>)}
+                {/* Each row leads with what the map shows there: the spawn puck, the structure, or an empty ring. */}
+                {scouting.sightings.map((s) => (
+                  <li key={targetOf(s)}>
+                    <span className="sighting-glyph" aria-hidden>
+                      {s.type === 'spawn' ? <span className="spawn-dot" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
+                    </span>
+                    {sightingLabel(s)}
+                  </li>
+                ))}
               </ul>
             </section>
           )}
