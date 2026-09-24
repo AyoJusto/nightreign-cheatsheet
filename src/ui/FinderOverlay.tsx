@@ -9,7 +9,7 @@ import { StructureButtons, StructureStrip } from './StructureStrip'
 import { groupByKind } from './structureGroups'
 import { Icon } from './Icon'
 import { useSightings, encodeSightings } from './useSightings'
-import { useWide } from './useWide'
+import { useFinePointer, useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
 import { splitStructure, structureName, nightlordName, earthName, type EarthId, type NightlordId, type SlotId, type StructureKey } from '../domain/names'
@@ -22,6 +22,7 @@ export function FinderOverlay(props: {
   setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
+  const verb = useFinePointer() ? 'Click' : 'Tap'
   const pillRef = useMeasure(props.topInset, pillBottom)
   // The strip's height plus its offset from the bottom edge; a hidden (empty) strip covers nothing.
   const stripRef = useMeasure(props.restInset, (el) => (el.offsetHeight ? el.offsetHeight + parseFloat(getComputedStyle(el).bottom) : 0))
@@ -159,10 +160,10 @@ export function FinderOverlay(props: {
     <>
       <Glass className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
-        {/* Desktop shows the count in the side panel, so its pill carries only the first step's prompt. */}
-        {wide ? !spawn && <span className="pill-text">Tap where you spawned</span> : (
+        {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
+        {!wide && (
           <span className="pill-text">
-            {spawn ? <><Count value={count} /> possible</> : <>Tap where you spawned · <Count value={count} /></>}
+            {spawn ? <><Count value={count} /> possible</> : <>{verb} where you spawned · <Count value={count} /></>}
           </span>
         )}
         <button aria-label="Undo" disabled={!scouting.sightings.length}
@@ -182,7 +183,7 @@ export function FinderOverlay(props: {
               <h3 className="side-heading">{choicesTitle}</h3>
               {choices}
             </section>
-          ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : 'Tap where you spawned on the map.'}</p>)}
+          ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : `${verb} where you spawned on the map.`}</p>)}
           {groups.length > 0 && (
             <section>
               {/* The tile's name goes here, not in a tooltip that would cover the tiles around it. */}
