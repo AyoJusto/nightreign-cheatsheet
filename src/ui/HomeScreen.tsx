@@ -17,7 +17,7 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
   const [picked, setPicked] = useState<NightlordId | null>(null)
   return (
     <main className="home">
-      <h1 className="title home-title">Choose your Nightlord</h1>
+      <h1 className="home-title">Choose your Nightlord</h1>
       <ul className="nightlord-grid">
         {NIGHTLORDS.map((n) => (
           <li key={n.id}>
