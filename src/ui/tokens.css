@@ -188,10 +188,13 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .strip-item { position: relative; flex: 0 0 auto; width: 52px; height: 52px; border-radius: 26px; display: grid; place-items: center; }
 .strip-item[aria-expanded='true'] { background: var(--fill); }
 .strip-item[aria-pressed='true'], .strip-variant[aria-pressed='true'] { background: var(--fill); box-shadow: inset 0 0 0 1.5px var(--accent); }
-/* A kind that comes in elements: up to three overlapping dots in their colours, like the map's element dots. */
-.variant-dots { position: absolute; right: 5px; bottom: 5px; display: flex; }
-.variant-dots > span { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75); }
-.variant-dots > span + span { margin-left: -3px; }
+/* A kind that comes in elements: its elements' two-letter codes in one quiet chip, the map badge's style,
+   centred on the art's base. A neutral rim, since the codes each carry their own colour. */
+.element-codes {
+  position: absolute; left: 0; right: 0; bottom: 2px; width: fit-content; margin: 0 auto; display: flex; gap: 3px;
+  height: 13px; padding: 0 3px; box-sizing: border-box; border-radius: 6.5px; font-size: 11px; line-height: 13px; font-weight: 700; letter-spacing: -0.02em;
+  background: rgba(28, 28, 30, 0.92); color: var(--label-2); box-shadow: inset 0 0 0 0.75px rgba(235, 235, 245, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
 .strip-variant { position: relative; flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; box-sizing: border-box; border-radius: 26px; font-size: 15px; font-weight: 600; white-space: nowrap; background: var(--fill-2); }
 
 /* Result pill: layer toggles. Each is a 44px target around a smaller capsule, so the row reads light. */

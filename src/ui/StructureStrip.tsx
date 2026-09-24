@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { StructureIcon, ELEMENT_COLORS } from './StructureIcon'
 import { Glass } from './Glass'
 import type { KindGroup } from './structureGroups'
-import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
+import { ELEMENT_BADGES, ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
 
 const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
 
@@ -32,16 +32,24 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
       ]
     }
     const expanded = open === kind
+    const elements = variants.flatMap((v) => splitStructure(v).element ?? [])
+    const typeNames = variants.map((v) => { const { element } = splitStructure(v); return element ? ELEMENT_NAMES[element] : 'no element' })
+    // Three codes fit the tile; past that, two and how many more, so the chip never outgrows the art.
+    const shown = elements.length > 3 ? elements.slice(0, 2) : elements
     return [
-      <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(kindName(kind))} aria-label={`${kindName(kind)}, ${variants.length} types`}
+      <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(kindName(kind))}
+        aria-label={`${kindName(kind)}, ${variants.length} types: ${typeNames.join(', ')}`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />
-        {/* Stacked dots in its elements' colours say "comes in elements"; a number read as a count or an order. */}
-        <span className="variant-dots" aria-hidden>
-          {variants.flatMap((v) => splitStructure(v).element ?? []).slice(0, 3).map((element) => (
-            <span key={element} style={{ background: ELEMENT_COLORS[element] }} />
-          ))}
-        </span>
+        {/* "Comes in elements", named by the map badges' two-letter codes: never by colour alone. */}
+        {elements.length > 0 && (
+          <span className="element-codes" aria-hidden>
+            {shown.map((element) => (
+              <span key={element} style={{ color: ELEMENT_COLORS[element] }}>{ELEMENT_BADGES[element]}</span>
+            ))}
+            {elements.length > shown.length && <span>+{elements.length - shown.length}</span>}
+          </span>
+        )}
       </motion.button>,
       ...(expanded ? variants.map((v) => {
         const { element } = splitStructure(v)
