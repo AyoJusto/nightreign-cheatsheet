@@ -156,9 +156,12 @@ export function FinderOverlay(props: {
     <>
       <Glass className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
-        <span className="pill-text">
-          {spawn ? <><Count value={count} /> possible</> : <>Tap where you spawned · <Count value={count} /></>}
-        </span>
+        {/* Desktop shows the count in the side panel, so its pill carries only the first step's prompt. */}
+        {wide ? !spawn && <span className="pill-text">Tap where you spawned</span> : (
+          <span className="pill-text">
+            {spawn ? <><Count value={count} /> possible</> : <>Tap where you spawned · <Count value={count} /></>}
+          </span>
+        )}
         <button aria-label="Undo" disabled={!scouting.sightings.length}
           onClick={() => apply(scouting.retract(targetOf(scouting.sightings[scouting.sightings.length - 1])))}><Icon name="undo" /></button>
         <button aria-label="Reset" disabled={!scouting.sightings.length}
@@ -176,7 +179,7 @@ export function FinderOverlay(props: {
               <h3 className="side-heading">{choicesTitle}</h3>
               {choices}
             </section>
-          ) : <p className="hint">Select a site on the map or a structure.</p>)}
+          ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : 'Tap where you spawned on the map.'}</p>)}
           {groups.length > 0 && (
             <section>
               <h3 className="side-heading">Structures still possible</h3>
