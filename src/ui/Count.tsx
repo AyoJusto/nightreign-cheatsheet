@@ -7,5 +7,13 @@ export function Count({ value }: { value: number }) {
   // MotionConfig does not reach useSpring; with reduced motion the number changes in place.
   const reduce = useReducedMotion()
   useEffect(() => (reduce ? spring.jump(value) : spring.set(value)), [spring, value, reduce])
-  return <motion.span className="num" aria-live="polite">{text}</motion.span>
+  return (
+    <>
+      {/* The visible digits animate every frame, so a screen reader must never read them directly. */}
+      <motion.span className="num" aria-hidden>{text}</motion.span>
+      {/* A separate, visually hidden span holds only the settled value: the live region announces
+          the final count once, not each in-flight spring frame. */}
+      <span className="sr-only" aria-live="polite">{value}</span>
+    </>
+  )
 }

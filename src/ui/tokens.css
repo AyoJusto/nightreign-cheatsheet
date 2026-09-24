@@ -46,6 +46,8 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
   box-shadow: var(--glass-edge), var(--glass-shadow);
 }
 .hidden { display: none !important; }
+/* Present to assistive tech, invisible on screen: for a live region whose visible twin is aria-hidden. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* ---------- Home ---------- */
 
