@@ -379,14 +379,14 @@ function MapMarker({ marker, pins, x, y, scale, size, topInset, bottomInset, pin
     // so no label is sliced by the sheet or drawn under the pill's controls.
     const visible = { w, top: topInset.get(), h: h - bottomInset.get() }
     const spot = placeLabel(point, box.get(), visible, obstacles, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
-    // A point under the pill or the sheet has no place for its label: clamped into the band, it would
+    // A glyph partly under the pill or the sheet has no place for its label: clamped into the band, it would
     // float away from its glyph, and a fully open sheet would stack every such label under the pill.
-    const inBand = point.y >= visible.top && point.y <= visible.h
+    const inBand = point.y - MARK_RADIUS >= visible.top && point.y + MARK_RADIUS <= visible.h
     return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear, inBand }
   })
   const labelX = useTransform(offset, (o) => o.x)
   const labelY = useTransform(offset, (o) => o.y)
-  // A night's circle keeps its short chip while its point is in sight. Other labels (field bosses, evergaols…)
+  // A night's circle keeps its short chip while its glyph is in sight. Other labels (field bosses, evergaols…)
   // also step aside when there is no free spot, leaving the glyph: their names are listed in the sheet, and a
   // structure matters more.
   const labelOpacity = useTransform(offset, (o) => (o.inBand && (o.clear || marker.layer === 'circle') ? 1 : 0))
