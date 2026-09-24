@@ -134,6 +134,19 @@ test('a low site stays in sight above its sheet', async ({ page, isMobile }) => 
   expect(pin.top + pin.height / 2).toBeLessThan(sheet.top)
 })
 
+// Desktop: selecting a site should not force a keyboard user to tab past every other pin to reach its
+// options, and closing it should not drop focus to the document body (m5).
+test('desktop: selecting a site focuses its first option, and Escape returns focus to the pin', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the side panel is desktop only')
+  const target = targets[0]
+  await page.goto(`/find/${target.nightlord}/${target.earth}`)
+  const pin = page.getByRole('button', { name: 'Unknown site', exact: true }).first()
+  await pin.click()
+  await expect(page.locator('.options').getByRole('button').first()).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(pin).toBeFocused()
+})
+
 // Result pins do nothing when clicked, so they are named images, not buttons Tab would walk through.
 test('result map pins are named images, not buttons', async ({ page }) => {
   await page.goto(`/seed/${targets[0].id}`)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
@@ -38,6 +38,9 @@ export function FinderOverlay(props: {
   const [detent, setDetent] = useState<Detent>('peek')
   const coords = catalog.slotsOf(props.earth)
   const count = scouting.candidates().length
+  // Desktop: the side panel's option list, so a new selection can move focus into its first option.
+  const optionsRef = useRef<HTMLUListElement>(null)
+  const lastSelected = useRef<SlotId | null>(null)
 
   // The delay lets the last pin's animation play before the result takes over.
   useEffect(() => {
@@ -65,6 +68,21 @@ export function FinderOverlay(props: {
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
   }, [])
+
+  // Desktop: selecting a site moves focus to its first option, so a keyboard user need not tab past
+  // every other pin to reach it; closing (Escape, background tap, or picking an option) returns focus
+  // to that pin, wherever it landed in the tab order, rather than dropping it to the document body.
+  useEffect(() => {
+    if (!wide) return
+    if (selected) {
+      lastSelected.current = selected
+      optionsRef.current?.querySelector<HTMLElement>('button')?.focus()
+    } else if (lastSelected.current) {
+      const slot = lastSelected.current
+      lastSelected.current = null
+      document.querySelector<HTMLElement>(`.pin-hit[data-slot="${slot}"]`)?.focus()
+    }
+  }, [selected, wide])
 
   // With the sheet closed, only the strip covers the bottom of the map. The map springs to the new inset itself.
   useEffect(() => {
@@ -105,7 +123,7 @@ export function FinderOverlay(props: {
   const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
   const choices = selected && (
     // Named by the heading or sheet title around it; data-slot is for tests, players never see slot numbers.
-    <ul className="options" data-slot={selected}>
+    <ul className="options" ref={optionsRef} data-slot={selected}>
       {/* First, so the half-height sheet never cuts it off. */}
       {sightedHere && (
         <li><button className="option option-clear" onClick={() => apply(scouting.retract(selected))}>Clear</button></li>
