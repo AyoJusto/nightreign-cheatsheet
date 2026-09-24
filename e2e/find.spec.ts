@@ -237,9 +237,12 @@ test("a sighted site's sheet marks the recorded option as current", async ({ pag
   await page.goto(`/find/${target.nightlord}/${target.earth}?s=spawn@${target.spawn},24@church`)
   await page.getByRole('button', { name: 'Church, sighted', exact: true }).click()
   const options = page.locator('.options')
-  await expect(options.getByRole('button', { name: /^Church, current, leaves \d+$/ })).toHaveAttribute('aria-current', 'true')
-  await expect(options.locator('[aria-current]')).toHaveCount(1)
-  await expect(options.locator('[aria-current] .option-check')).toBeVisible()
+  const current = options.getByRole('button', { name: /^Church, current, leaves \d+$/ })
+  await expect(current.locator('.option-check')).toBeVisible()
+  // Marked once: by name and checkmark, on one option only, and not also by aria-current (announced twice).
+  await expect(options.getByRole('button', { name: /, current,/ })).toHaveCount(1)
+  await expect(options.locator('.option-check')).toHaveCount(1)
+  await expect(options.locator('[aria-current]')).toHaveCount(0)
 })
 
 // A kind tile shows its elements as 14px emblems; hovering it names them, so no element rests on colour (iter-10 fix 2).

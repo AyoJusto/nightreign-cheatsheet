@@ -148,7 +148,7 @@ export function FinderOverlay(props: {
         <li key={option}>
           <button
             className="option"
-            aria-current={option === current || undefined}
+            // "current" in the name only: aria-current as well would have it announced twice.
             aria-label={`${option === 'nothing' ? 'Nothing here' : structureName(option)}${option === current ? ', current' : ''}, leaves ${remaining}`}
             onClick={() => apply(scouting.sight(option === 'nothing' ? { type: 'nothing', slot: selected } : { type: 'structure', slot: selected, structure: option }))}
           >
