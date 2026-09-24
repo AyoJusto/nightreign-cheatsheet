@@ -234,7 +234,10 @@ export function FinderOverlay(props: {
             <section>
               {/* The tile's name goes here, not in a tooltip that would cover the tiles around it. */}
               <h3 className="side-heading structure-heading">
-                Structures still possible<span className="structure-name" aria-hidden>{tileName}</span>
+                {/* A hovered tile's name takes the heading's whole line (a kind's name lists its elements, too long to
+                    share it); the heading text stays for screen readers, which read the tile's own label. */}
+                <span className={tileName ? 'sr-only' : undefined}>Structures still possible</span>
+                {tileName && <span className="structure-name" aria-hidden>{tileName}</span>}
               </h3>
               {/* The heading above names it; a matching aria-label would be announced twice. */}
               <div className="structure-grid">{structureButtons}</div>

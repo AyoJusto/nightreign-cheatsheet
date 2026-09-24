@@ -53,7 +53,7 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
     // Three emblems fit the tile; past that, one emblem and how many more, so the chip never outgrows the art.
     const shown = elements.length > 3 ? elements.slice(0, 1) : elements
     return [
-      <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(kindName(kind))}
+      <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(`${kindName(kind)}: ${typeNames.join(', ')}`)}
         aria-label={`${kindName(kind)}, ${variants.length} types: ${typeNames.join(', ')}`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />

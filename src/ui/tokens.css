@@ -321,8 +321,8 @@ li.run-row .run-value { font-weight: 400; }
 .sightings > li + li { background: linear-gradient(var(--separator), var(--separator)) no-repeat 52px 0 / 100% 0.5px; }
 .sighting-glyph { flex: 0 0 28px; height: 28px; display: grid; place-items: center; }
 .hint { color: var(--label-2); font-size: 15px; line-height: 20px; margin: 8px 4px 0; }
-/* Structures as tiles; the hovered or focused one is named at the end of the heading above them. */
-.structure-heading { display: flex; justify-content: space-between; gap: 12px; }
+/* Structures as tiles; the hovered or focused one is named in place of the heading above them. */
+.structure-heading { display: flex; }
 .structure-name { min-width: 0; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .structure-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .structure-grid .strip-item { width: 64px; height: 64px; border-radius: 16px; background: var(--surface-2); }

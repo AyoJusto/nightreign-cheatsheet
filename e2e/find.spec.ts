@@ -242,6 +242,16 @@ test("a sighted site's sheet marks the recorded option as current", async ({ pag
   await expect(options.locator('[aria-current] .option-check')).toBeVisible()
 })
 
+// A kind tile shows its elements as 14px emblems; hovering it names them, so no element rests on colour (iter-10 fix 2).
+test('desktop: hovering a kind tile names its elements', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the side panel is desktop only')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  const tile = page.locator('.structure-grid .strip-item[aria-expanded]').first()
+  const types = (await tile.getAttribute('aria-label'))!.split(' types: ')[1]
+  await tile.hover()
+  await expect(page.locator('.structure-heading .structure-name')).toHaveText(new RegExp(`: ${escapeRe(types)}$`))
+})
+
 // Result pins do nothing when clicked, so they are named images, not buttons Tab would walk through.
 test('result map pins are named images, not buttons', async ({ page }) => {
   await page.goto(`/seed/${targets[0].id}`)
