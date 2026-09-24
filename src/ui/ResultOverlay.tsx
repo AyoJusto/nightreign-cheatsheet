@@ -106,8 +106,9 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     ['Night 2', seed.nights[2].boss || null],
     ['Event', seed.event ? `${seed.event.name}${seed.event.day ? ` · Day ${seed.event.day}` : ''}` : null],
     ['Castle', seed.castle?.crew || null],
-    ['Castle basement', seed.castle?.basement || null],
-    ['Castle rooftop', seed.castle?.rooftop || null],
+    // Short labels under the Castle row: the label column fits the longest one, and a wide column wrapped the boss names.
+    ['Basement', seed.castle?.basement || null],
+    ['Rooftop', seed.castle?.rooftop || null],
     ['Old Gaol', seed.oldGaol ? 'Present' : null],
   ]
   const runCard = (
