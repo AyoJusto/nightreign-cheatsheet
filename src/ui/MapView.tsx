@@ -5,6 +5,7 @@ import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
+import { crossfade } from './crossfade'
 import { nearestPin, placeLabel, playableBox, rubberband } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
@@ -25,6 +26,8 @@ const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(
 // How far (CSS px on screen) a tap may land from a slot and still count as that slot.
 const TAP_REACH = 32
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
+// With reduced motion, a map move shorter than this (px) just jumps, like the finger it follows; a longer one crossfades.
+const NUDGE = 24
 
 /** What the active mode (finder or result) shows on the map. */
 export interface MapContent {
@@ -66,9 +69,10 @@ export function MapView(props: MapContent & {
   // or larger; below that (a phone's zoomed-out map) each badge is a small dot in its element's colour.
   const [smallArt, setSmallArt] = useState(() => artScale.get() < 1)
   useMotionValueEvent(artScale, 'change', (f) => setSmallArt(f < 1))
-  // MotionConfig only reaches declarative animations; imperative ones jump when motion is reduced.
+  // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
   const reduce = useReducedMotion()
-  const move = reduce ? { duration: 0 } : snap
+  const fade = useMotionValue(1)
+  const fading = useRef(false)
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
   // Per axis, an image larger than the frame keeps covering it and a smaller one (zoomed out to fit
@@ -132,12 +136,25 @@ export function MapView(props: MapContent & {
     y.stop()
     scale.stop()
   }
-  const settle = () => {
-    const s = boundScale(scale.get())
-    if (s !== scale.get()) animate(scale, s, move)
-    animate(x, clamp(x.get(), 'x', s), move)
-    animate(y, reveal(s) ?? clamp(y.get(), 'y', s), move)
+  // Springs each value to its target. With reduced motion a far move crossfades instead; `targets` is read
+  // again when the map is faded out, so the jump lands where things are by then, not where they were.
+  type Targets = () => [MotionValue<number>, number][]
+  const moveTo = (targets: Targets) => {
+    const now = targets()
+    if (!reduce) return now.forEach(([v, t]) => { if (v !== scale || t !== v.get()) animate(v, t, snap) })
+    const far = now.some(([v, t]) => Math.abs(v === scale ? side(t) - side() : t - v.get()) > NUDGE)
+    if (!far) return now.forEach(([v, t]) => v.jump(t))
+    if (fading.current) return
+    fading.current = true
+    crossfade(fade, () => {
+      targets().forEach(([v, t]) => v.jump(t))
+      fading.current = false
+    })
   }
+  const settle = () => moveTo(() => {
+    const s = boundScale(scale.get())
+    return [[scale, s], [x, clamp(x.get(), 'x', s)], [y, reveal(s) ?? clamp(y.get(), 'y', s)]]
+  })
 
   useGesture(
     {
@@ -216,8 +233,7 @@ export function MapView(props: MapContent & {
   // Re-subscribing on selected/pins changes means the listener never reads stale props.
   useEffect(() => {
     if (props.selected) touched.current = true
-    const target = reveal()
-    if (target !== undefined) animate(y, target, move)
+    if (reveal() !== undefined) moveTo(() => { const target = reveal(); return target === undefined ? [] : [[y, target]] })
     const onInset = () => {
       if (!active.current.drag && !active.current.pinch) settle()
     }
@@ -252,7 +268,7 @@ export function MapView(props: MapContent & {
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className={`map-layer${smallArt ? ' small-art' : ''}`} style={{ x, y, scale }}>
+      <motion.div className={`map-layer${smallArt ? ' small-art' : ''}`} style={{ x, y, scale, opacity: fade }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.pins.map((p) => (

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, type MotionValue, type PanInfo } from 'motion/react'
+import { crossfade } from './crossfade'
 import { detentHeights, type Detent, type SheetMeasure } from './sheetDetents'
 
 export type { Detent }
@@ -66,11 +67,14 @@ export function Sheet(props: {
   // Starts below the screen, so the first animation is the sheet rising into place.
   const y = useMotionValue(m.frame)
   const controls = useDragControls()
-  // MotionConfig does not reach imperative animate(); with reduced motion the sheet jumps between detents.
-  const move = useReducedMotion() ? { duration: 0 } : sheetSpring
+  // With reduced motion the sheet crossfades into place (rising, and between detents) instead of sliding.
+  const reduce = useReducedMotion()
+  // Reduced motion starts it unseen, so it does not show where it starts (below or at peek) before fading in.
+  const fade = useMotionValue(reduce ? 0 : 1)
+  const moveTo = (target: number) => (reduce ? crossfade(fade, () => y.jump(target)) : animate(y, target, sheetSpring))
 
   useEffect(() => {
-    if (measured) animate(y, h.full - h[props.detent], move)
+    if (measured) moveTo(h.full - h[props.detent])
   }, [props.detent, h.peek, h.half, h.full, measured])
 
   // 0 at half and above, 1 at peek: drives the float inset, the radius, the glass crossfade and the body fade.
@@ -93,7 +97,7 @@ export function Sheet(props: {
     const projected = y.get() + info.velocity.y * 0.2
     const visible = h.full - projected
     const nearest = ORDER.reduce((a, b) => (Math.abs(h[a] - visible) < Math.abs(h[b] - visible) ? a : b))
-    if (nearest === props.detent) animate(y, h.full - h[nearest], move)
+    if (nearest === props.detent) moveTo(h.full - h[nearest])
     else props.onDetent(nearest)
   }
   const step = (by: 1 | -1) => {
@@ -107,7 +111,7 @@ export function Sheet(props: {
       className="sheet"
       role="dialog"
       aria-label={props.label}
-      style={{ y, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius }}
+      style={{ y, opacity: fade, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius }}
       drag="y"
       dragListener={false}
       dragControls={controls}
