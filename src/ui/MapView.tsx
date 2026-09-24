@@ -1,5 +1,5 @@
-import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionStyle, type MotionValue } from 'motion/react'
+import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { motion, useMotionValue, useMotionValueEvent, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
@@ -62,8 +62,10 @@ export function MapView(props: MapContent & {
   const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
   const artScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ART_MIN, ART_MAX))
   const dotScale = useTransform(mapWidth, (m) => clampTo(m / DOT_FULL_SIDE, 1, DOT_MAX))
-  // Element badges keep one legible size: they undo the art's scale (a CSS transform, see .pin .element-badge).
-  const badgeUp = useTransform(artScale, (f) => 1 / f)
+  // Element badges scale with the art, so they never outweigh it. Their 11px letters need the art at full size
+  // or larger; below that (a phone's zoomed-out map) each badge is a small dot in its element's colour.
+  const [smallArt, setSmallArt] = useState(() => artScale.get() < 1)
+  useMotionValueEvent(artScale, 'change', (f) => setSmallArt(f < 1))
   // MotionConfig only reaches declarative animations; imperative ones jump when motion is reduced.
   const reduce = useReducedMotion()
   const move = reduce ? { duration: 0 } : snap
@@ -250,7 +252,7 @@ export function MapView(props: MapContent & {
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className="map-layer" style={{ x, y, scale, '--badge-up': badgeUp } as MotionStyle}>
+      <motion.div className={`map-layer${smallArt ? ' small-art' : ''}`} style={{ x, y, scale }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.pins.map((p) => (
