@@ -70,8 +70,10 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* Nightlords are named in the game's own face. */
 .nightlord-name { font-family: var(--font-title); font-size: 13px; line-height: 16px; letter-spacing: 0.02em; color: var(--label); }
 @media (min-width: 900px) { .nightlord-name { font-size: 17px; } .portrait { width: 84%; } }
-/* Phone: sticky glass over the grid's bottom edge (8px from the screen edges). Desktop: plain, under the grid. */
-.earth-bar { position: sticky; z-index: 10; bottom: calc(var(--safe-bottom) + var(--gutter)); margin: 24px -8px 0; padding: 12px; border-radius: 28px; }
+/* Phone: sticky glass over the grid's bottom edge (8px from the screen edges). Desktop: plain, under the grid.
+   Capsule family, like the pill and the collapsed sheet: capsule tiles in a bar whose corners are concentric with them. */
+.earth-bar { position: sticky; z-index: 10; bottom: calc(var(--safe-bottom) + var(--gutter)); margin: 24px -8px 0; padding: 12px; border-radius: 40px; }
+.earth-bar .earth { border-radius: 28px; }
 .earths:not(.earth-bar) { max-width: 760px; margin: 48px auto 0; }
 .earth-heading { margin: 0 4px 10px; font-size: 15px; line-height: 20px; font-weight: 600; color: var(--label-2); }
 .earths:not(.earth-bar) .earth-heading { text-align: center; }

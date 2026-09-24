@@ -6,6 +6,8 @@ import { detentHeights, type Detent, type SheetMeasure } from './sheetDetents'
 export type { Detent }
 const sheetSpring = { type: 'spring', visualDuration: 0.5, bounce: 0 } as const
 const FLOAT = 8 // the collapsed capsule's gap to the screen edges
+const RADIUS_FULL = 12 // docked below the pill
+const RADIUS_HALF = 28 // docked at the bottom edge
 const ORDER: Detent[] = ['peek', 'half', 'full']
 const DETENT_NAMES: Record<Detent, string> = { peek: 'collapsed', half: 'half open', full: 'fully open' }
 
@@ -80,7 +82,10 @@ export function Sheet(props: {
   // 0 at half and above, 1 at peek: drives the float inset, the radius, the glass crossfade and the body fade.
   const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
   const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
-  const radius = useTransform(y, (v) => 12 + 16 * clamp01(v / Math.max(1, h.full - h.half)))
+  // Full to half rounds the top corners; half to peek grows them into a capsule (half the peek's height),
+  // the same shape as the pill above it.
+  const radius = useTransform(y, (v) =>
+    RADIUS_FULL + (RADIUS_HALF - RADIUS_FULL) * clamp01(v / Math.max(1, h.full - h.half)) + (h.peek / 2 - RADIUS_HALF) * towardPeek(v))
   const solid = useTransform(y, (v) => 1 - towardPeek(v))
   // The reduced-motion fade goes on each layer, never the section: opacity on an ancestor of the glass would
   // cut its blur off from the map behind for the length of the fade.
