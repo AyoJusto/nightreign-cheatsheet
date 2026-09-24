@@ -124,12 +124,14 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 
 .structure-icon { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
 .structure-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
-/* A certain slot is known but not yet confirmed by a tap: a ghost, distinct from a sighted pin's plain,
-   full-colour art. Desaturated and dimmer art behind a dashed ring, the same family as .icon-empty.
-   The ring is ::before, so it paints first and the element chip sits on top of it, never crossed by it; the chip
-   is dimmed with a filter, not opacity, so it stays solid and the ring can't show through it. */
-.pin-certain .structure-icon img { filter: grayscale(0.9) drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)) brightness(0.85); }
-.pin-certain .structure-icon::before { content: ''; position: absolute; inset: -3px; border: 1.5px dashed var(--label-2); border-radius: 50%; }
+/* A certain slot is known but not yet confirmed by a tap: a ghost, told from a sighted pin's plain, full-colour,
+   ringless art at a glance. Half-opacity desaturated art inside a 2px dashed ring, the same family as .icon-empty.
+   Only the art is faded, not the pin, so the ring stays at full strength; a dark shadow keeps it legible on
+   bright map art. The ring is ::before, so it paints first and the element chip sits on top of it, never crossed
+   by it; the chip is dimmed with a filter, not opacity, so it stays solid and the ring can't show through it. */
+.pin .structure-icon img { transition: opacity 0.35s ease-out; }
+.pin-certain .structure-icon img { opacity: 0.5; filter: grayscale(0.9) drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
+.pin-certain .structure-icon::before { content: ''; position: absolute; inset: -4px; border: 2px dashed var(--label-2); border-radius: 50%; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
 .pin-certain .element-badge { filter: brightness(0.75); }
 .icon-glyph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 10px; background: var(--surface-2); font-size: 12px; font-weight: 700; }
 /* "Nothing here": an empty dashed ring where the art would be, at the same size and visual weight as a

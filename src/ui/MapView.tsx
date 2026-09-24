@@ -317,7 +317,8 @@ export function MapView(props: MapContent & {
             data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
             style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: p.state === 'dimmed' ? 0.4 : p.state === 'certain' ? 0.7 : 1 }}
+            // A certain ghost dims its art alone (tokens.css), so its dashed ring stays clearly visible.
+            animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
           >
             <motion.span className="pin-body" style={{ scale: p.structure ? artOf(p) : dotScale }}>
