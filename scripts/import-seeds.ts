@@ -34,6 +34,25 @@ export function toEvent(raw: string, info: Record<string, string[]>) {
   return { name, day: match[2] ? (Number(match[2]) as 1 | 2) : null }
 }
 
+type BossDetail = { key: string; name: string; summary: string }
+/**
+ * Fight notes keyed by the boss name the app shows. The source spells a boss many ways
+ * ("Night's Cavalries", "Crucible Knight & Hippo"), so a shown name joins its note through the
+ * source key where the source has one, and by exact name otherwise.
+ */
+export function toBossNotes(details: BossDetail[], shown: Iterable<[name: string, key: string | null]>) {
+  const byKey = new Map(details.map((d) => [d.key, d]))
+  const byName = new Map(details.map((d) => [d.name, d]))
+  const notes: Record<string, string> = {}
+  for (const [name, key] of shown) {
+    const summary = (key ? byKey.get(key) : byName.get(name))?.summary
+    if (!summary || hasCjk(summary)) continue
+    if (notes[name] !== undefined && notes[name] !== summary) throw new Error(`"${name}" means two bosses`)
+    notes[name] = summary
+  }
+  return notes
+}
+
 // Castle ids are snake_case ("ancient_hero_of_zamor"); "of" stays lowercase as in the boss roster.
 const titleCase = (id: string) =>
   id.split('_').map((w, i) => (i > 0 && w === 'of' ? w : w[0].toUpperCase() + w.slice(1))).join(' ')
@@ -73,6 +92,9 @@ function main() {
   }
   const evergaolAt = Object.fromEntries(observer.coordinates.evergaols.map((e: any) => [e.id, e]))
   const castles = new Map(observer.castleAssignments.map((c: any) => [c.seed_id, c]))
+  const nightKeys = new Map(observer.bossAssignments.map((b: any) => [b.seed_id, b]))
+  // Every boss name a seed shows, with the source key where the source has one.
+  const shownBosses: [string, string | null][] = []
 
   const seeds = observer.seeds.map((s: any) => {
     const id: string = s.seed_id
@@ -128,6 +150,13 @@ function main() {
 
     const castle = castles.get(id) as any
     const crew = remote.castleCrew.seeds[id]
+    const keys = nightKeys.get(id) as any
+    for (const night of [1, 2] as const) {
+      const boss = nc?.[`night${night}`]?.boss
+      if (boss) shownBosses.push([bossName(boss), keys?.[`night${night}`] ?? null])
+    }
+    if (castle) shownBosses.push([titleCase(castle.basement), castle.basement], [titleCase(castle.rooftop), castle.rooftop])
+    for (const m of markers) if (m.layer === 'boss' || m.layer === 'evergaol') shownBosses.push([m.label, null])
     return {
       id,
       nightlord: toNightlord(s.nightlord),
@@ -157,7 +186,8 @@ function main() {
   }
 
   if (seeds.length !== 520) problems.push(`expected 520 seeds, got ${seeds.length}`)
-  const out = JSON.stringify({ maps, seeds })
+  const bossNotes = toBossNotes(observer.bossDetails, shownBosses)
+  const out = JSON.stringify({ maps, seeds, bossNotes })
   if (hasCjk(out)) problems.push('non-English text in output')
   for (const name of aliases.internalNightlordNames) {
     if (new RegExp(`\\b${name}\\b`, 'i').test(out)) problems.push(`internal nightlord name in output: ${name}`)
@@ -169,12 +199,12 @@ function main() {
   mkdirSync('src/data', { recursive: true })
   writeFileSync('src/data/seeds.json', out)
   console.log(`wrote ${seeds.length} seeds`)
-  return copyAssets().then(() => reportCoverage(seeds))
+  return copyAssets().then(() => reportCoverage(seeds, bossNotes))
 }
 
-function reportCoverage(seeds: any[]) {
+function reportCoverage(seeds: any[], bossNotes: Record<string, string>) {
   const count = (pred: (s: any) => boolean) => seeds.filter(pred).length
-  console.log('castle', count((s) => s.castle), 'event', count((s) => s.event))
+  console.log('castle', count((s) => s.castle), 'event', count((s) => s.event), 'boss notes', Object.keys(bossNotes).length)
   for (const layer of ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing']) {
     console.log(layer, count((s) => s.markers.some((m: any) => m.layer === layer)))
   }

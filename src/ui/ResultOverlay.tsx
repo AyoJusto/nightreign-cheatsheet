@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react'
-import type { MotionValue } from 'motion/react'
+import { motion, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, PEEK, type Detent } from './Sheet'
 import { Glass } from './Glass'
@@ -116,9 +116,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const body = (
     <>
       <dl className="run-card">
-        {rows.filter(([, v]) => v).map(([k, v]) => (
-          <div key={k} className="run-row"><dt>{k}</dt><dd>{v}</dd></div>
-        ))}
+        {rows.filter(([, v]) => v).map(([k, v]) => <RunRow key={`${k}:${v}`} label={k} value={v!} />)}
       </dl>
       {LISTS.map(([layer, heading]) => {
         const items = markers.filter((m) => m.layer === layer)
@@ -149,5 +147,27 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       )}
       {toast && <Glass className="toast" role="status">{toast}</Glass>}
     </>
+  )
+}
+
+// A boss with notes in the data expands in place to show them; anything else is a plain row.
+function RunRow({ label, value }: { label: string; value: string }) {
+  const [open, setOpen] = useState(false)
+  const notes = catalog.bossNotes(value)
+  return (
+    <div className="run-row">
+      <dt>{label}</dt>
+      {notes ? (
+        <dd>
+          <button className="run-more" aria-expanded={open} onClick={() => setOpen(!open)}>
+            {value}
+            <svg className="run-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4.5 2.5 8 6l-3.5 3.5" />
+            </svg>
+          </button>
+        </dd>
+      ) : <dd>{value}</dd>}
+      {open && <motion.dd className="run-notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{notes}</motion.dd>}
+    </div>
   )
 }

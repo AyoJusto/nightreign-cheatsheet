@@ -34,6 +34,12 @@ describe('seed data', () => {
     for (const name of aliases.internalNightlordNames) expect(raw).not.toMatch(new RegExp(`\\b${name}\\b`, 'i'))
     expect(raw).not.toMatch(/[\u3000-\u9FFF\uFF00-\uFFEF]/)
   })
+  it('has fight notes for every night and castle boss', () => {
+    for (const seed of catalog.all) {
+      const bosses = [seed.nights[1].boss, seed.nights[2].boss, seed.castle?.basement, seed.castle?.rooftop]
+      for (const boss of bosses) if (boss) expect(catalog.bossNotes(boss), `seed ${seed.id} ${boss}`).toBeTruthy()
+    }
+  })
   it('offers every nightlord at least one shifting earth', () => {
     for (const n of NIGHTLORDS) expect(catalog.earthsFor(n.id).length).toBeGreaterThan(0)
     expect(EARTHS.length).toBe(6)
