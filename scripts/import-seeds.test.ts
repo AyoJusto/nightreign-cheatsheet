@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName } from './import-seeds.ts'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
@@ -57,6 +57,33 @@ describe('import translation', () => {
     })
     it('rejects one shown name meaning two bosses', () => {
       expect(() => toBossNotes(details, [['Sentinel', 'tree_sentinel'], ['Sentinel', 'demi_human_queen']])).toThrow(/two bosses/)
+    })
+  })
+
+  describe('boss name normalization', () => {
+    it('folds case, &-vs-and and hyphen-vs-space apart so the same fight has one key', () => {
+      expect(normalizeBossName('Demihuman Queen & Swordmaster')).toBe(normalizeBossName('Demi-Human Queen and Swordmaster'))
+    })
+    it('leaves genuinely different names apart', () => {
+      expect(normalizeBossName('Tree Sentinel')).not.toBe(normalizeBossName('Tree Sentinels'))
+    })
+    // The regression this catches: the source spelled one boss two ways, and both spellings shipped.
+    it('gives every distinct boss, castle and marker name in the shipped data its own key', () => {
+      const seeds = JSON.parse(readFileSync('src/data/seeds.json', 'utf8'))
+      const names = new Set<string>()
+      for (const s of seeds.seeds) {
+        if (s.nights[1].boss) names.add(s.nights[1].boss)
+        if (s.nights[2].boss) names.add(s.nights[2].boss)
+        if (s.castle?.basement) names.add(s.castle.basement)
+        if (s.castle?.rooftop) names.add(s.castle.rooftop)
+        for (const m of s.markers) if (m.layer === 'boss' || m.layer === 'evergaol') names.add(m.label)
+      }
+      const byKey = new Map<string, string>()
+      for (const name of names) {
+        const key = normalizeBossName(name)
+        expect(byKey.get(key), `"${name}" and "${byKey.get(key)}" normalize to the same key`).toBeUndefined()
+        byKey.set(key, name)
+      }
     })
   })
 })

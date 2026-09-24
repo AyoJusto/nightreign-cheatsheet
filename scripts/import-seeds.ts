@@ -8,6 +8,11 @@ const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
 export const hasCjk = (s: string) => /[\u3000-\u9FFF\uFF00-\uFFEF]/.test(s)
 
+// Folds two spellings of the same fight to one key: case, "&" vs "and", and hyphen/space both
+// collapse away, so "Demihuman Queen & Swordmaster" and "Demi-Human Queen and Swordmaster" match.
+export const normalizeBossName = (name: string) =>
+  name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]/g, '')
+
 export function toStructureKey(raw: string): string | null {
   if (raw === '' || raw === 'empty_spawn') return null
   const value = raw.replace(/_spawn$/, '')

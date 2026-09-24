@@ -10,7 +10,9 @@
     "gnosterplague": "Sentient Pest Plague",
     "libracurse": "Equilibrious Beast Curse"
   },
-  "bossNameOverrides": {},
+  "bossNameOverrides": {
+    "Demihuman Queen & Swordmaster": "Demi-Human Queen and Swordmaster"
+  },
   "structureKinds": {
     "church": "church", "greatchurch": "great-church", "fort": "fort", "mainencampment": "main-encampment",
     "ruins": "ruins", "sorcerers": "sorcerers-rise", "diff_sorcerers": "ruined-rise",
