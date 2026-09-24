@@ -5,7 +5,7 @@ import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
-import { nearestPin, playableBox } from './mapGeometry'
+import { nearestPin, playableBox, rubberband } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
@@ -48,10 +48,18 @@ export function MapView(props: MapContent & {
   const side = (s = scale.get()) => Math.max(size.current.w, size.current.h) * s
   // The image always covers the frame; its bottom edge may rise to whatever covers the bottom of the screen.
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
-  const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
+  const bounds = (axis: 'x' | 'y', s = scale.get()) => {
     const slack = Math.max(0, (side(s) - (axis === 'x' ? size.current.w : size.current.h)) / 2)
-    const min = axis === 'x' ? -slack : -slack - props.bottomInset.get()
-    return Math.min(slack, Math.max(min, v))
+    return { min: axis === 'x' ? -slack : -slack - props.bottomInset.get(), max: slack }
+  }
+  const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
+    const { min, max } = bounds(axis, s)
+    return Math.min(max, Math.max(min, v))
+  }
+  // Under the finger the map may go past its bounds, with resistance; release springs it back.
+  const band = (v: number, axis: 'x' | 'y') => {
+    const { min, max } = bounds(axis)
+    return rubberband(v, min, max, axis === 'x' ? size.current.w : size.current.h)
   }
   // If the selected pin would sit under the sheet, pan it up into the visible area.
   const reveal = (s = scale.get()): number | undefined => {
@@ -99,8 +107,8 @@ export function MapView(props: MapContent & {
       onDrag: ({ offset: [ox, oy], pinching, cancel, tap }) => {
         if (pinching) return cancel()
         if (tap) return
-        x.set(ox)
-        y.set(oy)
+        x.set(band(ox, 'x'))
+        y.set(band(oy, 'y'))
       },
       onDragEnd: ({ velocity: [vx, vy], direction: [dx, dy], tap, canceled }) => {
         active.current.drag = false
@@ -115,8 +123,9 @@ export function MapView(props: MapContent & {
         // equals the current value, so pass the same projected, clamped end point as the target.
         const glideX = clamp(x.get() + velocityX * inertia.power, 'x')
         const glideY = clamp(y.get() + velocityY * inertia.power, 'y')
-        animate(x, glideX, { ...inertia, velocity: velocityX, modifyTarget: (t: number) => clamp(t, 'x') })
-        animate(y, glideY, { ...inertia, velocity: velocityY, modifyTarget: (t: number) => clamp(t, 'y') })
+        // min/max make a glide that starts past the edge, or reaches it, spring back to it.
+        animate(x, glideX, { ...inertia, ...bounds('x'), velocity: velocityX, modifyTarget: (t: number) => clamp(t, 'x') })
+        animate(y, glideY, { ...inertia, ...bounds('y'), velocity: velocityY, modifyTarget: (t: number) => clamp(t, 'y') })
       },
       onPinch: ({ origin: [ox, oy], first, offset: [s], memo }) => {
         if (first) {
@@ -127,9 +136,9 @@ export function MapView(props: MapContent & {
         const [x0, y0, s0, dx, dy] = memo as number[]
         // Zoom about the pinch origin: the layer point under the fingers stays put.
         const ratio = s / s0
-        x.set(x0 - (ratio - 1) * dx)
-        y.set(y0 - (ratio - 1) * dy)
         scale.set(s)
+        x.set(band(x0 - (ratio - 1) * dx, 'x'))
+        y.set(band(y0 - (ratio - 1) * dy, 'y'))
         return memo
       },
       onPinchEnd: () => {

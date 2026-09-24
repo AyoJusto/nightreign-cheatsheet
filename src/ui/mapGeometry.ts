@@ -35,3 +35,14 @@ export function nearestPin<P extends { x: number; y: number }>(pins: readonly P[
   }
   return best
 }
+
+// iOS scroll views use this constant: the edge gives way less and less the further it is pulled.
+const RUBBERBAND = 0.55
+const resist = (overshoot: number, dimension: number) => (overshoot * dimension * RUBBERBAND) / (dimension + RUBBERBAND * overshoot)
+
+/** `v` held to [min, max] with elastic give past either end; `dimension` is the visible length on that axis. */
+export function rubberband(v: number, min: number, max: number, dimension: number): number {
+  if (v < min) return min - resist(min - v, dimension)
+  if (v > max) return max + resist(v - max, dimension)
+  return v
+}
