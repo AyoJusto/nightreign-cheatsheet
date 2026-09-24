@@ -505,3 +505,23 @@ test.describe('a Church at the spawn point', () => {
     await expect.poll(() => new URL(page.url()).searchParams.get('s')).toMatch(new RegExp(`(^|,)${churchSeed.spawn}@church(,|$)`))
   })
 })
+
+// Offline after the first visit: the service worker serves the app, the map and the structure art (final m8).
+test('works offline once the service worker has installed', async ({ page, context, browserName, isMobile }) => {
+  test.skip(browserName !== 'chromium' || isMobile, 'one engine is enough to prove the precache')
+  await page.goto('/')
+  await page.waitForFunction(() => navigator.serviceWorker?.controller !== null)
+  await context.setOffline(true)
+  const loaded = (selector: string) =>
+    expect.poll(() => page.locator(selector).evaluateAll((imgs) => imgs.length > 0 && imgs.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)))
+      .toBe(true)
+
+  await page.goto(`/seed/${targets[0].id}`)
+  await expect(page.getByRole('heading', { name: `Seed ${targets[0].id}` })).toBeVisible()
+  await loaded('img.map-image')
+  await loaded('.pin img.structure-art')
+
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}?s=spawn@${targets[0].spawn}`)
+  await loaded('img.map-image')
+  await loaded('.structure-grid img.structure-art')
+})
