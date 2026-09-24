@@ -72,6 +72,22 @@ describe('Scouting', () => {
     expect(s.certainSlots()).toEqual(new Map([['1', 'fort']]))
   })
 
+  it('reveals every unsighted slot once a single candidate remains', () => {
+    const s = Scouting.start(pool).sight({ type: 'spawn', slot: '7' })
+    expect(s.identifiedSeed()?.id).toBe('002')
+    expect(s.certainSlots()).toEqual(new Map([
+      ['1', 'church'],
+      ['2', 'great-church:fire'],
+      ['3', 'church'],
+    ]))
+    // A slot already sighted is excluded, not re-reported as certain.
+    const withSighting = s.sight({ type: 'structure', slot: '1', structure: 'church' })
+    expect(withSighting.certainSlots()).toEqual(new Map([
+      ['2', 'great-church:fire'],
+      ['3', 'church'],
+    ]))
+  })
+
   it('lists structures still in play with the unsighted slots that could hold them', () => {
     const s = Scouting.start(pool).sight({ type: 'structure', slot: '1', structure: 'fort' })
     expect(s.structuresInPlay()).toContainEqual({ structure: 'great-church:fire', slots: ['2'] })
