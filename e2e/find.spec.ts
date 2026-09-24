@@ -252,6 +252,21 @@ test('desktop: hovering a kind tile names its elements', async ({ page, isMobile
   await expect(page.locator('.structure-heading .structure-name')).toHaveText(new RegExp(`: ${escapeRe(types)}$`))
 })
 
+// An emblem that fails to load falls back to the element's two-letter code, so the element never drops silently (iter-10 fix 3).
+test.describe(() => {
+  // Requests the service worker makes are out of page.route's reach, so it is kept out of this test.
+  test.use({ serviceWorkers: 'block' })
+  test('a failed emblem falls back to its element code', async ({ page }) => {
+    await page.route('**/elements/*.webp', (route) => route.abort())
+    await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+    await page.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
+    const codes = page.locator('.options .element-code')
+    await expect(codes.first()).toBeVisible()
+    await expect(codes.first()).toHaveText(/^[A-Z][a-z]$/)
+    await expect(page.locator('.options img.element-badge')).toHaveCount(0)
+  })
+})
+
 // Result pins do nothing when clicked, so they are named images, not buttons Tab would walk through.
 test('result map pins are named images, not buttons', async ({ page }) => {
   await page.goto(`/seed/${targets[0].id}`)

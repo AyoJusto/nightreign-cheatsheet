@@ -1,9 +1,18 @@
 import { useState } from 'react'
-import { splitStructure, structureName, type ElementId, type StructureKey } from '../domain/names'
+import { ELEMENT_CODES, splitStructure, structureName, type ElementId, type StructureKey } from '../domain/names'
 
-/** The game's own emblem for an element: a small square picture, told apart by its shape, not only its colour. */
+/**
+ * The game's own emblem for an element: a small square picture, told apart by its shape, not only its colour.
+ * If it fails to load, the element's two-letter code stands in, so the element never drops out silently.
+ */
 export function ElementEmblem({ element, className = 'element-emblem', size }: { element: ElementId; className?: string; size?: number }) {
-  return <img className={className} src={`/elements/${element}.webp`} alt="" width={size} height={size} draggable={false} aria-hidden />
+  // Remembered per element, so a reused emblem tries again when its element changes.
+  const [failed, setFailed] = useState<ElementId | null>(null)
+  if (failed === element) {
+    return <span className={`${className} element-code`} style={{ minWidth: size, height: size }} aria-hidden>{ELEMENT_CODES[element]}</span>
+  }
+  return <img key={element} className={className} src={`/elements/${element}.webp`} alt="" width={size} height={size}
+    onError={() => setFailed(element)} draggable={false} aria-hidden />
 }
 
 /** The emblem badge's size on art `size` px wide: under half, near the game's own ratio (about 0.4). */
