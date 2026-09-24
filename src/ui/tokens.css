@@ -188,8 +188,10 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .strip-item { position: relative; flex: 0 0 auto; width: 52px; height: 52px; border-radius: 26px; display: grid; place-items: center; }
 .strip-item[aria-expanded='true'] { background: var(--fill); }
 .strip-item[aria-pressed='true'], .strip-variant[aria-pressed='true'] { background: var(--fill); box-shadow: inset 0 0 0 1.5px var(--accent); }
-/* How many element variants a kind holds; neutral, since the elements themselves show once it expands. */
-.variant-count { position: absolute; right: 3px; bottom: 3px; min-width: 16px; height: 16px; box-sizing: border-box; padding: 0 4px; border-radius: 8px; background: var(--surface-3); color: var(--label); font-size: 11px; line-height: 16px; font-weight: 600; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+/* A kind that comes in elements: up to three overlapping dots in their colours, like the map's element dots. */
+.variant-dots { position: absolute; right: 5px; bottom: 5px; display: flex; }
+.variant-dots > span { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75); }
+.variant-dots > span + span { margin-left: -3px; }
 .strip-variant { position: relative; flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; box-sizing: border-box; border-radius: 26px; font-size: 15px; font-weight: 600; white-space: nowrap; background: var(--fill-2); }
 
 /* Result pill: layer toggles. Each is a 44px target around a smaller capsule, so the row reads light. */

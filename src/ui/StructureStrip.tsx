@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode, type Ref } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { StructureIcon } from './StructureIcon'
+import { StructureIcon, ELEMENT_COLORS } from './StructureIcon'
 import { Glass } from './Glass'
 import type { KindGroup } from './structureGroups'
 import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
@@ -31,7 +31,12 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant }: {
       <motion.button key={kind} layout className="strip-item" data-kind={kind} data-name={kindName(kind)} aria-label={`${kindName(kind)}, ${variants.length} types`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />
-        <span className="num variant-count" aria-hidden>{variants.length}</span>
+        {/* Stacked dots in its elements' colours say "comes in elements"; a number read as a count or an order. */}
+        <span className="variant-dots" aria-hidden>
+          {variants.flatMap((v) => splitStructure(v).element ?? []).slice(0, 3).map((element) => (
+            <span key={element} style={{ background: ELEMENT_COLORS[element] }} />
+          ))}
+        </span>
       </motion.button>,
       ...(expanded ? variants.map((v) => {
         const { element } = splitStructure(v)

@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { splitStructure, structureName, ELEMENT_BADGES, type StructureKey } from '../domain/names'
 
-const ELEMENT_COLORS: Record<string, string> = {
+export const ELEMENT_COLORS: Record<string, string> = {
   fire: '#ff7a45', holy: '#f5d76e', magic: '#6aa9ff', lightning: '#ffd84d', frostbite: '#9fe3ff', poison: '#8fd46b',
   bleed: '#e0455a', blight: '#9b8cff', madness: '#ffb347', sleep: '#c49bff', rot: '#e05a3c',
 }
