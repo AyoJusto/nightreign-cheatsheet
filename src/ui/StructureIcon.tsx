@@ -6,6 +6,9 @@ export function ElementEmblem({ element, className = 'element-emblem', size }: {
   return <img className={className} src={`/elements/${element}.webp`} alt="" width={size} height={size} draggable={false} aria-hidden />
 }
 
+/** The emblem badge's size on art `size` px wide: under half, near the game's own ratio (about 0.4). */
+export const emblemSize = (size: number) => Math.round(size * 0.45)
+
 /**
  * The kind's plain art, with the element's emblem as a badge in the corner (where the game puts it), so every
  * kind and element pair reads the same way. Kind art that fails to load falls back to a text glyph.
@@ -22,8 +25,7 @@ export function StructureIcon({ structure, size = 36 }: { structure: StructureKe
       ) : (
         <img key={kind} className="structure-art" src={`/structures/${kind}.webp`} alt="" width={size} height={size} onError={() => setFailed(structure)} draggable={false} />
       )}
-      {/* Under half the art's width (the game's own ratio is about 0.4): legible, and smaller than the art it marks. */}
-      {element && <ElementEmblem element={element} className="element-badge" size={Math.round(size * 0.45)} />}
+      {element && <ElementEmblem element={element} className="element-badge" size={emblemSize(size)} />}
     </span>
   )
 }

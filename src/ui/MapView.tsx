@@ -1,9 +1,9 @@
 import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionStyle, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
-import { splitStructure, type EarthId, type SlotId, type StructureKey } from '../domain/names'
+import { type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
-import { StructureIcon } from './StructureIcon'
+import { StructureIcon, emblemSize } from './StructureIcon'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { isTrackpadScroll, nearestPin, placeLabels, playableBox, rubberband, zoomAbout } from './mapGeometry'
@@ -18,11 +18,12 @@ const MAX_ZOOM = 4
 // Dots only grow, from DOT_FULL_SIDE up to DOT_MAX.
 const ART_FULL_SIDE = 800
 const ART_MIN = 0.7
-// Elemental art never shrinks below a size whose emblem badge (14px on the 32px art, StructureIcon) is 16px on screen,
-// the least that reads on a phone; the art is kept at a bit over twice the emblem's width, so it stays the louder of the two.
-const ELEMENTAL_ART_MIN = 1.15
 const ART_MAX = 1.3
 const ART_SIZE = 32
+// Every kind is drawn at one size, elemental or not. Its emblem badge scales with the art but never drops under
+// EMBLEM_MIN px on screen: at 12px (36 device px on a 3x phone) holy's ring and lightning's bolts still read,
+// where at 11px they start to merge, and a larger badge would outweigh the phone's smallest art.
+const EMBLEM_MIN = 12
 const DOT_FULL_SIDE = 900
 const DOT_MAX = 1.35
 const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
@@ -68,8 +69,8 @@ export function MapView(props: MapContent & {
   const pinScale = useTransform(scale, (s) => 1 / s)
   const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
   const artScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ART_MIN, ART_MAX))
-  const elementalArtScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ELEMENTAL_ART_MIN, ART_MAX))
-  const artOf = (p: Pin) => (p.structure && splitStructure(p.structure).element ? elementalArtScale : artScale)
+  // The badge's own counter-scale (a CSS transform, see .pin .element-badge) holds it at EMBLEM_MIN, and no larger.
+  const badgeHold = useTransform(artScale, (f) => Math.max(1, EMBLEM_MIN / (emblemSize(ART_SIZE) * f)))
   const dotScale = useTransform(mapWidth, (m) => clampTo(m / DOT_FULL_SIDE, 1, DOT_MAX))
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
   const reduce = useReducedMotion()
@@ -311,7 +312,7 @@ export function MapView(props: MapContent & {
     const pinRects = props.pins.map((p) => {
       const c = toScreen(p.x, p.y)
       // Art plus its badge's overhang, or a dot with its halo.
-      const r = p.structure ? (ART_SIZE / 2 + 4) * artOf(p).get() : 10 * dotScale.get()
+      const r = p.structure ? (ART_SIZE / 2 + 4) * artScale.get() : 10 * dotScale.get()
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
     const boxes = labelBoxes.get()
@@ -332,7 +333,7 @@ export function MapView(props: MapContent & {
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
+      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade, '--badge-hold': badgeHold } as MotionStyle}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.pins.map((p) => (
@@ -351,7 +352,7 @@ export function MapView(props: MapContent & {
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
           >
-            <motion.span className="pin-body" style={{ scale: p.structure ? artOf(p) : dotScale }}>
+            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : dotScale }}>
               <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
                 {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
               </motion.span>

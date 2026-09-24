@@ -138,14 +138,16 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
    structure icon there, so the row never reads as blank. */
 .icon-empty { display: block; box-sizing: border-box; border: 1.5px dashed var(--label-2); border-radius: 50%; }
 /* The game's element emblem, a small square picture with the game's slightly rounded corners. A thin dark
-   rim lifts it off the art and the map; set in the art's corner, where the game puts it, and under half the
-   art's width, so the art stays the loudest thing. */
+   rim lifts it off the art and the map; set in the art's corner, where the game puts it, and about 0.45 of the
+   art's box (the game's own ratio is about 0.4), so the art stays the loudest thing. */
 .element-emblem, .element-badge {
   display: block; box-sizing: border-box; object-fit: cover; border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 .element-badge { position: absolute; right: -3px; bottom: -3px; }
-.pin .element-badge { right: -2px; bottom: -2px; }
+/* On the map the badge scales with the art, except that it never drops under 12px on screen when the art
+   shrinks on a phone (--badge-hold from MapView), and no larger than that floor. */
+.pin .element-badge { right: -2px; bottom: -2px; transform: scale(var(--badge-hold, 1)); transform-origin: 100% 100%; }
 
 /* A zero-size anchor on the point: the glyph centres on it, MapView places the label beside it, clear of pins. */
 .marker { position: absolute; z-index: 2; width: 0; height: 0; pointer-events: none; }
