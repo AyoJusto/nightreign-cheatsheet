@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence, animate, useMotionValue, type MotionValue } from 'motion/react'
-import { MapView, type Pin } from './MapView'
+import { MapView, type MapViewState, type Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { Count } from './Count'
@@ -14,7 +14,7 @@ import { Scouting, type Sighting } from '../domain/scouting'
 
 export function FinderOverlay(props: {
   pool: readonly Seed[]; nightlord: NightlordId; earth: EarthId
-  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>
+  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; view?: MapViewState
 }) {
   const wide = useWide()
   const noInset = useMotionValue(0) // desktop: the side panel never covers the map
@@ -113,7 +113,7 @@ export function FinderOverlay(props: {
     <>
       <MapView
         earth={props.earth} pins={pins} dim={focus !== null} selected={selected}
-        bottomInset={wide ? noInset : props.bottomInset} onPin={onPin} onBackground={close}
+        bottomInset={wide ? noInset : props.bottomInset} onPin={onPin} onBackground={close} view={props.view}
       />
       <Glass className="pill">
         <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}>‹</button>

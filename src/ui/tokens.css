@@ -98,10 +98,29 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .side-heading { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; color: var(--label-2); margin: 20px 0 8px; }
 .sightings { list-style: none; margin: 0; padding: 0; font-size: 15px; color: var(--label-2); display: grid; gap: 6px; }
 .hint { color: var(--label-2); }
-.result-stub { position: fixed; z-index: 10; top: calc(var(--safe-top) + 12px); left: 16px; margin: 0; font-size: 22px; font-weight: 400; }
+.result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.result-text { min-width: 0; }
+.result-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.result-title { font-size: 22px; margin: 0; font-weight: 400; white-space: nowrap; }
+.result-sub { margin: 2px 0 0; color: var(--label-2); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-badge { min-width: 0; padding: 2px 8px; border-radius: 8px; background: rgba(201,165,92,.18); color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; background: var(--fill); display: grid; place-items: center; }
+.run-card { margin: 12px 0 16px; border-radius: 14px; overflow: hidden; display: grid; gap: 1px; background: var(--separator); }
+.run-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--surface-2); font-size: 15px; }
+.run-row dt { color: var(--label-2); flex: 0 0 auto; }
+.run-row dd { margin: 0; text-align: right; font-weight: 600; }
+.result-list h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--label-2); margin: 20px 0 8px; }
+.result-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15px; }
+.chips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; max-width: calc(100vw - 80px); }
+.chips::-webkit-scrollbar { display: none; }
+.pill .chip { flex: 0 0 auto; width: auto; height: 44px; padding: 0 12px; border-radius: 22px; font-size: 13px; font-weight: 600; color: var(--label-2); }
+.pill .chip[aria-pressed='true'] { background: var(--fill); color: var(--label); }
+.toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 10px 16px; font-size: 15px; font-weight: 600; white-space: nowrap; }
 @media (min-width: 900px) {
   .map-frame { right: 360px; }
   .pill { left: calc(50% - 180px); }
+  .chips { max-width: calc(100vw - 360px - 96px); }
+  .toast { left: calc(50% - 180px); }
 }
 /* Hit areas overlap at low zoom; the pins the current step asks for win the tap. */
 .pin-spawn-option, .pin-candidate { z-index: 1; }

@@ -1,26 +1,146 @@
-import { useMemo } from 'react'
-import type { MotionValue } from 'motion/react'
-import { MapView, type Pin } from './MapView'
+import { useMemo, useState } from 'react'
+import { useMotionValue, type MotionValue } from 'motion/react'
+import { MapView, type MapViewState, type Pin } from './MapView'
+import { Sheet, type Detent } from './Sheet'
+import { Glass } from './Glass'
+import { useWide } from './useWide'
+import { decodeSightings, encodeSightings } from './useSightings'
 import { catalog } from '../data/catalog'
-import { structureName } from '../domain/names'
-import type { Seed } from '../domain/seed'
+import { earthName, nightlordName, structureName } from '../domain/names'
+import type { MarkerLayer, Seed } from '../domain/seed'
 
-// Minimal stand-in so the finder can land somewhere; Task 10 replaces it with the real result screen.
-export function ResultOverlay({ seed, bottomInset }: {
-  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>
+// The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
+const SHOW_NIGHT1_CIRCLE = true
+
+type Layer = 'structures' | 'spawn' | MarkerLayer
+const LAYER_NAMES: Record<Layer, string> = {
+  structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
+  chest: 'Chests', merchant: 'Merchant', 'rot-blessing': 'Rot Blessing',
+}
+const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
+const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
+
+export function ResultOverlay({ seed, go, bottomInset, view }: {
+  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; view?: MapViewState
 }) {
-  const pins = useMemo(() => {
+  const wide = useWide()
+  const noInset = useMotionValue(0) // desktop: the side panel never covers the map
+  const [detent, setDetent] = useState<Detent>('peek')
+  const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
+  const [toast, setToast] = useState<string | null>(null)
+  // Circle names are never shown as places: Great Hollow reports "Divine Tower" for every Night 2 circle.
+  const markers = useMemo(
+    () => seed.markers.filter((m) => SHOW_NIGHT1_CIRCLE || !(m.layer === 'circle' && m.night === 1)),
+    [seed],
+  )
+  const available: Layer[] = ['structures', 'spawn', ...MARKER_LAYERS.filter((l) => markers.some((m) => m.layer === l))]
+
+  const pins = useMemo<Pin[]>(() => {
     const coords = catalog.slotsOf(seed.earth)
-    const out: Pin[] = [{ slot: seed.spawn, ...coords[seed.spawn], state: 'spawn', structure: null, label: `Spawn, slot ${seed.spawn}` }]
-    for (const [slot, key] of Object.entries(seed.slots)) {
-      if (key && slot !== seed.spawn) out.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: `Slot ${slot}, ${structureName(key)}` })
+    const list: Pin[] = []
+    if (on.has('spawn')) list.push({ slot: seed.spawn, ...coords[seed.spawn], state: 'spawn', structure: null, label: `Spawn, slot ${seed.spawn}` })
+    if (on.has('structures')) {
+      for (const [slot, key] of Object.entries(seed.slots)) {
+        if (key && slot !== seed.spawn) list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: `Slot ${slot}, ${structureName(key)}` })
+      }
     }
-    return out
-  }, [seed])
+    return list
+  }, [seed, on])
+  const shownMarkers = useMemo(() => markers.filter((m) => on.has(m.layer)), [markers, on])
+
+  const flash = (text: string) => {
+    setToast(text)
+    setTimeout(() => setToast(null), 1500)
+  }
+  // Native share sheet on phone; on desktop the OS share dialog is a detour, so copy the link.
+  const share = async () => {
+    const url = `${location.origin}/seed/${seed.id}`
+    if (!wide && navigator.share) return navigator.share({ title: `Seed ${seed.id}`, url }).catch(() => {})
+    try {
+      await navigator.clipboard.writeText(url)
+      flash('Link copied')
+    } catch {
+      flash('Could not copy the link')
+    }
+  }
+  // One sighting back, so the finder does not re-identify this seed and bounce straight here again.
+  // A shared link has no sightings and goes home.
+  const back = () => {
+    const q = new URLSearchParams(location.search).get('s')
+    if (q === null) return go('/')
+    const rest = encodeSightings(decodeSightings(q).slice(0, -1))
+    go(`/find/${seed.nightlord}/${seed.earth}${rest ? `?${new URLSearchParams({ s: rest })}` : ''}`)
+  }
+  const toggle = (l: Layer) =>
+    setOn((s) => {
+      const next = new Set(s)
+      if (next.has(l)) next.delete(l)
+      else next.add(l)
+      return next
+    })
+
+  const title = (
+    // Two single lines, so the header always fits the 96px peek; long names truncate here and show in full in the run card.
+    <div className="result-head">
+      <div className="result-text">
+        <div className="result-line">
+          <h1 className="title result-title">Seed {seed.id}</h1>
+          {seed.event && <span className="event-badge">{seed.event.name}</span>}
+        </div>
+        <p className="result-sub">{nightlordName(seed.nightlord)} · {earthName(seed.earth)}</p>
+      </div>
+      <button className="share" aria-label="Share" onClick={share}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 3v12M8 7l4-4 4 4M7 11H5v10h14V11h-2" />
+        </svg>
+      </button>
+    </div>
+  )
+  const rows: [string, string | null][] = [
+    ['Night 1', seed.nights[1].boss || null],
+    ['Night 2', seed.nights[2].boss || null],
+    ['Event', seed.event ? `${seed.event.name}${seed.event.day ? ` · Day ${seed.event.day}` : ''}` : null],
+    ['Castle', seed.castle?.crew || null],
+    ['Castle basement', seed.castle?.basement || null],
+    ['Castle rooftop', seed.castle?.rooftop || null],
+    ['Old Gaol', seed.oldGaol ? 'Present' : null],
+  ]
+  const body = (
+    <>
+      <dl className="run-card">
+        {rows.filter(([, v]) => v).map(([k, v]) => (
+          <div key={k} className="run-row"><dt>{k}</dt><dd>{v}</dd></div>
+        ))}
+      </dl>
+      {LISTS.map(([layer, heading]) => {
+        const items = markers.filter((m) => m.layer === layer)
+        return items.length ? (
+          <section key={layer} className="result-list">
+            <h3>{heading}</h3>
+            <ul>{items.map((m, i) => <li key={i}>{m.label}</li>)}</ul>
+          </section>
+        ) : null
+      })}
+    </>
+  )
+
   return (
     <>
-      <MapView earth={seed.earth} pins={pins} bottomInset={bottomInset} onPin={() => {}} />
-      <h1 className="title result-stub">Seed {seed.id}</h1>
+      <MapView earth={seed.earth} pins={pins} markers={shownMarkers} bottomInset={wide ? noInset : bottomInset} onPin={() => {}} view={view} />
+      <Glass className="pill">
+        <button className="pill-back" aria-label="Back" onClick={back}>‹</button>
+        <div className="chips" role="group" aria-label="Map layers">
+          {available.map((l) => (
+            <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
+          ))}
+        </div>
+      </Glass>
+      {wide ? (
+        <aside className="side-panel" aria-label="Seed details">{title}{body}</aside>
+      ) : (
+        <Sheet detent={detent} onDetent={setDetent} height={bottomInset} label="Seed details" header={title}>{body}</Sheet>
+      )}
+      {toast && <Glass className="toast" role="status">{toast}</Glass>}
     </>
   )
 }

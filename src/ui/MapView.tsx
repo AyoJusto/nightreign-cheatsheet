@@ -12,6 +12,8 @@ const MAX_ZOOM = 4
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(1, s))
 
+export interface MapViewState { x: MotionValue<number>; y: MotionValue<number>; scale: MotionValue<number> }
+
 export function MapView(props: {
   earth: EarthId
   pins: Pin[]
@@ -21,12 +23,17 @@ export function MapView(props: {
   selected?: SlotId | null
   onPin: (slot: SlotId, state: PinState) => void
   onBackground?: () => void
+  /** Pan and zoom owned by the caller, so they survive this view remounting (finder to result). */
+  view?: MapViewState
 }) {
   const frame = useRef<HTMLDivElement>(null)
   const layer = useRef<HTMLDivElement>(null)
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
-  const scale = useMotionValue(1)
+  const ownX = useMotionValue(0)
+  const ownY = useMotionValue(0)
+  const ownScale = useMotionValue(1)
+  const x = props.view?.x ?? ownX
+  const y = props.view?.y ?? ownY
+  const scale = props.view?.scale ?? ownScale
   const pinScale = useTransform(scale, (s) => 1 / s)
 
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
