@@ -10,32 +10,13 @@ const seed = JSON.parse(readFileSync('src/data/seeds.json', 'utf8')).seeds.find(
 
 type Shot = (page: Page) => Promise<void>
 
-// The Sheet component (src/ui/Sheet.tsx) has no programmatic detent control — it only
-// snaps to peek/half/full from a drag gesture's release velocity and position. So to
-// capture the half and full result sheets, drag the grab handle the way a thumb would:
-// press it, move by the same pixel delta the sheet's own height math uses, pause so
-// release velocity is ~0, then let it settle on the nearest detent.
-async function dragSheetTo(page: Page, detent: 'half' | 'full') {
-  const grab = page.locator('.sheet-grab')
-  const box = await grab.boundingBox()
-  if (!box) throw new Error('sheet grab handle not found')
-  const vh = page.viewportSize()!.height
-  const targetHeight = Math.round(vh * (detent === 'half' ? 0.5 : 0.92))
-  const x = box.x + box.width / 2
-  const startY = box.y + box.height / 2
-  const targetY = vh - targetHeight
-  await page.mouse.move(x, startY)
-  await page.mouse.down()
-  const steps = 20
-  for (let i = 1; i <= steps; i++) {
-    await page.mouse.move(x, startY + (targetY - startY) * (i / steps))
-    await page.waitForTimeout(16)
-  }
-  // Pause with no movement so drag velocity decays to ~0 before release — otherwise the
-  // sheet's own fling-detection (velocity-weighted projection) overrides the drop position
-  // and both detents snap to whichever one the fling favors.
-  await page.waitForTimeout(200)
-  await page.mouse.up()
+// Step the result sheet with its keyboard-operable grab handle: detent heights are measured
+// from the page, so a keypress lands exactly on a detent where a scripted drag would guess.
+async function stepSheetTo(page: Page, detent: 'half' | 'full') {
+  const handle = page.getByRole('button', { name: /^Resize / })
+  await handle.focus()
+  for (let i = 0; i < (detent === 'half' ? 1 : 2); i++) await handle.press('ArrowUp')
+  await handle.blur() // the capture shows the detent, not the focus ring
   await page.waitForTimeout(700)
 }
 
@@ -65,12 +46,12 @@ const shots: [string, Shot][] = [
   ['great-hollow', async (p) => { await p.goto(`${base}/find/dreglord/great-hollow`) }],
 ]
 
-// Phone only: the result sheet's other detents need a drag to reach, and there is no
+// Phone only: the result sheet's other detents need a step to reach, and there is no
 // side panel to fall back on. A reduced-motion capture of result-peek is skipped — with
 // motion swapped for a fade, a still screenshot looks identical to the normal capture.
 const phoneOnlyShots: [string, Shot][] = [
-  ['result-half', async (p) => { await p.goto(`${base}/seed/${seed.id}`); await dragSheetTo(p, 'half') }],
-  ['result-full', async (p) => { await p.goto(`${base}/seed/${seed.id}`); await dragSheetTo(p, 'full') }],
+  ['result-half', async (p) => { await p.goto(`${base}/seed/${seed.id}`); await stepSheetTo(p, 'half') }],
+  ['result-full', async (p) => { await p.goto(`${base}/seed/${seed.id}`); await stepSheetTo(p, 'full') }],
 ]
 
 for (const [name, engine, context] of [

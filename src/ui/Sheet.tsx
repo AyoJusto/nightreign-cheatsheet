@@ -6,6 +6,7 @@ export type { Detent }
 const sheetSpring = { type: 'spring', visualDuration: 0.5, bounce: 0 } as const
 const FLOAT = 8 // the collapsed capsule's gap to the screen edges
 const ORDER: Detent[] = ['peek', 'half', 'full']
+const DETENT_NAMES: Record<Detent, string> = { peek: 'collapsed', half: 'half open', full: 'fully open' }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 const sameMeasure = (a: SheetMeasure, b: SheetMeasure) =>
@@ -94,6 +95,11 @@ export function Sheet(props: {
     if (nearest === props.detent) animate(y, h.full - h[nearest], move)
     else props.onDetent(nearest)
   }
+  const step = (by: 1 | -1) => {
+    const next = ORDER[Math.min(ORDER.length - 1, Math.max(0, ORDER.indexOf(props.detent) + by))]
+    if (next !== props.detent) props.onDetent(next)
+  }
+
   return (
     <motion.section
       ref={section}
@@ -111,7 +117,19 @@ export function Sheet(props: {
       onDragEnd={release}
     >
       <div className="sheet-grab" ref={grab} onPointerDown={(e) => controls.start(e)}>
-        <span className="sheet-handle" aria-hidden />
+        <button
+          className="sheet-handle"
+          aria-label={`Resize ${props.label}, ${DETENT_NAMES[props.detent]}`}
+          // Keyboard and assistive tech only: a pointer on the handle drags, and a drag must not also step.
+          onClick={(e) => { if (e.detail === 0) props.onDetent(props.detent === 'full' ? 'peek' : ORDER[ORDER.indexOf(props.detent) + 1]) }}
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+            e.preventDefault()
+            step(e.key === 'ArrowUp' ? 1 : -1)
+          }}
+        >
+          <span aria-hidden />
+        </button>
         {props.header}
       </div>
       {/* Scrolls at half too; the bottom padding lets the end of the content rise above the screen edge. */}

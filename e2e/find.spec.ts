@@ -77,6 +77,7 @@ test('a slot sheet at half scrolls to its last option', async ({ page, isMobile 
   await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
   await page.getByRole('button', { name: /^Slot \d+$/ }).first().click()
   const list = page.getByRole('list', { name: /^Slot / })
+  await expect(page.getByRole('button', { name: /^Resize Slot .*, half open$/ })).toBeVisible()
   await page.waitForTimeout(700) // let the sheet rise
   const last = await list.evaluate((el) => {
     const body = el.closest('.sheet-body') as HTMLElement
@@ -89,3 +90,20 @@ test('a slot sheet at half scrolls to its last option', async ({ page, isMobile 
   expect(last.top).toBeGreaterThan(last.sheetTop)
 })
 
+// The grab handle steps detents from the keyboard, and full stops below the pill.
+test('the result sheet steps with the keyboard and opens fully below the pill', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the sheet is phone only')
+  await page.goto(`/seed/${targets[0].id}`)
+  // The name carries the detent, so match the handle by its prefix.
+  const handle = page.getByRole('button', { name: /^Resize Seed details/ })
+  await expect(handle).toHaveAccessibleName('Resize Seed details, collapsed')
+  await handle.focus()
+  await handle.press('ArrowUp')
+  await expect(handle).toHaveAccessibleName('Resize Seed details, half open')
+  await handle.press('ArrowUp')
+  await expect(handle).toHaveAccessibleName('Resize Seed details, fully open')
+  await expect(handle).toBeFocused()
+  await page.waitForTimeout(700)
+  const [pill, sheet] = await page.evaluate(() => ['.pill', '.sheet'].map((s) => document.querySelector(s)!.getBoundingClientRect()))
+  expect(sheet.top).toBeGreaterThanOrEqual(pill.bottom + 7.5)
+})
