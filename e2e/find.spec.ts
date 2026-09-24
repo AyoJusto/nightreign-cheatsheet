@@ -396,3 +396,17 @@ test('desktop: an expanded kind shows its variants in a row beneath the tiles, w
   expect(await variants.count()).toBeGreaterThan(1)
   for (const v of await variants.all()) expect((await v.boundingBox())!.y).toBeGreaterThanOrEqual(lastTileBottom)
 })
+
+// Reset sits beside Undo, so a mis-tap must be recoverable: Undo brings back every sighting it cleared (final I2).
+test('Undo after Reset restores every sighting', async ({ page }) => {
+  const target = targets[0]
+  const sightings = `spawn@${target.spawn},24@church`
+  await page.goto(`/find/${target.nightlord}/${target.earth}?s=${sightings}`)
+  const live = page.locator('[aria-live]')
+  const count = (await live.textContent())!
+  await page.getByRole('button', { name: 'Reset' }).click()
+  await expect.poll(() => new URL(page.url()).searchParams.get('s')).toBeNull()
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await expect.poll(() => new URL(page.url()).searchParams.get('s')).toBe(sightings)
+  await expect(live).toHaveText(count)
+})

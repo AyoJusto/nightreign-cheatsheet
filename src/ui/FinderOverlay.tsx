@@ -26,7 +26,7 @@ export function FinderOverlay(props: {
   const pillRef = useMeasure(props.topInset, pillBottom)
   // The strip's height plus its offset from the bottom edge; a hidden (empty) strip covers nothing.
   const stripRef = useMeasure(props.restInset, (el) => (el.offsetHeight ? el.offsetHeight + parseFloat(getComputedStyle(el).bottom) : 0))
-  const [scouting, setScouting] = useSightings(props.pool)
+  const { scouting, update: setScouting, undo } = useSightings(props.pool)
   const [selected, setSelected] = useState<SlotId | null>(null)
   const [focus, setFocus] = useState<StructureKey | null>(null)
   // The strip kind whose element variants are expanded.
@@ -211,8 +211,7 @@ export function FinderOverlay(props: {
           </span>
         )}
         <div className="pill-trailing">
-          <button aria-label="Undo" disabled={!scouting.sightings.length}
-            onClick={() => apply(scouting.retract(targetOf(scouting.sightings[scouting.sightings.length - 1])))}><Icon name="undo" /></button>
+          <button aria-label="Undo" disabled={!undo} onClick={() => { undo?.(); close() }}><Icon name="undo" /></button>
           <button aria-label="Reset" disabled={!scouting.sightings.length}
             onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
         </div>
