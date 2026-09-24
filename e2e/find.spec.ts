@@ -410,3 +410,13 @@ test('Undo after Reset restores every sighting', async ({ page }) => {
   await expect.poll(() => new URL(page.url()).searchParams.get('s')).toBe(sightings)
   await expect(live).toHaveText(count)
 })
+
+// A touch tap leaves :hover stuck on the chip; it must still show one capsule, not a second one around it (final m4).
+test('a tapped layer chip shows one capsule', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'sticky hover is a touch problem')
+  await page.goto(`/seed/${targets[0].id}`)
+  const chip = page.getByRole('button', { name: 'Bosses', exact: true })
+  await chip.tap()
+  await expect(chip).toHaveAttribute('aria-pressed', 'true')
+  await expect(chip).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+})

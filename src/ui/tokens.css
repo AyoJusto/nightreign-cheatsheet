@@ -208,7 +208,8 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
    landscape), so the two floating controls line up and never sit under the sensor housing. */
 .pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); display: flex; align-items: center; gap: 2px; padding: 4px; height: 52px; box-sizing: border-box; }
 .pill button { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; }
-.pill button:not(:disabled):hover { background: var(--fill-2); }
+/* Pointer hover only: a touch tap leaves :hover stuck on the tapped control. */
+@media (hover: hover) { .pill button:not(:disabled):hover { background: var(--fill-2); } }
 .pill button:disabled { opacity: 0.3; cursor: default; }
 /* A title centres on the pill's own width (which spans the screen), not in whatever space the buttons leave:
    two equal flexible edge columns hold the leading and trailing controls, however many there are on each side,
@@ -261,7 +262,8 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .chips::-webkit-scrollbar { display: none; }
 .pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 12px; border-radius: 22px; font-size: 15px; font-weight: 500; color: var(--label-2); background: none; }
 .pill .chip::before { content: ''; position: absolute; inset: 6px 0; border-radius: 16px; z-index: -1; }
-.pill .chip:hover { background: none; color: var(--label); }
+/* As specific as the pill button hover above, so a chip keeps its one inner capsule and never gets a second one. */
+@media (hover: hover) { .pill .chip:not(:disabled):hover { background: none; color: var(--label); } }
 .pill .chip[aria-pressed='true'] { color: var(--label); font-weight: 600; }
 .pill .chip[aria-pressed='true']::before { background: var(--fill); }
 .chips { isolation: isolate; }
