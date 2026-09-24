@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { splitStructure, structureName, ELEMENT_NAMES, type StructureKey } from '../domain/names'
+import { splitStructure, structureName, ELEMENT_BADGES, type StructureKey } from '../domain/names'
 
 const ELEMENT_COLORS: Record<string, string> = {
   fire: '#ff7a45', holy: '#f5d76e', magic: '#6aa9ff', lightning: '#ffd84d', frostbite: '#9fe3ff', poison: '#8fd46b',
@@ -29,7 +29,7 @@ export function StructureIcon({ structure, size = 36 }: { structure: StructureKe
       )}
       {element && (
         <span className="element-badge" style={{ background: ELEMENT_COLORS[element] }} aria-hidden>
-          {ELEMENT_NAMES[element][0]}
+          {ELEMENT_BADGES[element]}
         </span>
       )}
     </span>

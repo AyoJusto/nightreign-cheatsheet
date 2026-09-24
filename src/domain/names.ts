@@ -52,6 +52,12 @@ export const ELEMENT_NAMES: Record<ElementId, string> = {
   bleed: 'Bleed', blight: 'Blight', madness: 'Madness', sleep: 'Sleep', rot: 'Rot',
 }
 
+/** Two letters, unique per element, for the icon badge: first letters alone collide (Fire/Frostbite, Bleed/Blight). */
+export const ELEMENT_BADGES: Record<ElementId, string> = {
+  fire: 'Fi', holy: 'Ho', magic: 'Mg', lightning: 'Li', frostbite: 'Fr', poison: 'Po',
+  bleed: 'Bl', blight: 'Bt', madness: 'Md', sleep: 'Sl', rot: 'Ro',
+}
+
 export function splitStructure(key: StructureKey): { kind: string; element: ElementId | null } {
   const [kind, element] = key.split(':')
   return { kind, element: (element as ElementId) ?? null }
