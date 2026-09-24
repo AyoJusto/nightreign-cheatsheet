@@ -73,4 +73,42 @@ describe('placeLabel', () => {
   it('keeps the label inside the frame', () => {
     expect(placeLabel({ x: 10, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 8, y: 309, clear: true })
   })
+
+  // The point's own glyph (a 6px radius here) must stay visible: it is what the marker exists to show.
+  const coversPoint = (s: { x: number; y: number }, p: { x: number; y: number }) =>
+    s.x < p.x + 6 && s.x + label.w > p.x - 6 && s.y < p.y + 6 && s.y + label.h > p.y - 6
+
+  it('never lets the clamp into the frame push a label back over its own point', () => {
+    // Near the left edge, with pins below, above and right, only "left" is clear before clamping,
+    // and clamping pulls it right over the point. Some spot that leaves the point visible must win.
+    const point = { x: 20, y: 300 }
+    const below = { x0: 0, y0: 309, x1: 120, y1: 345 }
+    const above = { x0: 0, y0: 255, x1: 120, y1: 291 }
+    const right = { x0: 29, y0: 280, x1: 140, y1: 320 }
+    const spot = placeLabel(point, label, frame, [below, above, right], 9, 8, 6)
+    expect(coversPoint(spot, point)).toBe(false)
+    expect(spot.clear).toBe(false)
+  })
+
+  it('treats its own point as covered even with no pins around', () => {
+    // In a frame barely wider than the label, "below" is still fine; the point is never under it.
+    const point = { x: 60, y: 300 }
+    const spot = placeLabel(point, label, { w: 116, h: 600 }, [], 9, 8, 6)
+    expect(coversPoint(spot, point)).toBe(false)
+    expect(spot).toEqual({ x: 8, y: 309, clear: true })
+  })
+
+  it('keeps the label inside a frame that stops above the bottom sheet', () => {
+    // A point just above a 200px-tall visible frame: "below" would cross its bottom edge, so the label goes above.
+    const point = { x: 200, y: 185 }
+    const spot = placeLabel(point, label, { w: 400, h: 200 }, [], 9, 8, 6)
+    expect(spot.y + label.h).toBeLessThanOrEqual(200 - 8)
+    expect(coversPoint(spot, point)).toBe(false)
+  })
+
+  it('in a corner, still finds a spot clear of the point', () => {
+    const point = { x: 4, y: 4 }
+    const spot = placeLabel(point, label, frame, [], 9, 8, 6)
+    expect(coversPoint(spot, point)).toBe(false)
+  })
 })

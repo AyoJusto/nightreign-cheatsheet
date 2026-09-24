@@ -60,8 +60,11 @@ export interface Rect { x0: number; y0: number; x1: number; y1: number }
 
 /**
  * Where a label goes around a point, as its top-left corner in frame px: below, above, right or left of
- * the point, then the four diagonals, kept `edge` px inside the frame. The first spot that covers none of `obstacles` wins;
- * if every spot covers something, the one covering the least area, with `clear: false`.
+ * the point, then the four diagonals, kept `edge` px inside the frame. The point's own glyph (`mark` px
+ * around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
+ * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first
+ * that covers none of `obstacles` wins; if every one covers something, the one covering the least area,
+ * with `clear: false`.
  */
 export function placeLabel(
   point: { x: number; y: number },
@@ -70,6 +73,7 @@ export function placeLabel(
   obstacles: Rect[],
   gap: number,
   edge: number,
+  mark = 0,
 ): { x: number; y: number; clear: boolean } {
   const keepIn = (v: number, size: number, room: number) => Math.max(edge, Math.min(room - edge - size, v))
   const spots = [
@@ -82,16 +86,21 @@ export function placeLabel(
     { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
     { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
   ].map((s) => ({ x: keepIn(s.x, label.w, frame.w), y: keepIn(s.y, label.h, frame.h) }))
-  const covered = (s: { x: number; y: number }) =>
-    obstacles.reduce((sum, o) => {
-      const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
-      const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
-      return sum + (w > 0 && h > 0 ? w * h : 0)
-    }, 0)
-  let best = spots[0]
+  const overlap = (s: { x: number; y: number }, o: Rect) => {
+    const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
+    const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
+    return w > 0 && h > 0 ? w * h : 0
+  }
+  const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
+  const overPoint = (s: { x: number; y: number }) =>
+    s.x <= glyph.x1 && s.x + label.w >= glyph.x0 && s.y <= glyph.y1 && s.y + label.h >= glyph.y0
+  const clearOfPoint = spots.filter((s) => !overPoint(s))
+  // Only a frame too small for the label leaves no spot off the point; then the point loses.
+  const candidates = clearOfPoint.length ? clearOfPoint : spots
+  let best = candidates[0]
   let least = Infinity
-  for (const spot of spots) {
-    const area = covered(spot)
+  for (const spot of candidates) {
+    const area = obstacles.reduce((sum, o) => sum + overlap(spot, o), 0)
     if (area === 0) return { ...spot, clear: true }
     if (area < least) { least = area; best = spot }
   }

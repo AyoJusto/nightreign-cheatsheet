@@ -288,9 +288,11 @@ export function MapView(props: MapContent & {
   )
 }
 
-// Gap kept between a marker label and the frame's edges; distance from the point to the label.
+// Gap kept between a marker label and the frame's edges; distance from the point to the label;
+// the glyph on the point (the 10px circle target and its 1px rim), which a label never covers.
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
+const MARK_RADIUS = 6
 
 /**
  * A glyph on the exact point, with its label beside it: below, above, right or left, whichever covers no
@@ -327,7 +329,7 @@ function MapMarker({ marker, pins, x, y, scale, size, pinScale, artScale, dotSca
       const r = p.structure ? (ART_SIZE / 2 + 4) * artScale.get() : 10 * dotScale.get()
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
-    const spot = placeLabel(point, box.get(), { w, h }, obstacles, LABEL_GAP, LABEL_EDGE)
+    const spot = placeLabel(point, box.get(), { w, h }, obstacles, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
     return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear }
   })
   const labelX = useTransform(offset, (o) => o.x)
