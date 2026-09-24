@@ -86,7 +86,7 @@ export class Scouting {
     const [first, ...rest] = this.candidates()
     const sighted = new Set(this.sightings.flatMap((s) => (s.type === 'spawn' ? [] : [s.slot])))
     const certain = new Map<SlotId, StructureKey | null>()
-    if (!first || rest.length === 0) return certain
+    if (!first) return certain
     for (const [slot, key] of Object.entries(first.slots)) {
       if (sighted.has(slot) || key === null) continue
       if (rest.every((seed) => seed.slots[slot] === key)) certain.set(slot, key)
