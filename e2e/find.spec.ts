@@ -70,3 +70,22 @@ test('the map frame never scrolls under the map, so taps still land', async ({ p
   }
   throw new Error('no spawn option on screen')
 })
+
+// At half the sheet body scrolls, and its scroll range ends on screen, so the last option needs no drag.
+test('a slot sheet at half scrolls to its last option', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the sheet is phone only')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  await page.getByRole('button', { name: /^Slot \d+$/ }).first().click()
+  const list = page.getByRole('list', { name: /^Slot / })
+  await page.waitForTimeout(700) // let the sheet rise
+  const last = await list.evaluate((el) => {
+    const body = el.closest('.sheet-body') as HTMLElement
+    body.scrollTop = body.scrollHeight
+    const option = el.querySelector('li:last-child button')!.getBoundingClientRect()
+    return { overflow: getComputedStyle(body).overflowY, bottom: option.bottom, top: option.top, sheetTop: body.closest('.sheet')!.getBoundingClientRect().top }
+  })
+  expect(last.overflow).toBe('auto')
+  expect(last.bottom).toBeLessThanOrEqual(page.viewportSize()!.height)
+  expect(last.top).toBeGreaterThan(last.sheetTop)
+})
+

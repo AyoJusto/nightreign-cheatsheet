@@ -1,55 +1,102 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, type MotionValue, type PanInfo } from 'motion/react'
+import { detentHeights, type Detent, type SheetMeasure } from './sheetDetents'
 
-export type Detent = 'peek' | 'half' | 'full'
-export const PEEK = 96
-const heights = (vh: number): Record<Detent, number> => ({ peek: PEEK, half: Math.round(vh * 0.5), full: Math.round(vh * 0.92) })
+export type { Detent }
 const sheetSpring = { type: 'spring', visualDuration: 0.5, bounce: 0 } as const
+const FLOAT = 8 // the collapsed capsule's gap to the screen edges
+const ORDER: Detent[] = ['peek', 'half', 'full']
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
+const sameMeasure = (a: SheetMeasure, b: SheetMeasure) =>
+  (Object.keys(a) as (keyof SheetMeasure)[]).every((k) => a[k] === b[k])
 
 export function Sheet(props: {
   detent: Detent
   onDetent: (d: Detent) => void
+  /** Receives the height the sheet covers at the bottom of the screen, live. */
   height: MotionValue<number>
+  /** Receives what the sheet covers at peek, for framing the map. */
+  rest?: MotionValue<number>
+  /** Bottom edge of the top pill; 0 when there is none. Full stops below it. */
+  top: MotionValue<number>
   header: ReactNode
+  /** What half shows; half grows to fit it, up to about half the screen. */
   children: ReactNode
+  /** Further content, reached at full or by scrolling. */
+  more?: ReactNode
   label: string
 }) {
-  const [vh, setVh] = useState(() => innerHeight)
+  const section = useRef<HTMLElement>(null)
+  const grab = useRef<HTMLDivElement>(null)
+  const content = useRef<HTMLDivElement>(null)
+  const [m, setM] = useState<SheetMeasure>(() => ({ frame: innerHeight, grab: 0, content: 0, safeTop: 0, safeBottom: 0, pillBottom: 0 }))
+  const h = detentHeights(m)
+  const measured = m.grab > 0
+
+  // Measure, don't guess: detents follow the real header, content, pill, safe areas and viewport.
   useLayoutEffect(() => {
-    const onResize = () => setVh(innerHeight)
-    addEventListener('resize', onResize)
-    return () => removeEventListener('resize', onResize)
-  }, [])
-  const h = heights(vh)
-  const y = useMotionValue(h.full - h[props.detent])
+    const update = () => {
+      const css = getComputedStyle(section.current!)
+      const next: SheetMeasure = {
+        frame: visualViewport?.height ?? innerHeight,
+        grab: grab.current!.offsetHeight,
+        content: content.current!.offsetHeight,
+        safeTop: parseFloat(css.scrollMarginTop) || 0,
+        safeBottom: parseFloat(css.paddingBottom) || 0,
+        pillBottom: props.top.get(),
+      }
+      setM((prev) => (sameMeasure(prev, next) ? prev : next))
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(grab.current!)
+    observer.observe(content.current!)
+    const viewport = visualViewport ?? window
+    viewport.addEventListener('resize', update)
+    const off = props.top.on('change', update)
+    return () => {
+      observer.disconnect()
+      viewport.removeEventListener('resize', update)
+      off()
+    }
+  }, [props.top])
+
+  // Starts below the screen, so the first animation is the sheet rising into place.
+  const y = useMotionValue(m.frame)
   const controls = useDragControls()
   // MotionConfig does not reach imperative animate(); with reduced motion the sheet jumps between detents.
   const move = useReducedMotion() ? { duration: 0 } : sheetSpring
 
   useEffect(() => {
-    animate(y, h.full - h[props.detent], move)
-  }, [props.detent, vh])
-  // Publish the visible height, including the starting value, so the map can inset itself.
+    if (measured) animate(y, h.full - h[props.detent], move)
+  }, [props.detent, h.peek, h.half, h.full, measured])
+
+  // 0 at half and above, 1 at peek: drives the float inset and the radius.
+  const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
+  const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
+  const radius = useTransform(y, (v) => 12 + 16 * clamp01(v / Math.max(1, h.full - h.half)))
+
+  // Publish what the sheet covers, including the starting value, so the map can inset itself.
   useEffect(() => {
-    const publish = (v: number) => props.height.set(h.full - v)
+    const publish = (v: number) => props.height.set(Math.max(0, h.full - v + FLOAT * towardPeek(v)))
     publish(y.get())
     return y.on('change', publish)
-  }, [y, h.full, props.height])
-
-  // Floating capsule at peek, flush when open, like Maps on iOS 26.
-  const inset = useTransform(y, [h.full - h.half, h.full - h.peek], [0, 8])
-  const radius = useTransform(y, [0, h.full - h.half], [12, 28])
+  }, [y, h.full, h.half, h.peek, props.height])
+  useLayoutEffect(() => {
+    if (measured) props.rest?.set(h.peek + FLOAT)
+  }, [h.peek, measured, props.rest])
 
   const release = (_: unknown, info: PanInfo) => {
     const projected = y.get() + info.velocity.y * 0.2
     const visible = h.full - projected
-    const nearest = (Object.keys(h) as Detent[]).reduce((a, b) => (Math.abs(h[a] - visible) < Math.abs(h[b] - visible) ? a : b))
+    const nearest = ORDER.reduce((a, b) => (Math.abs(h[a] - visible) < Math.abs(h[b] - visible) ? a : b))
     if (nearest === props.detent) animate(y, h.full - h[nearest], move)
     else props.onDetent(nearest)
   }
-
   return (
     <motion.section
+      ref={section}
       className="sheet"
       role="dialog"
       aria-label={props.label}
@@ -63,12 +110,14 @@ export function Sheet(props: {
       dragMomentum={false}
       onDragEnd={release}
     >
-      <div className="sheet-grab" onPointerDown={(e) => controls.start(e)}>
+      <div className="sheet-grab" ref={grab} onPointerDown={(e) => controls.start(e)}>
         <span className="sheet-handle" aria-hidden />
         {props.header}
       </div>
-      <div className="sheet-body" style={{ overflowY: props.detent === 'full' ? 'auto' : 'hidden' }}>
-        {props.children}
+      {/* Scrolls at half too; the bottom padding lets the end of the content rise above the screen edge. */}
+      <div className="sheet-body" style={{ overflowY: props.detent === 'peek' ? 'hidden' : 'auto', paddingBottom: h.full - h[props.detent] }}>
+        <div className="sheet-half" ref={content}>{props.children}</div>
+        {props.more && <div className="sheet-more">{props.more}</div>}
       </div>
     </motion.section>
   )

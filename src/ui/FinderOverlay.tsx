@@ -167,7 +167,7 @@ export function FinderOverlay(props: {
         <AnimatePresence>
           {selected && (
             <Sheet detent={detent} onDetent={(d) => (d === 'peek' ? setSelected(null) : setDetent(d))}
-              height={props.bottomInset} label={`Slot ${selected}`}
+              height={props.bottomInset} top={props.topInset} label={`Slot ${selected}`}
               header={<h2 className="sheet-title">{choicesTitle}</h2>}>
               {choices}
             </Sheet>

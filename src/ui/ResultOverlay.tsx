@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useState } from 'react'
 import { motion, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
-import { Sheet, PEEK, type Detent } from './Sheet'
+import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
@@ -30,8 +30,6 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 }) {
   const wide = useWide()
   const pillRef = useMeasure(topInset, pillBottom)
-  // At rest the sheet sits at peek.
-  useLayoutEffect(() => restInset.set(PEEK), [restInset])
   const [detent, setDetent] = useState<Detent>('peek')
   const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
   const [toast, setToast] = useState<string | null>(null)
@@ -88,7 +86,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     })
 
   const title = (
-    // Two single lines, so the header always fits the 96px peek; long names truncate here and show in full in the run card.
+    // Two single lines keep the peek short; long names truncate here and show in full in the run card.
     <div className="result-head">
       <div className="result-text">
         <div className="result-line">
@@ -113,11 +111,13 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     ['Castle rooftop', seed.castle?.rooftop || null],
     ['Old Gaol', seed.oldGaol ? 'Present' : null],
   ]
-  const body = (
+  const runCard = (
+    <dl className="run-card">
+      {rows.filter(([, v]) => v).map(([k, v]) => <RunRow key={`${k}:${v}`} label={k} value={v!} />)}
+    </dl>
+  )
+  const lists = (
     <>
-      <dl className="run-card">
-        {rows.filter(([, v]) => v).map(([k, v]) => <RunRow key={`${k}:${v}`} label={k} value={v!} />)}
-      </dl>
       {LISTS.map(([layer, heading]) => {
         const items = markers.filter((m) => m.layer === layer)
         return items.length ? (
@@ -141,9 +141,11 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
         </div>
       </Glass>
       {wide ? (
-        <aside className="side-panel" aria-label="Seed details">{title}{body}</aside>
+        <aside className="side-panel" aria-label="Seed details">{title}{runCard}{lists}</aside>
       ) : (
-        <Sheet detent={detent} onDetent={setDetent} height={bottomInset} label="Seed details" header={title}>{body}</Sheet>
+        <Sheet detent={detent} onDetent={setDetent} height={bottomInset} rest={restInset} top={topInset} label="Seed details" header={title} more={lists}>
+          {runCard}
+        </Sheet>
       )}
       {toast && <Glass className="toast" role="status">{toast}</Glass>}
     </>

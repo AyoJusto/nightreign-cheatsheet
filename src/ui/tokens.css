@@ -82,10 +82,14 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
 
-.sheet { position: fixed; z-index: 20; background: var(--surface); display: flex; flex-direction: column; box-shadow: 0 -1px 0 var(--separator); padding-bottom: var(--safe-bottom); }
+/* Sheet.tsx reads both safe-area insets from here: padding-bottom, and scroll-margin-top (which does nothing else on a fixed element). */
+.sheet { position: fixed; z-index: 20; display: flex; flex-direction: column; background: var(--surface); box-shadow: 0 -1px 0 var(--separator); padding-bottom: var(--safe-bottom); scroll-margin-top: var(--safe-top); }
 .sheet-grab { touch-action: none; padding: 8px 16px 12px; cursor: grab; }
 .sheet-handle { display: block; width: 36px; height: 5px; border-radius: 3px; background: var(--label-3); margin: 0 auto 10px; }
-.sheet-body { flex: 1; padding: 0 16px 24px; overscroll-behavior: contain; }
+.sheet-body { flex: 1; min-height: 0; padding: 0 16px; overscroll-behavior: contain; }
+/* flow-root, so the content's own margins count when half is sized to it. */
+.sheet-half { display: flow-root; padding-bottom: 12px; }
+.sheet-more { padding-bottom: 24px; }
 
 .pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 4px; height: 52px; box-sizing: border-box; }
 .pill button { width: 44px; height: 44px; border-radius: 22px; font-size: 20px; }
@@ -113,7 +117,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .result-sub { margin: 2px 0 0; color: var(--label-2); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event-badge { min-width: 0; padding: 2px 8px; border-radius: 8px; background: rgba(201,165,92,.18); color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; background: var(--fill); display: grid; place-items: center; }
-.run-card { margin: 12px 0 16px; padding: 0; list-style: none; border-radius: 14px; overflow: hidden; display: grid; gap: 1px; background: var(--separator); }
+.run-card { margin: 12px 0 0; padding: 0; list-style: none; border-radius: 14px; overflow: hidden; display: grid; gap: 1px; background: var(--separator); }
 .run-row { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; column-gap: 8px; min-height: 44px; box-sizing: border-box; padding: 10px 14px; background: var(--surface-2); font-size: 15px; }
 .run-row dt { color: var(--label-2); flex: 0 0 auto; }
 .run-value { flex: 1 1 0; min-width: 0; margin: 0; text-align: right; font-weight: 600; }
