@@ -175,7 +175,14 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .pill button { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; }
 .pill button:not(:disabled):hover { background: var(--fill-2); }
 .pill button:disabled { opacity: 0.3; cursor: default; }
-.pill-text { flex: 1; min-width: 0; padding: 0 6px; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A title centres on the pill's own width (which spans the screen), not in whatever space the buttons leave:
+   two equal flexible edge columns hold the leading and trailing controls, however many there are on each side,
+   so the middle column (the title) always lands on the pill's true centre, like an iOS nav bar. */
+.pill-titled { display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; }
+.pill-leading, .pill-trailing { display: flex; align-items: center; gap: 2px; }
+.pill-leading { grid-column: 1; justify-self: start; }
+.pill-trailing { grid-column: 3; justify-self: end; }
+.pill-text { grid-column: 2; justify-self: center; min-width: 0; padding: 0 6px; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* The pill's column; items sit centred in it, and a row too long for it scrolls. */
 .strip { position: fixed; z-index: 10; left: var(--gutter); right: var(--gutter); bottom: calc(var(--safe-bottom) + var(--gutter)); display: flex; overflow: hidden; }
 /* The fade sits on the scrolling row, not the glass, so the capsule itself keeps a crisp edge. */
@@ -294,7 +301,6 @@ li.run-row .run-value { font-weight: 400; }
   .map-frame { right: 360px; }
   /* Desktop: the pill hugs its content, centred over the map. */
   .pill { left: calc(50% - 180px); right: auto; transform: translateX(-50%); max-width: calc(100% - 360px - 2 * var(--gutter)); }
-  .pill-text { flex: 0 1 auto; }
   .chips { max-width: calc(100vw - 360px - 96px); }
   .toast { left: calc(50% - 180px); }
 }

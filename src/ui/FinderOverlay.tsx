@@ -158,18 +158,22 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      <Glass className="pill" ref={pillRef}>
-        <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
+      <Glass className="pill pill-titled" ref={pillRef}>
+        <div className="pill-leading">
+          <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
+        </div>
         {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
         {!wide && (
           <span className="pill-text">
             {spawn ? <><Count value={count} /> possible</> : <>{verb} where you spawned · <Count value={count} /></>}
           </span>
         )}
-        <button aria-label="Undo" disabled={!scouting.sightings.length}
-          onClick={() => apply(scouting.retract(targetOf(scouting.sightings[scouting.sightings.length - 1])))}><Icon name="undo" /></button>
-        <button aria-label="Reset" disabled={!scouting.sightings.length}
-          onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
+        <div className="pill-trailing">
+          <button aria-label="Undo" disabled={!scouting.sightings.length}
+            onClick={() => apply(scouting.retract(targetOf(scouting.sightings[scouting.sightings.length - 1])))}><Icon name="undo" /></button>
+          <button aria-label="Reset" disabled={!scouting.sightings.length}
+            onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
+        </div>
       </Glass>
       {!wide && (
         <StructureStrip glassRef={stripRef} open={open} hidden={!groups.length}>{structureButtons}</StructureStrip>
