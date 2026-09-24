@@ -5,12 +5,14 @@ import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
-import { playableBox } from './mapGeometry'
+import { nearestPin, playableBox } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
 
 const MAX_ZOOM = 4
+// How far (CSS px on screen) a tap may land from a slot and still count as that slot.
+const TAP_REACH = 32
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(1, s))
 
@@ -22,6 +24,8 @@ export interface MapContent {
   selected?: SlotId | null
   onPin: (slot: SlotId, state: PinState) => void
   onBackground?: () => void
+  /** Which pins a tap can land on in the current step; the rest count as the background. */
+  tappable?: (pin: Pin) => boolean
 }
 
 export function MapView(props: MapContent & {
@@ -177,6 +181,19 @@ export function MapView(props: MapContent & {
     return () => { offTop(); offBottom() }
   }, [props.topInset, props.bottomInset, props.selected, props.pins])
 
+  // A tap goes to the nearest tappable slot within reach, not to whichever overlapping hit area is on top.
+  const tapAt = (clientX: number, clientY: number) => {
+    const r = frame.current!.getBoundingClientRect()
+    const s = side()
+    const point = {
+      x: ((clientX - r.left - r.width / 2 - x.get()) / s + 0.5) * 1000,
+      y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
+    }
+    const pin = nearestPin(props.tappable ? props.pins.filter(props.tappable) : props.pins, point, (TAP_REACH / s) * 1000)
+    if (pin) props.onPin(pin.slot, pin.state)
+    else props.onBackground?.()
+  }
+
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       size.current = { w: entry.contentRect.width, h: entry.contentRect.height }
@@ -188,9 +205,8 @@ export function MapView(props: MapContent & {
   }, [])
 
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
-  // Pin clicks stop propagation, so this only sees taps on the map itself.
   return (
-    <div ref={frame} className="map-frame" onClick={() => props.onBackground?.()}>
+    <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
       <motion.div className="map-layer" style={{ x, y, scale }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
@@ -213,7 +229,12 @@ export function MapView(props: MapContent & {
             initial={{ opacity: 0 }}
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : p.state === 'certain' ? 0.7 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
-            onClick={(e) => { e.stopPropagation(); props.onPin(p.slot, p.state) }}
+            onClick={(e) => {
+              // Pointer taps bubble to the frame, which snaps them; keyboard activation has no point to snap.
+              if (e.detail) return
+              e.stopPropagation()
+              props.onPin(p.slot, p.state)
+            }}
           >
             <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
               {p.state === 'spawn-option' || p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} /> : <span className="open-dot" />}

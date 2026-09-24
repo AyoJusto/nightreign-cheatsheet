@@ -124,7 +124,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .chips { max-width: calc(100vw - 360px - 96px); }
   .toast { left: calc(50% - 180px); }
 }
-/* Hit areas overlap at low zoom; the pins the current step asks for win the tap. */
+/* The pins the current step asks for draw above the rest; taps snap by distance (MapView). */
 .pin-spawn-option, .pin-candidate { z-index: 1; }
 .structure-grid { display: flex; flex-wrap: wrap; gap: 4px; }
 .about p { color: var(--label-2); line-height: 1.5; }

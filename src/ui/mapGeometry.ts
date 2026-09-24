@@ -21,3 +21,17 @@ export function playableBox(points: Iterable<{ x: number; y: number }>): Box {
     y1: Math.min(1000, box.y1 + PLAYABLE_MARGIN),
   }
 }
+
+/** The pin closest to `point`, if one lies within `radius` (all in image units). */
+export function nearestPin<P extends { x: number; y: number }>(pins: readonly P[], point: { x: number; y: number }, radius: number): P | null {
+  let best: P | null = null
+  let bestDistance = Infinity
+  for (const pin of pins) {
+    const distance = Math.hypot(pin.x - point.x, pin.y - point.y)
+    if (distance <= radius && distance < bestDistance) {
+      best = pin
+      bestDistance = distance
+    }
+  }
+  return best
+}

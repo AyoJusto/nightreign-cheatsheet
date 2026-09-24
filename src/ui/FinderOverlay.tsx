@@ -77,7 +77,9 @@ export function FinderOverlay(props: {
   }, [scouting, focus])
   // Layout effect, so the map has these pins before the first paint.
   useLayoutEffect(() => {
-    props.setMap({ pins, dim: focus !== null, selected, onPin, onBackground: close })
+    // In focus mode only the candidates answer a tap; anywhere else cancels.
+    const tappable = focus ? (p: Pin) => p.state === 'candidate' : undefined
+    props.setMap({ pins, dim: focus !== null, selected, onPin, onBackground: close, tappable })
   }, [pins, focus, selected, onPin, close, props.setMap])
 
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
