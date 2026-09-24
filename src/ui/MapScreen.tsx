@@ -16,7 +16,7 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, r
   const topInset = useMotionValue(0) // bottom edge of the overlay's top pill, measured by the overlay
   const restInset = useMotionValue(96) // what the overlay covers at the bottom when no sheet is open
   // One map for both modes: the overlays hand it their pins, so finder to result keeps the map in place.
-  const [content, setContent] = useState<MapContent>({ pins: [], onPin: () => {} })
+  const [content, setContent] = useState<MapContent>({ pins: [] })
   // parseRoute only yields a seed route for ids that exist.
   const seed = route.name === 'seed' ? catalog.seed(route.id)! : null
   const { nightlord, earth } = seed ?? (route as Extract<MapRoute, { name: 'find' }>)

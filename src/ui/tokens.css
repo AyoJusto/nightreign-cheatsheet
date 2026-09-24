@@ -96,7 +96,8 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 
 /* Pins: a 44px target around a small, crisp marker. Taps snap to the nearest slot (MapView). */
 .pin { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; }
-.pin:focus-visible { outline-offset: -4px; }
+.pin-hit { position: absolute; inset: 0; border-radius: 50%; }
+.pin-hit:focus-visible { outline-offset: -4px; }
 .pin-body, .pin-body > span { display: grid; place-items: center; }
 /* A site not yet known: a small white dot, lifted off the map by a dark rim and a soft shadow. */
 .open-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--label); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55), 0 1px 4px rgba(0, 0, 0, 0.6); }

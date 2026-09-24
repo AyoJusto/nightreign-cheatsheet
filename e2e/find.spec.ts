@@ -54,7 +54,7 @@ test('the map frame never scrolls under the map, so taps still land', async ({ p
     el.dispatchEvent(new WheelEvent('wheel', { deltaY: -500, clientX: r.width / 2, clientY: r.height / 2, bubbles: true, cancelable: true }))
   })
   await page.waitForTimeout(600)
-  await frame.evaluate((el) => el.querySelectorAll<HTMLElement>('.pin').forEach((pin) => { pin.scrollIntoView(); pin.focus() }))
+  await frame.evaluate((el) => el.querySelectorAll<HTMLElement>('.pin-hit').forEach((pin) => { pin.scrollIntoView(); pin.focus() }))
   expect(await frame.evaluate((el) => [el.scrollLeft, el.scrollTop])).toEqual([0, 0])
 
   // Tap the first spawn option that is on screen, by its point, and expect that exact spawn.
@@ -129,4 +129,11 @@ test('a low site stays in sight above its sheet', async ({ page, isMobile }) => 
   const [pin, sheet] = await page.evaluate(() => ['.pin-selected', '.sheet'].map((s) => document.querySelector(s)!.getBoundingClientRect()))
   expect(lowestY + 22).toBeGreaterThan(sheet.top) // the sheet would have covered it
   expect(pin.top + pin.height / 2).toBeLessThan(sheet.top)
+})
+
+// Result pins do nothing when clicked, so they are named images, not buttons Tab would walk through.
+test('result map pins are named images, not buttons', async ({ page }) => {
+  await page.goto(`/seed/${targets[0].id}`)
+  await expect(page.getByRole('img', { name: 'Spawn point' })).toBeAttached()
+  await expect(page.locator('.map-frame button')).toHaveCount(0)
 })

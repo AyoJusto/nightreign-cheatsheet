@@ -35,7 +35,8 @@ export interface MapContent {
   markers?: Marker[]
   dim?: boolean
   selected?: SlotId | null
-  onPin: (slot: SlotId, state: PinState) => void
+  /** Omitted when pins do nothing (the result map): they are then images with a name, not buttons. */
+  onPin?: (slot: SlotId, state: PinState) => void
   onBackground?: () => void
   /** The pins the current step asks for: a tap in reach of one goes to it, even if another pin is nearer. */
   preferred?: (pin: Pin) => boolean
@@ -261,7 +262,7 @@ export function MapView(props: MapContent & {
       y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
     }
     const pin = nearestPin(props.pins, point, (TAP_REACH / s) * 1000, props.preferred)
-    if (pin) props.onPin(pin.slot, pin.state)
+    if (pin) props.onPin?.(pin.slot, pin.state)
     else props.onBackground?.()
   }
 
@@ -278,32 +279,41 @@ export function MapView(props: MapContent & {
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.pins.map((p) => (
-          <motion.button
+          <motion.span
             // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
             key={`${p.slot}:${p.structure ?? p.state}`}
             className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}`}
-            aria-label={p.label}
+            // A pin that does nothing (the result map) is a named image, not a Tab stop or a button to VoiceOver.
+            {...(props.onPin ? {} : { role: 'img', 'aria-label': p.label })}
             data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
             style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
             initial={{ opacity: 0 }}
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : p.state === 'certain' ? 0.7 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
-            // buttons === 0: a pan that sweeps across pins is not hovering them.
-            onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !e.buttons) props.onHover?.(p) }}
-            onPointerLeave={(e) => { if (e.pointerType === 'mouse') props.onHover?.(null) }}
-            onClick={(e) => {
-              // Pointer taps bubble to the frame, which snaps them; keyboard activation has no point to snap.
-              if (e.detail) return
-              e.stopPropagation()
-              props.onPin(p.slot, p.state)
-            }}
           >
             <motion.span className="pin-body" style={{ scale: p.structure ? artScale : dotScale }}>
               <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
                 {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
               </motion.span>
             </motion.span>
-          </motion.button>
+            {/* The 44px target lies over the art as a sibling, so art and pin stay mounted when the result drops it. */}
+            {props.onPin && (
+              <button
+                className="pin-hit"
+                aria-label={p.label}
+                data-slot={p.slot}
+                // buttons === 0: a pan that sweeps across pins is not hovering them.
+                onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !e.buttons) props.onHover?.(p) }}
+                onPointerLeave={(e) => { if (e.pointerType === 'mouse') props.onHover?.(null) }}
+                onClick={(e) => {
+                  // Pointer taps bubble to the frame, which snaps them; keyboard activation has no point to snap.
+                  if (e.detail) return
+                  e.stopPropagation()
+                  props.onPin?.(p.slot, p.state)
+                }}
+              />
+            )}
+          </motion.span>
         ))}
         {/* After the pins, so a label is never under a structure; MapMarker also places it off every pin. */}
         {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} bottomInset={props.bottomInset} pinScale={pinScale} artScale={artScale} dotScale={dotScale} />)}

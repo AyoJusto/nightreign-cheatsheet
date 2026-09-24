@@ -14,8 +14,6 @@ import type { MarkerLayer, Seed } from '../domain/seed'
 // The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
 const SHOW_NIGHT1_CIRCLE = true
 
-const noop = () => {}
-
 type Layer = 'structures' | 'spawn' | MarkerLayer
 const LAYER_NAMES: Record<Layer, string> = {
   structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
@@ -53,7 +51,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     return list
   }, [seed, on])
   const shownMarkers = useMemo(() => markers.filter((m) => on.has(m.layer)), [markers, on])
-  useLayoutEffect(() => setMap({ pins, markers: shownMarkers, onPin: noop }), [pins, shownMarkers, setMap])
+  useLayoutEffect(() => setMap({ pins, markers: shownMarkers }), [pins, shownMarkers, setMap])
 
   const flash = (text: string) => {
     setToast(text)
