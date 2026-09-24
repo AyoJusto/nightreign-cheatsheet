@@ -26,3 +26,7 @@ dist-ssr
 # Design specs and plans stay local, never committed
 docs/specs/
 .superpowers/
+
+# Playwright output
+playwright-report/
+test-results/
