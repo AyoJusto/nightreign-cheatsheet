@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence, animate, useMotionValue, type MotionValue } from 'motion/react'
-import { MapView, type MapViewState, type Pin } from './MapView'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { motion, AnimatePresence, animate, type MotionValue } from 'motion/react'
+import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { Count } from './Count'
@@ -14,10 +14,9 @@ import { Scouting, type Sighting } from '../domain/scouting'
 
 export function FinderOverlay(props: {
   pool: readonly Seed[]; nightlord: NightlordId; earth: EarthId
-  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; view?: MapViewState
+  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
-  const noInset = useMotionValue(0) // desktop: the side panel never covers the map
   const [scouting, setScouting] = useSightings(props.pool)
   const [selected, setSelected] = useState<SlotId | null>(null)
   const [focus, setFocus] = useState<StructureKey | null>(null)
@@ -43,7 +42,7 @@ export function FinderOverlay(props: {
     return () => clearTimeout(t)
   }, [scouting, props.go])
 
-  const close = () => { setFocus(null); setSelected(null); setDetent('peek') }
+  const close = useCallback(() => { setFocus(null); setSelected(null); setDetent('peek') }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
@@ -60,13 +59,18 @@ export function FinderOverlay(props: {
   // Memoized: MapView re-reveals the selected pin whenever the pins array changes identity.
   const pins = useMemo(() => buildPins(scouting, coords, focus), [scouting, coords, focus])
 
-  const onPin = (slot: SlotId, state: Pin['state']) => {
+  // Stable between sightings, so publishing it to the map only happens when something changed.
+  const onPin = useCallback((slot: SlotId, state: Pin['state']) => {
     if (state === 'spawn-option') return apply(scouting.sight({ type: 'spawn', slot }))
     if (state === 'candidate' && focus) return apply(scouting.sight({ type: 'structure', slot, structure: focus }))
     if (focus) return setFocus(null)
     setSelected(slot)
     setDetent('half')
-  }
+  }, [scouting, focus])
+  // Layout effect, so the map has these pins before the first paint.
+  useLayoutEffect(() => {
+    props.setMap({ pins, dim: focus !== null, selected, onPin, onBackground: close })
+  }, [pins, focus, selected, onPin, close, props.setMap])
 
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
   const atSpawn = selected !== null && spawn?.slot === selected
@@ -111,10 +115,6 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      <MapView
-        earth={props.earth} pins={pins} dim={focus !== null} selected={selected}
-        bottomInset={wide ? noInset : props.bottomInset} onPin={onPin} onBackground={close} view={props.view}
-      />
       <Glass className="pill">
         <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}>‹</button>
         <span className="pill-text">

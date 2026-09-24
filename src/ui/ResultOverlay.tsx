@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { useMotionValue, type MotionValue } from 'motion/react'
-import { MapView, type MapViewState, type Pin } from './MapView'
+import { useLayoutEffect, useMemo, useState } from 'react'
+import type { MotionValue } from 'motion/react'
+import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { useWide } from './useWide'
@@ -12,6 +12,8 @@ import type { MarkerLayer, Seed } from '../domain/seed'
 // The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
 const SHOW_NIGHT1_CIRCLE = true
 
+const noop = () => {}
+
 type Layer = 'structures' | 'spawn' | MarkerLayer
 const LAYER_NAMES: Record<Layer, string> = {
   structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
@@ -20,11 +22,10 @@ const LAYER_NAMES: Record<Layer, string> = {
 const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
-export function ResultOverlay({ seed, go, bottomInset, view }: {
-  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; view?: MapViewState
+export function ResultOverlay({ seed, go, bottomInset, setMap }: {
+  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
-  const noInset = useMotionValue(0) // desktop: the side panel never covers the map
   const [detent, setDetent] = useState<Detent>('peek')
   const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
   const [toast, setToast] = useState<string | null>(null)
@@ -47,6 +48,7 @@ export function ResultOverlay({ seed, go, bottomInset, view }: {
     return list
   }, [seed, on])
   const shownMarkers = useMemo(() => markers.filter((m) => on.has(m.layer)), [markers, on])
+  useLayoutEffect(() => setMap({ pins, markers: shownMarkers, onPin: noop }), [pins, shownMarkers, setMap])
 
   const flash = (text: string) => {
     setToast(text)
@@ -126,7 +128,6 @@ export function ResultOverlay({ seed, go, bottomInset, view }: {
 
   return (
     <>
-      <MapView earth={seed.earth} pins={pins} markers={shownMarkers} bottomInset={wide ? noInset : bottomInset} onPin={() => {}} view={view} />
       <Glass className="pill">
         <button className="pill-back" aria-label="Back" onClick={back}>‹</button>
         <div className="chips" role="group" aria-label="Map layers">

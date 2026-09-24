@@ -12,28 +12,22 @@ const MAX_ZOOM = 4
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(1, s))
 
-export interface MapViewState { x: MotionValue<number>; y: MotionValue<number>; scale: MotionValue<number> }
-
-export function MapView(props: {
-  earth: EarthId
+/** What the active mode (finder or result) shows on the map. */
+export interface MapContent {
   pins: Pin[]
   markers?: Marker[]
   dim?: boolean
-  bottomInset: MotionValue<number>
   selected?: SlotId | null
   onPin: (slot: SlotId, state: PinState) => void
   onBackground?: () => void
-  /** Pan and zoom owned by the caller, so they survive this view remounting (finder to result). */
-  view?: MapViewState
-}) {
+}
+
+export function MapView(props: MapContent & { earth: EarthId; bottomInset: MotionValue<number> }) {
   const frame = useRef<HTMLDivElement>(null)
   const layer = useRef<HTMLDivElement>(null)
-  const ownX = useMotionValue(0)
-  const ownY = useMotionValue(0)
-  const ownScale = useMotionValue(1)
-  const x = props.view?.x ?? ownX
-  const y = props.view?.y ?? ownY
-  const scale = props.view?.scale ?? ownScale
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const scale = useMotionValue(1)
   const pinScale = useTransform(scale, (s) => 1 / s)
 
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
@@ -172,7 +166,8 @@ export function MapView(props: {
         ))}
         {props.pins.map((p) => (
           <motion.button
-            key={p.slot + p.state}
+            // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
+            key={`${p.slot}:${p.structure ?? p.state}`}
             className={`pin pin-${p.state}`}
             aria-label={p.label}
             style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
