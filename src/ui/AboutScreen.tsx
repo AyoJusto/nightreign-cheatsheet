@@ -11,6 +11,10 @@ export function AboutScreen({ go }: { go: (path: string) => void }) {
         Seed data was compiled by the Nightreign community. Thanks to Artimuz (nightreign-seed-finder.com),
         thefifthmatt (Nightreign Map Patterns) and the nightreign-seed-observer project.
       </p>
+      <p>
+        The Nightlord medallions, the Scarlet Rot icon and the Marsh and Underground Fort map icons come from the
+        Fextralife Elden Ring Nightreign wiki, used here for a free fan project.
+      </p>
       <p>Not affiliated with FromSoftware or Bandai Namco. Game art belongs to its owners.</p>
     </main>
   )
