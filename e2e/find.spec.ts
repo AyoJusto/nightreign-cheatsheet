@@ -248,8 +248,14 @@ test('in focus mode a tap on a dimmed spawn option cancels and records nothing',
   expect(spawnSlots.length).toBeGreaterThan(0)
   // Enter focus mode on the first structure, expanding its kind first when it comes in elements.
   const kind = page.locator('[data-kind]').first()
-  if (await kind.getAttribute('aria-expanded')) await kind.click()
-  await page.getByRole('button', { name: /^Find / }).first().click()
+  if (await kind.getAttribute('aria-expanded')) {
+    // "Fort, 2 types: …" expands; its first chip is "Find Fort…".
+    const kindName = (await kind.getAttribute('aria-label'))!.split(',')[0]
+    await kind.click()
+    await page.getByRole('button', { name: new RegExp(`^Find ${escapeRe(kindName)}`) }).first().click()
+  } else {
+    await kind.click()
+  }
   await expect(page.locator('.pin-candidate').first()).toBeAttached()
   await expect(page.locator('.pin-spawn-option')).toHaveCount(0)
   await page.waitForTimeout(600) // let the pins settle
@@ -328,4 +334,26 @@ test('the full result sheet shows a hairline under its header once content scrol
   expect(await hairline()).toMatchObject({ color: 'rgba(84, 84, 88, 0.6)', height: '0.5px' })
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 0 })
   await expect.poll(async () => (await hairline()).opacity).toBe(0)
+})
+
+// Desktop: expanding a kind leaves every tile where it was and shows the kind's variants in their own
+// full-width row beneath the grid, rather than wrapping them in among the tiles (iter-8 m3).
+test('desktop: an expanded kind shows its variants in a row beneath the tiles, which stay put', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the side panel is desktop only')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  const grid = page.locator('.structure-grid')
+  const tiles = () => grid.locator('[data-kind]').evaluateAll((els) => els.map((el) => {
+    const r = el.getBoundingClientRect()
+    return [el.getAttribute('data-kind'), Math.round(r.x), Math.round(r.y)]
+  }))
+  const kind = grid.locator('[data-kind][aria-expanded]').first()
+  await expect(kind).toBeVisible()
+  const before = await tiles()
+  await kind.click()
+  await page.waitForTimeout(800) // let the layout animation settle
+  expect(await tiles()).toEqual(before)
+  const lastTileBottom = await grid.locator('[data-kind]').evaluateAll((els) => Math.max(...els.map((el) => el.getBoundingClientRect().bottom)))
+  const variants = grid.locator('.structure-variants .strip-variant')
+  expect(await variants.count()).toBeGreaterThan(1)
+  for (const v of await variants.all()) expect((await v.boundingBox())!.y).toBeGreaterThanOrEqual(lastTileBottom)
 })

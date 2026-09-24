@@ -165,7 +165,7 @@ export function FinderOverlay(props: {
         setFocus(focus === v ? null : v)
         if (splitStructure(v).kind !== open) setOpen(null)
       }}
-      onName={wide ? setTileName : undefined} />
+      onName={wide ? setTileName : undefined} variantsBelow={wide} />
   )
   const choicesTitle = atSpawn ? 'Spawn point' : "What's here?"
   // Read-only: the same rows as the choices, but nothing to click until the site itself is clicked.

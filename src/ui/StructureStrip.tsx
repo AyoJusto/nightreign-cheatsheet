@@ -7,17 +7,33 @@ import { ELEMENT_BADGES, ELEMENT_NAMES, kindName, splitStructure, structureName,
 
 const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
 
-/** One button per kind. A kind with several variants expands in place into one chip per element, named. */
-export function StructureButtons({ groups, open, focus, onKind, onVariant, onName }: {
+/**
+ * One button per kind. A kind with several variants expands into one chip per element, named: in place in the
+ * phone's scrolling row, or, with `variantsBelow` (the desktop grid), in a full-width row beneath the tiles, so
+ * no tile moves and the grid keeps its rhythm.
+ */
+export function StructureButtons({ groups, open, focus, onKind, onVariant, onName, variantsBelow }: {
   groups: KindGroup[]; open: string | null; focus: StructureKey | null
   onKind: (kind: string) => void; onVariant: (structure: StructureKey) => void
   /** Desktop: the name of the art-only tile under the mouse or keyboard focus, or null when it leaves. */
   onName?: (name: string | null) => void
+  variantsBelow?: boolean
 }) {
   const naming = (name: string) => onName && {
     onPointerEnter: () => onName(name), onPointerLeave: () => onName(null), onFocus: () => onName(name), onBlur: () => onName(null),
   }
-  return groups.flatMap(({ kind, variants }) => {
+  const variantChips = (variants: StructureKey[]) => variants.map((v) => {
+    const { element } = splitStructure(v)
+    return (
+      <motion.button key={v} layout {...appear} className="strip-variant" aria-label={`Find ${structureName(v)}`}
+        aria-pressed={focus === v} onClick={() => onVariant(v)}>
+        <StructureIcon structure={v} size={36} />
+        <span>{element ? ELEMENT_NAMES[element] : 'No element'}</span>
+      </motion.button>
+    )
+  })
+  const expandedGroup = groups.find((g) => g.kind === open && g.variants.length > 1)
+  const tiles = groups.flatMap(({ kind, variants }) => {
     if (variants.length === 1) {
       const [only] = variants
       const { element } = splitStructure(only)
@@ -51,18 +67,16 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
           </span>
         )}
       </motion.button>,
-      ...(expanded ? variants.map((v) => {
-        const { element } = splitStructure(v)
-        return (
-          <motion.button key={v} layout {...appear} className="strip-variant" aria-label={`Find ${structureName(v)}`}
-            aria-pressed={focus === v} onClick={() => onVariant(v)}>
-            <StructureIcon structure={v} size={36} />
-            <span>{element ? ELEMENT_NAMES[element] : 'No element'}</span>
-          </motion.button>
-        )
-      }) : []),
+      ...(expanded && !variantsBelow ? variantChips(variants) : []),
     ]
   })
+  if (!variantsBelow || !expandedGroup) return tiles
+  return [
+    ...tiles,
+    <div key="variants" className="structure-variants" role="group" aria-label={`${kindName(expandedGroup.kind)} types`}>
+      {variantChips(expandedGroup.variants)}
+    </div>,
+  ]
 }
 
 /** The phone's bottom strip: a glass capsule whose row scrolls, with edge fades wherever more is hidden. */

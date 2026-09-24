@@ -326,6 +326,8 @@ li.run-row .run-value { font-weight: 400; }
 .structure-grid .strip-item[aria-pressed='true'], .structure-grid .strip-item[aria-expanded='true'] { background: var(--surface-3); }
 .structure-grid .strip-variant { height: 64px; border-radius: 16px; background: var(--surface-2); }
 .structure-grid .strip-variant:hover { background: var(--surface-3); }
+/* An expanded kind's variants: their own full-width row beneath the tiles, so no tile moves. */
+.structure-variants { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 8px; }
 @media (min-width: 900px) {
   .map-frame { right: 360px; }
   /* Desktop: the pill hugs its content, centred over the map. */
