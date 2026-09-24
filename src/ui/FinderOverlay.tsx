@@ -131,6 +131,8 @@ export function FinderOverlay(props: {
   const sightedHere = selected ? scouting.sightings.find((s) => s.type !== 'spawn' && s.slot === selected) : undefined
   // The spawn pin holds the spawn sighting, not a structure question.
   const options = selected && !atSpawn ? scouting.possibilitiesAt(selected) : []
+  // What was recorded at a sighted site, marked in its list like an iOS selected row.
+  const current = sightedHere && (sightedHere.type === 'structure' ? sightedHere.structure : 'nothing')
   const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
   const choices = selected && (
     // Named by the heading or sheet title around it; data-slot is for tests, players never see slot numbers.
@@ -146,12 +148,16 @@ export function FinderOverlay(props: {
         <li key={option}>
           <button
             className="option"
-            aria-label={`${option === 'nothing' ? 'Nothing here' : structureName(option)}, leaves ${remaining}`}
+            aria-current={option === current || undefined}
+            aria-label={`${option === 'nothing' ? 'Nothing here' : structureName(option)}${option === current ? ', current' : ''}, leaves ${remaining}`}
             onClick={() => apply(scouting.sight(option === 'nothing' ? { type: 'nothing', slot: selected } : { type: 'structure', slot: selected, structure: option }))}
           >
             <StructureIcon structure={option === 'nothing' ? null : option} size={40} />
             <span className="option-name">{option === 'nothing' ? 'Nothing here' : structureName(option)}</span>
-            <span className="num option-count"><Icon name="arrow" size={15} />{remaining}</span>
+            <span className="num option-count">
+              {option === current && <Icon name="check" size={17} className="option-check" />}
+              <Icon name="arrow" size={15} />{remaining}
+            </span>
           </button>
         </li>
       ))}

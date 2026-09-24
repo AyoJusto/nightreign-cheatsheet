@@ -231,6 +231,17 @@ test('desktop: selecting a site focuses its first option, and Escape returns foc
   await expect(pin).toBeFocused()
 })
 
+// A sighted site's sheet marks what was recorded there, so the user can tell it from the alternatives (iter-10 m2).
+test("a sighted site's sheet marks the recorded option as current", async ({ page }) => {
+  const target = targets[0]
+  await page.goto(`/find/${target.nightlord}/${target.earth}?s=spawn@${target.spawn},24@church`)
+  await page.getByRole('button', { name: 'Church, sighted', exact: true }).click()
+  const options = page.locator('.options')
+  await expect(options.getByRole('button', { name: /^Church, current, leaves \d+$/ })).toHaveAttribute('aria-current', 'true')
+  await expect(options.locator('[aria-current]')).toHaveCount(1)
+  await expect(options.locator('[aria-current] .option-check')).toBeVisible()
+})
+
 // Result pins do nothing when clicked, so they are named images, not buttons Tab would walk through.
 test('result map pins are named images, not buttons', async ({ page }) => {
   await page.goto(`/seed/${targets[0].id}`)

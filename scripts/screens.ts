@@ -46,6 +46,11 @@ const shots: [string, Shot][] = [
     // reveal as certain (ghosted) without narrowing to one seed and leaving the finder (m6).
     await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn},24@church`)
   }],
+  ['finder-sighted-sheet', async (p) => {
+    // A sighted site's sheet: the recorded option carries a checkmark.
+    await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn},24@church`)
+    await p.getByRole('button', { name: 'Church, sighted', exact: true }).click()
+  }],
   ['result-peek', async (p) => { await p.goto(`${base}/seed/${seed.id}`) }],
   ['result-layers', async (p) => {
     // The busiest marker set a player turns on: labels must stay clear of each other and of every glyph.

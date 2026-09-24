@@ -261,6 +261,8 @@ button.option:hover, button.option:active { background: var(--surface-3); }
 .options > li:has(> .option-clear) + li, .options > li + li:has(> .option-clear) { background-position: 16px 0; }
 .option-name { min-width: 0; }
 .option-count { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; color: var(--label-2); }
+/* The option recorded at a sighted site: an iOS selected row, a tinted checkmark at the trailing edge. */
+.option-check { color: var(--accent); margin-right: 8px; }
 .option-clear { display: block; color: var(--label); text-align: center; font-weight: 600; }
 /* Labels share one column sized to the longest (subgrid), so every value starts on the same line. */
 .run-card { margin: 12px 0 0; padding: 0; list-style: none; border-radius: var(--radius-group); overflow: hidden; background: var(--surface-2); display: grid; grid-template-columns: auto 1fr; }
