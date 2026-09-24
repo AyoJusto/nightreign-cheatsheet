@@ -11,7 +11,9 @@ export class ImpossibleSighting extends Error {}
 
 const matches = (seed: Seed, s: Sighting) => {
   if (s.type === 'spawn') return seed.spawn === s.slot
-  const actual = seed.slots[s.slot] ?? null
+  // seed.slots lists every slot on the map, so a slot it lacks is not "nothing": it is not there at all.
+  if (!Object.hasOwn(seed.slots, s.slot)) return false
+  const actual = seed.slots[s.slot]
   return s.type === 'nothing' ? actual === null : actual === s.structure
 }
 const sameTarget = (a: Sighting, b: Sighting) =>
