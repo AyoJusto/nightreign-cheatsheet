@@ -158,7 +158,9 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      <Glass className="pill pill-titled" ref={pillRef}>
+      {/* The three-column centring grid (pill-titled) only makes sense when a title actually renders:
+          desktop carries the count in the side panel, so its pill is a plain flex row, a tight control group. */}
+      <Glass className={`pill${wide ? '' : ' pill-titled'}`} ref={pillRef}>
         <div className="pill-leading">
           <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
         </div>
