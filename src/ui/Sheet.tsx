@@ -73,10 +73,11 @@ export function Sheet(props: {
     if (measured) animate(y, h.full - h[props.detent], move)
   }, [props.detent, h.peek, h.half, h.full, measured])
 
-  // 0 at half and above, 1 at peek: drives the float inset and the radius.
+  // 0 at half and above, 1 at peek: drives the float inset, the radius and the glass crossfade.
   const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
   const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
   const radius = useTransform(y, (v) => 12 + 16 * clamp01(v / Math.max(1, h.full - h.half)))
+  const solid = useTransform(y, (v) => 1 - towardPeek(v))
 
   // Publish what the sheet covers, including the starting value, so the map can inset itself.
   useEffect(() => {
@@ -116,6 +117,9 @@ export function Sheet(props: {
       dragMomentum={false}
       onDragEnd={release}
     >
+      {/* Glass when collapsed, solid when open: the solid layer fades over the glass, so the blur radius never animates. */}
+      <div className="sheet-layer glass" aria-hidden />
+      <motion.div className="sheet-layer sheet-solid" style={{ opacity: solid }} aria-hidden />
       <div className="sheet-grab" ref={grab} onPointerDown={(e) => controls.start(e)}>
         <button
           className="sheet-handle"
