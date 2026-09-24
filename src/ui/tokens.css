@@ -183,9 +183,11 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 
 /* Result pill: layer toggles. Each is a 44px target around a smaller capsule, so the row reads light. */
 .chips {
-  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: calc(100vw - 80px); padding-right: 4px;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 16px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 16px), transparent);
+  /* The last 6px are fully clear, so a clipped chip fades out instead of leaving a sliver of its first letter
+     at the edge; the 20px end padding keeps a row that fits clear of the fade. */
+  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: calc(100vw - 80px); padding-right: 20px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 26px), transparent calc(100% - 6px));
+  mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 26px), transparent calc(100% - 6px));
 }
 .chips::-webkit-scrollbar { display: none; }
 .pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 12px; border-radius: 22px; font-size: 15px; font-weight: 500; color: var(--label-2); background: none; }
