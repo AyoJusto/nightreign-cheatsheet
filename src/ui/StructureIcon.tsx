@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { splitStructure, structureName, ELEMENT_BADGES, type StructureKey } from '../domain/names'
 
 const ELEMENT_COLORS: Record<string, string> = {
@@ -28,7 +28,7 @@ export function StructureIcon({ structure, size = 36 }: { structure: StructureKe
         <img key={src} src={src} alt="" width={size} height={size} onError={onError} draggable={false} />
       )}
       {element && (
-        <span className="element-badge" style={{ background: ELEMENT_COLORS[element] }} aria-hidden>
+        <span className="element-badge" style={{ '--element': ELEMENT_COLORS[element] } as CSSProperties} aria-hidden>
           {ELEMENT_BADGES[element]}
         </span>
       )}
