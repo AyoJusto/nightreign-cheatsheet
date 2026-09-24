@@ -75,7 +75,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* All six at once: three across, two down, name over count. Inner radius = bar radius - padding. */
 .earth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 @media (min-width: 900px) { .earth-grid { grid-template-columns: repeat(6, 1fr); gap: 8px; } }
-.earth { min-width: 0; min-height: 56px; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 8px 6px; border-radius: 16px; background: var(--fill-2); text-align: center; transition: background-color 0.15s; }
+.earth { min-width: 0; min-height: 56px; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 8px 6px; border-radius: 16px; background: var(--fill-2); text-align: center; }
 .earth:hover { background: var(--fill); }
 .earths:not(.earth-bar) .earth { background: var(--surface); }
 .earths:not(.earth-bar) .earth:hover { background: var(--surface-2); }
@@ -156,7 +156,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* ---------- Floating controls ---------- */
 
 .pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 4px; height: 52px; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter)); }
-.pill button { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; transition: background-color 0.15s; }
+.pill button { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; }
 .pill button:not(:disabled):hover { background: var(--fill-2); }
 .pill button:disabled { opacity: 0.3; cursor: default; }
 .pill-text { padding: 0 6px; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -172,12 +172,12 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .strip-scroll::-webkit-scrollbar { display: none; }
 .strip-scroll[data-more-left] { --fade-left: 28px; }
 .strip-scroll[data-more-right] { --fade-right: 28px; }
-.strip-item { position: relative; flex: 0 0 auto; width: 52px; height: 52px; border-radius: 26px; display: grid; place-items: center; transition: background-color 0.15s; }
+.strip-item { position: relative; flex: 0 0 auto; width: 52px; height: 52px; border-radius: 26px; display: grid; place-items: center; }
 .strip-item[aria-expanded='true'] { background: var(--fill); }
 .strip-item[aria-pressed='true'], .strip-variant[aria-pressed='true'] { background: var(--fill); box-shadow: inset 0 0 0 1.5px var(--accent); }
 /* How many element variants a kind holds; neutral, since the elements themselves show once it expands. */
 .variant-count { position: absolute; right: 3px; bottom: 3px; min-width: 16px; height: 16px; box-sizing: border-box; padding: 0 4px; border-radius: 8px; background: var(--surface-3); color: var(--label); font-size: 11px; line-height: 16px; font-weight: 600; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
-.strip-variant { position: relative; flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; box-sizing: border-box; border-radius: 26px; font-size: 15px; font-weight: 600; white-space: nowrap; background: var(--fill-2); transition: background-color 0.15s; }
+.strip-variant { position: relative; flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; box-sizing: border-box; border-radius: 26px; font-size: 15px; font-weight: 600; white-space: nowrap; background: var(--fill-2); }
 
 /* Result pill: layer toggles. Each is a 44px target around a smaller capsule, so the row reads light. */
 .chips {
@@ -187,7 +187,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 }
 .chips::-webkit-scrollbar { display: none; }
 .pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 12px; border-radius: 22px; font-size: 15px; font-weight: 500; color: var(--label-2); background: none; }
-.pill .chip::before { content: ''; position: absolute; inset: 6px 0; border-radius: 16px; z-index: -1; transition: background-color 0.15s; }
+.pill .chip::before { content: ''; position: absolute; inset: 6px 0; border-radius: 16px; z-index: -1; }
 .pill .chip:hover { background: none; color: var(--label); }
 .pill .chip[aria-pressed='true'] { color: var(--label); font-weight: 600; }
 .pill .chip[aria-pressed='true']::before { background: var(--fill); }
@@ -197,7 +197,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* ---------- Lists: inset grouped, hairlines inset from the leading edge ---------- */
 
 .options { list-style: none; margin: 0; padding: 0; border-radius: var(--radius-group); overflow: hidden; background: var(--surface-2); }
-.option { box-sizing: border-box; width: 100%; min-height: 56px; display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 16px 8px 12px; text-align: left; font-size: 17px; transition: background-color 0.15s; }
+.option { box-sizing: border-box; width: 100%; min-height: 56px; display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 16px 8px 12px; text-align: left; font-size: 17px; }
 button.option:hover, button.option:active { background: var(--surface-3); }
 .options > li + li { background: linear-gradient(var(--separator), var(--separator)) no-repeat 64px 0 / 100% 0.5px; }
 .options > li:has(> .option-clear) + li, .options > li + li:has(> .option-clear) { background-position: 16px 0; }
@@ -237,7 +237,7 @@ li.run-row .run-value { font-weight: 400; }
 .result-title { font-size: 22px; line-height: 28px; margin: 0; white-space: nowrap; }
 .result-sub { margin: 2px 0 0; color: var(--label-2); font-size: 15px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event-badge { min-width: 0; padding: 3px 8px; border-radius: 6px; background: var(--fill); color: var(--label); font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; background: var(--fill); display: grid; place-items: center; transition: background-color 0.15s; }
+.share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; background: var(--fill); display: grid; place-items: center; }
 .share:hover { background: var(--surface-3); }
 
 /* ---------- Desktop side panel ---------- */
