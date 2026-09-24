@@ -259,6 +259,7 @@ li.run-row .run-value { font-weight: 400; }
 .result-text { min-width: 0; }
 .result-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .result-title { font-size: 22px; line-height: 28px; margin: 0; white-space: nowrap; }
+.seed-number { font-family: var(--font); font-weight: 600; letter-spacing: 0; }
 .result-sub { margin: 2px 0 0; color: var(--label-2); font-size: 15px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event-badge { min-width: 0; padding: 3px 8px; border-radius: 6px; background: var(--fill); color: var(--label); font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; background: var(--fill); display: grid; place-items: center; }

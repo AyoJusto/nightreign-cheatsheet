@@ -89,7 +89,8 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     <div className="result-head">
       <div className="result-text">
         <div className="result-line">
-          <h1 className="title result-title">Seed {seed.id}</h1>
+          {/* "Seed" in the game's face; the number in the system face, where 0 never reads as O. */}
+          <h1 className="title result-title">Seed <span className="num seed-number">{seed.id}</span></h1>
           {seed.event && <span className="event-badge">{seed.event.name}</span>}
         </div>
         <p className="result-sub">{nightlordName(seed.nightlord)} · {earthName(seed.earth)}</p>
