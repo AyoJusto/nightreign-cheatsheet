@@ -121,8 +121,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .structure-icon { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
 .structure-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
 .icon-glyph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 10px; background: var(--surface-2); font-size: 12px; font-weight: 700; }
-/* "Nothing here": an empty dashed ring where the art would be. */
-.icon-empty { display: block; box-sizing: border-box; border: 1.5px dashed var(--label-3); border-radius: 50%; transform: scale(0.6); }
+/* "Nothing here": an empty dashed ring where the art would be, at the same size and visual weight as a
+   structure icon there, so the row never reads as blank. */
+.icon-empty { display: block; box-sizing: border-box; border: 1.5px dashed var(--label-2); border-radius: 50%; }
 .element-badge {
   position: absolute; right: -4px; bottom: -4px; min-width: 15px; height: 15px; box-sizing: border-box; padding: 0 3px;
   border-radius: 7.5px; font-size: 11px; line-height: 15px; font-weight: 700; letter-spacing: -0.02em; text-align: center;
