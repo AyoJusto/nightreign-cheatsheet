@@ -6,7 +6,7 @@ import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
-import { nearestPin, placeLabel, playableBox, rubberband } from './mapGeometry'
+import { isTrackpadScroll, nearestPin, placeLabel, playableBox, rubberband, zoomAbout } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
@@ -216,12 +216,31 @@ export function MapView(props: MapContent & {
         active.current.pinch = false
         settle()
       },
-      onWheel: ({ event, delta: [, dy] }) => {
+      onWheel: ({ event, delta: [dx, dy] }) => {
         event.preventDefault()
-        // Trackpad pinch arrives as ctrl+wheel and is already handled by onPinch.
+        // Trackpad pinch arrives as ctrl+wheel and is already handled by onPinch, about the pointer.
         if (event.ctrlKey) return
         touched.current = true
-        scale.set(boundScale(scale.get() * (1 - dy / 500)))
+        // A wheel step takes over from any glide or settle spring, which .set alone would not stop.
+        x.stop()
+        y.stop()
+        scale.stop()
+        // A two-finger trackpad scroll pans, as in Apple Maps; it stays inside the bounds, as there is no release to spring back from.
+        if (isTrackpadScroll(event)) {
+          x.set(clamp(x.get() - dx, 'x'))
+          y.set(clamp(y.get() - dy, 'y'))
+          return
+        }
+        // A mouse wheel zooms about the pointer: the image point under it stays under it.
+        const r = frame.current!.getBoundingClientRect()
+        const pointer = { x: event.clientX - (r.left + r.width / 2), y: event.clientY - (r.top + r.height / 2) }
+        const s0 = scale.get()
+        // Exponential, so a step in and the same step out cancel, and no step can flip the scale's sign.
+        const s1 = boundScale(s0 * Math.exp(-dy / 500))
+        const t = zoomAbout({ x: x.get(), y: y.get() }, s0, s1, pointer)
+        scale.set(s1)
+        x.set(band(t.x, 'x'))
+        y.set(band(t.y, 'y'))
         settle()
       },
     },

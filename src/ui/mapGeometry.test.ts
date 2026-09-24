@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, zoomAbout, isTrackpadScroll } from './mapGeometry'
 import { catalog } from '../data/catalog'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
@@ -125,5 +125,54 @@ describe('placeLabel', () => {
     const point = { x: 4, y: 4 }
     const spot = placeLabel(point, label, frame, [], 9, 8, 6)
     expect(coversPoint(spot, point)).toBe(false)
+  })
+})
+
+describe('wheel zoom keeps the point under the pointer still', () => {
+  // A point is on screen at t + i * s, with i its offset from the layer centre in image px at scale 1.
+  const onScreen = (t: { x: number; y: number }, s: number, i: { x: number; y: number }) => ({ x: t.x + i.x * s, y: t.y + i.y * s })
+
+  it('zooming in about a corner leaves the image point there in place', () => {
+    const t = { x: -2, y: 45 }
+    const pointer = { x: -620, y: -350 } // frame-centre relative, near the top-left corner of a 1440x900 frame
+    const s0 = 1.12
+    const s1 = 1.79
+    const image = { x: (pointer.x - t.x) / s0, y: (pointer.y - t.y) / s0 }
+    const after = onScreen(zoomAbout(t, s0, s1, pointer), s1, image)
+    expect(after.x).toBeCloseTo(pointer.x, 9)
+    expect(after.y).toBeCloseTo(pointer.y, 9)
+  })
+
+  it('zooming about the layer centre does not move the layer', () => {
+    const t = { x: 30, y: -12 }
+    expect(zoomAbout(t, 1, 2.5, t)).toEqual(t)
+  })
+
+  it('an unchanged scale leaves the translation alone', () => {
+    const t = { x: 30, y: -12 }
+    expect(zoomAbout(t, 1.5, 1.5, { x: 400, y: 300 })).toEqual(t)
+  })
+})
+
+describe('a wheel event pans for a trackpad and zooms for a mouse wheel', () => {
+  it('pans on a sideways component, as only a trackpad (or tilt wheel) scrolls sideways', () => {
+    expect(isTrackpadScroll({ deltaX: 3, deltaY: 0, deltaMode: 0 })).toBe(true)
+    expect(isTrackpadScroll({ deltaX: -1, deltaY: 12, deltaMode: 0 })).toBe(true)
+  })
+
+  it('pans on the small fractional pixel deltas a trackpad sends', () => {
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 2.5, deltaMode: 0 })).toBe(true)
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: -0.75, deltaMode: 0 })).toBe(true)
+  })
+
+  it('zooms on a mouse wheel notch: whole pixels, or lines or pages', () => {
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 100, deltaMode: 0 })).toBe(false)
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: -300, deltaMode: 0 })).toBe(false)
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 3, deltaMode: 1 })).toBe(false)
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 1, deltaMode: 2 })).toBe(false)
+  })
+
+  it('zooms on a large fractional delta, which a fast mouse wheel with acceleration sends', () => {
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 120.5, deltaMode: 0 })).toBe(false)
   })
 })

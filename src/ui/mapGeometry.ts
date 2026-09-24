@@ -108,3 +108,27 @@ export function placeLabel(
   }
   return { ...best, clear: false }
 }
+
+/**
+ * The translation that keeps the screen point `p` still while the layer zooms from `s0` to `s1`.
+ * `t` and `p` are measured from the frame's centre, where the layer's transform origin sits at t = 0.
+ */
+export function zoomAbout(t: { x: number; y: number }, s0: number, s1: number, p: { x: number; y: number }): { x: number; y: number } {
+  const ratio = s1 / s0
+  return { x: p.x - (p.x - t.x) * ratio, y: p.y - (p.y - t.y) * ratio }
+}
+
+// A trackpad sends pixel deltas of a few px per event; a mouse wheel notch is tens to hundreds.
+const TRACKPAD_MAX_DELTA = 50
+
+/**
+ * Whether a (non-pinch) wheel event is a trackpad's two-finger scroll, which pans, rather than a mouse
+ * wheel, which zooms. Browsers do not say which device sent it, so this is a heuristic: only a trackpad
+ * (or a tilt wheel) scrolls sideways, and a trackpad sends small, often fractional pixel deltas, where a
+ * wheel notch is whole pixels, lines or pages.
+ */
+export function isTrackpadScroll(e: { deltaX: number; deltaY: number; deltaMode: number }): boolean {
+  if (e.deltaX !== 0) return true
+  const fractional = !Number.isInteger(e.deltaY)
+  return e.deltaMode === 0 && fractional && Math.abs(e.deltaY) < TRACKPAD_MAX_DELTA
+}
