@@ -57,6 +57,8 @@ export function rubberband(v: number, min: number, max: number, dimension: numbe
 }
 
 export interface Rect { x0: number; y0: number; x1: number; y1: number }
+/** An obstacle; `weight` scales how much covering it counts when no spot is free (default 1). */
+export type Obstacle = Rect & { weight?: number }
 
 /**
  * Where a label goes around a point, as its top-left corner in frame px: below, above, right or left of
@@ -64,14 +66,14 @@ export interface Rect { x0: number; y0: number; x1: number; y1: number }
  * `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph (`mark` px
  * around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
  * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first
- * that covers none of `obstacles` wins; if every one covers something, the one covering the least area,
- * with `clear: false`.
+ * that covers none of `obstacles` wins; if every one covers something, the one covering the least area
+ * (each obstacle's area scaled by its weight), with `clear: false`.
  */
 export function placeLabel(
   point: { x: number; y: number },
   label: { w: number; h: number },
   frame: { w: number; h: number; top?: number },
-  obstacles: Rect[],
+  obstacles: Obstacle[],
   gap: number,
   edge: number,
   mark = 0,
@@ -88,10 +90,10 @@ export function placeLabel(
     { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
     { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
   ].map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
-  const overlap = (s: { x: number; y: number }, o: Rect) => {
+  const overlap = (s: { x: number; y: number }, o: Obstacle) => {
     const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
     const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
-    return w > 0 && h > 0 ? w * h : 0
+    return w > 0 && h > 0 ? w * h * (o.weight ?? 1) : 0
   }
   const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
   const overPoint = (s: { x: number; y: number }) =>
@@ -107,6 +109,52 @@ export function placeLabel(
     if (area < least) { least = area; best = spot }
   }
   return { ...best, clear: false }
+}
+
+const MARKER_WEIGHT = 15
+
+export interface LabelRequest {
+  point: { x: number; y: number }
+  label: { w: number; h: number }
+  /** Placement order, lowest first: circles, then bosses, then the rest. Ties keep their input order. */
+  rank: number
+  /** Shown even with no free spot (a night's circle chip); every other label then hides, leaving its glyph. */
+  keep: boolean
+}
+
+/**
+ * Places every marker's label so none covers a pin, any marker's glyph (`mark` px around each point) or a
+ * label placed before it, in `rank` order. A label is shown only when its glyph lies inside the visible band
+ * and it found a free spot (or is `keep`); a shown label becomes an obstacle for the ones after it.
+ * Returns one result per request, in input order, with the label's top-left corner in frame px.
+ */
+export function placeLabels(
+  requests: readonly LabelRequest[],
+  frame: { w: number; h: number; top?: number },
+  pins: readonly Rect[],
+  gap: number,
+  edge: number,
+  mark: number,
+): { x: number; y: number; shown: boolean }[] {
+  const top = frame.top ?? 0
+  // A glyph is tiny but covering it hides a whole marker, and text over text is unreadable: when a kept label
+  // has no free spot, covering either costs about as much as covering a whole pin, so a pin's edge loses first.
+  const glyphs = requests.map(({ point: p }) => ({ x0: p.x - mark, y0: p.y - mark, x1: p.x + mark, y1: p.y + mark, weight: MARKER_WEIGHT }))
+  const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
+  const placed: Obstacle[] = []
+  const results: { x: number; y: number; shown: boolean }[] = new Array(requests.length)
+  for (const i of order) {
+    const { point, label, keep } = requests[i]
+    const obstacles = [...pins, ...glyphs.filter((_, j) => j !== i), ...placed]
+    const spot = placeLabel(point, label, frame, obstacles, gap, edge, mark)
+    // A glyph partly under the pill or the sheet has no place for its label: clamped into the band, it would
+    // float away from its glyph.
+    const inBand = point.y - mark >= top && point.y + mark <= frame.h
+    const shown = inBand && (spot.clear || keep)
+    if (shown) placed.push({ x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h, weight: MARKER_WEIGHT })
+    results[i] = { x: spot.x, y: spot.y, shown }
+  }
+  return results
 }
 
 /**

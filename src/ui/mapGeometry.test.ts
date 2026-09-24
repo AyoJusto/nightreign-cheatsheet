@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, zoomAbout, isTrackpadScroll } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll } from './mapGeometry'
 import { catalog } from '../data/catalog'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
@@ -174,5 +174,65 @@ describe('a wheel event pans for a trackpad and zooms for a mouse wheel', () => 
 
   it('zooms on a large fractional delta, which a fast mouse wheel with acceleration sends', () => {
     expect(isTrackpadScroll({ deltaX: 0, deltaY: 120.5, deltaMode: 0 })).toBe(false)
+  })
+})
+
+describe('placeLabels: markers never cover each other', () => {
+  const frame = { w: 400, h: 800 }
+  const label = { w: 100, h: 30 }
+  const at = (x: number, y: number, rank = 1, keep = false) => ({ point: { x, y }, label, rank, keep })
+  const rectOf = (s: { x: number; y: number }) => ({ x0: s.x, y0: s.y, x1: s.x + label.w, y1: s.y + label.h })
+  const hits = (r: { x0: number; y0: number; x1: number; y1: number }, p: { x: number; y: number }, mark: number) =>
+    r.x0 < p.x + mark && r.x1 > p.x - mark && r.y0 < p.y + mark && r.y1 > p.y - mark
+  const intersects = (a: ReturnType<typeof rectOf>, b: ReturnType<typeof rectOf>) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0
+
+  it("moves a label off another marker's glyph", () => {
+    // B sits right under A, where A's label would go first (below).
+    const [a] = placeLabels([at(200, 300), at(200, 320)], frame, [], 9, 8, 6)
+    expect(a.shown).toBe(true)
+    expect(hits(rectOf(a), { x: 200, y: 320 }, 6)).toBe(false)
+  })
+  it('moves a label off a label already placed', () => {
+    // Side by side, both would go below and overlap; the second steps aside.
+    const [a, b] = placeLabels([at(200, 300), at(240, 300)], frame, [], 9, 8, 6)
+    expect(a.shown && b.shown).toBe(true)
+    expect(intersects(rectOf(a), rectOf(b))).toBe(false)
+  })
+  it('places circles first, then bosses, then the rest, whatever the input order', () => {
+    // Same point pair, reversed ranks: the higher-priority marker keeps its first choice (below).
+    const [chest, circle] = placeLabels([at(200, 300, 2), at(240, 300, 0, true)], frame, [], 9, 8, 6)
+    expect(circle).toMatchObject({ x: 190, y: 309, shown: true })
+    expect(intersects(rectOf(chest), rectOf(circle))).toBe(false)
+  })
+  it('hides a label with no free spot, but a circle keeps its chip', () => {
+    const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
+    const [boss, circle] = placeLabels([at(200, 300, 1), at(200, 600, 0, true)], frame, [everywhere], 9, 8, 6)
+    expect(boss.shown).toBe(false)
+    expect(circle.shown).toBe(true)
+  })
+  it('two markers on one point both find clear spots', () => {
+    const [first, second] = placeLabels([at(200, 300), at(200, 300)], { w: 400, h: 800, top: 0 }, [], 9, 8, 6)
+    // Same point: the second marker's glyph covers the first's point too, but both still get clear spots.
+    expect(first.shown && second.shown).toBe(true)
+    expect(intersects(rectOf(first), rectOf(second))).toBe(false)
+  })
+  it("a circle with no free spot clips a pin's edge rather than cover another marker's glyph", () => {
+    // Pins block every spot around the circle but two: "below" clips 190 px² of one pin's corner, and "right"
+    // is free of pins but holds a boss glyph (144 px²). By area alone, the glyph would lose.
+    const circle = at(200, 300, 0, true)
+    const pins = [
+      { x0: 80, y0: 250, x1: 320, y1: 280 }, // above, and both upper diagonals
+      { x0: 80, y0: 282, x1: 149, y1: 340 }, // left, and the lower-left diagonal
+      { x0: 262, y0: 318, x1: 320, y1: 340 }, // the lower-right diagonal
+      { x0: 240, y0: 320, x1: 260, y1: 340 }, // a corner of "below"
+    ]
+    const boss = at(300, 300, 1)
+    const [placed] = placeLabels([circle, boss], frame, pins, 9, 8, 6)
+    expect(placed.shown).toBe(true)
+    expect(hits(rectOf(placed), boss.point, 6)).toBe(false)
+  })
+  it('hides the label of a glyph outside the visible band', () => {
+    const [off] = placeLabels([at(200, 790)], { w: 400, h: 700 }, [], 9, 8, 6)
+    expect(off.shown).toBe(false)
   })
 })

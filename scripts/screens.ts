@@ -47,6 +47,11 @@ const shots: [string, Shot][] = [
     await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn},24@church`)
   }],
   ['result-peek', async (p) => { await p.goto(`${base}/seed/${seed.id}`) }],
+  ['result-layers', async (p) => {
+    // The busiest marker set a player turns on: labels must stay clear of each other and of every glyph.
+    await p.goto(`${base}/seed/000`)
+    for (const layer of ['Bosses', 'Chests']) await p.getByRole('button', { name: layer, exact: true }).click()
+  }],
   ['about', async (p) => { await p.goto(`${base}/about`) }],
   ['great-hollow', async (p) => { await p.goto(`${base}/find/dreglord/great-hollow`) }],
 ]

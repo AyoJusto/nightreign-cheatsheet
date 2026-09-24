@@ -6,7 +6,7 @@ import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
-import { isTrackpadScroll, nearestPin, placeLabel, playableBox, rubberband, zoomAbout } from './mapGeometry'
+import { isTrackpadScroll, nearestPin, placeLabels, playableBox, rubberband, zoomAbout } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
@@ -299,6 +299,36 @@ export function MapView(props: MapContent & {
     return () => observer.disconnect()
   }, [])
 
+  // Every marker's label, placed in one pass so labels avoid each other and every glyph, not only the pins.
+  // Screen px equal a label's own px: markers counter-scale the map's zoom.
+  const labelBoxes = useMotionValue<{ w: number; h: number }[]>([])
+  const labelSizes = useRef<{ w: number; h: number }[]>([])
+  const measured = (i: number, box: { w: number; h: number }) => { labelSizes.current[i] = box }
+  const labels = useTransform(() => {
+    const { w, h } = size.get()
+    const s = side()
+    const toScreen = (px: number, py: number) => ({ x: w / 2 + x.get() + (px / 1000 - 0.5) * s, y: h / 2 + y.get() + (py / 1000 - 0.5) * s })
+    const pinRects = props.pins.map((p) => {
+      const c = toScreen(p.x, p.y)
+      // Art plus its badge's overhang, or a dot with its halo.
+      const r = p.structure ? (ART_SIZE / 2 + 4) * artOf(p).get() : 10 * dotScale.get()
+      return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
+    })
+    const boxes = labelBoxes.get()
+    const requests = (props.markers ?? []).map((m, i) => ({
+      point: toScreen(m.x, m.y), label: boxes[i] ?? { w: 0, h: 0 }, rank: LABEL_RANK[m.layer] ?? 2, keep: m.layer === 'circle',
+    }))
+    // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
+    // so no label is sliced by the sheet or drawn under the pill's controls.
+    const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
+    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
+      .map((spot, i) => ({ ...spot, x: spot.x - requests[i].point.x, y: spot.y - requests[i].point.y }))
+  })
+  // Markers measure their labels in their own layout effects, which run before this component's: published
+  // from here, after the transform above has subscribed (in its own layout effect, declared earlier), so the
+  // new sizes are never missed.
+  useLayoutEffect(() => labelBoxes.set([...labelSizes.current]), [props.markers, labelBoxes])
+
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
@@ -345,8 +375,8 @@ export function MapView(props: MapContent & {
             )}
           </motion.span>
         ))}
-        {/* After the pins, so a label is never under a structure; MapMarker also places it off every pin. */}
-        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} topInset={props.topInset} bottomInset={props.bottomInset} pinScale={pinScale} artOf={artOf} dotScale={dotScale} />)}
+        {/* After the pins, so a label is never under a structure; placeLabels also keeps it off every pin and marker. */}
+        {props.markers?.map((m, i) => <MapMarker key={i} index={i} marker={m} labels={labels} onMeasure={measured} pinScale={pinScale} />)}
       </motion.div>
     </div>
   )
@@ -357,62 +387,29 @@ export function MapView(props: MapContent & {
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
 const MARK_RADIUS = 6
+// Which labels get first pick of the free spots: the night circles, then field bosses, then everything else.
+const LABEL_RANK: Partial<Record<Marker['layer'], number>> = { circle: 0, boss: 1 }
 
-/**
- * A glyph on the exact point, with its label beside it: below, above, right or left, whichever covers no
- * pin (structures stay visible), kept inside the frame. Placement is live through pan and zoom (transform only).
- */
-function MapMarker({ marker, pins, x, y, scale, size, topInset, bottomInset, pinScale, artOf, dotScale }: {
+/** A glyph on the exact point, with its label beside it where MapView's placement pass put it. */
+function MapMarker({ index, marker, labels, onMeasure, pinScale }: {
+  index: number
   marker: Marker
-  pins: Pin[]
-  x: MotionValue<number>
-  y: MotionValue<number>
-  scale: MotionValue<number>
-  size: MotionValue<{ w: number; h: number }>
-  topInset: MotionValue<number>
-  bottomInset: MotionValue<number>
+  labels: MotionValue<{ x: number; y: number; shown: boolean }[]>
+  onMeasure: (index: number, box: { w: number; h: number }) => void
   pinScale: MotionValue<number>
-  artOf: (p: Pin) => MotionValue<number>
-  dotScale: MotionValue<number>
 }) {
   const label = useRef<HTMLSpanElement>(null)
   // A circle is a short chip: a two-line "Night 1: boss" label had nowhere to go on a busy phone map without
   // covering a structure. The run card names each night's boss.
   const text = marker.layer === 'circle' && marker.night ? `Night ${marker.night}` : marker.label
-  const box = useMotionValue({ w: 0, h: 0 })
-  // Screen px equal the label's own px here: the marker counter-scales the map's zoom.
-  const offset = useTransform(() => {
-    const { w, h } = size.get()
-    const side = Math.max(w, h) * scale.get()
-    const toScreen = (px: number, py: number) => ({
-      x: w / 2 + x.get() + (px / 1000 - 0.5) * side,
-      y: h / 2 + y.get() + (py / 1000 - 0.5) * side,
-    })
-    const point = toScreen(marker.x, marker.y)
-    const obstacles = pins.map((p) => {
-      const c = toScreen(p.x, p.y)
-      // Art plus its badge's overhang, or a dot with its halo.
-      const r = p.structure ? (ART_SIZE / 2 + 4) * artOf(p).get() : 10 * dotScale.get()
-      return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
-    })
-    // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
-    // so no label is sliced by the sheet or drawn under the pill's controls.
-    const visible = { w, top: topInset.get(), h: h - bottomInset.get() }
-    const spot = placeLabel(point, box.get(), visible, obstacles, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
-    // A glyph partly under the pill or the sheet has no place for its label: clamped into the band, it would
-    // float away from its glyph, and a fully open sheet would stack every such label under the pill.
-    const inBand = point.y - MARK_RADIUS >= visible.top && point.y + MARK_RADIUS <= visible.h
-    return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear, inBand }
-  })
-  const labelX = useTransform(offset, (o) => o.x)
-  const labelY = useTransform(offset, (o) => o.y)
-  // A night's circle keeps its short chip while its glyph is in sight. Other labels (field bosses, evergaols…)
-  // also step aside when there is no free spot, leaving the glyph: their names are listed in the sheet, and a
-  // structure matters more.
-  const labelOpacity = useTransform(offset, (o) => (o.inBand && (o.clear || marker.layer === 'circle') ? 1 : 0))
-  // Measured after the transforms above: Motion re-subscribes them in its own layout effects, and a write
-  // made before that in the same commit would be missed, leaving the label placed as if it had no size.
-  useLayoutEffect(() => box.set({ w: label.current!.offsetWidth, h: label.current!.offsetHeight }), [text, box])
+  const spot = useTransform(labels, (all) => all[index] ?? { x: 0, y: 0, shown: false })
+  const labelX = useTransform(spot, (o) => o.x)
+  const labelY = useTransform(spot, (o) => o.y)
+  // A label with no free spot steps aside, leaving the glyph: its name is listed in the sheet, and a structure
+  // matters more. A night's circle keeps its short chip while its glyph is in sight (placeLabels).
+  const labelOpacity = useTransform(spot, (o) => (o.shown ? 1 : 0))
+  // Reported to MapView, which publishes every size at once after its placement pass has subscribed.
+  useLayoutEffect(() => onMeasure(index, { w: label.current!.offsetWidth, h: label.current!.offsetHeight }), [text, index])
   return (
     <motion.span className={`marker marker-${marker.layer}`} style={{ left: `${marker.x / 10}%`, top: `${marker.y / 10}%`, scale: pinScale }}>
       <span className="marker-dot" />
