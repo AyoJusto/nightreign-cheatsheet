@@ -13,7 +13,8 @@ export interface SheetMeasure {
 // Half never covers much more than half the screen, so the map stays usable; longer content scrolls.
 // 0.6, not 0.5: a six-row run card under the header needs about 58% of Safari's 659px iPhone 15 viewport.
 export const HALF_MAX = 0.6
-const PILL_GAP = 8
+// Fully open, the sheet docks flush under the pill (spec: "like Apple Maps on iOS 26"), no gap for the map to show through.
+const PILL_GAP = 0
 
 export function detentHeights(m: SheetMeasure): Record<Detent, number> {
   // The header clears the home indicator at peek.

@@ -91,8 +91,8 @@ test('a slot sheet at half scrolls to its last option', async ({ page, isMobile 
   expect(last.top).toBeGreaterThan(last.sheetTop)
 })
 
-// The grab handle steps detents from the keyboard, and full stops below the pill.
-test('the result sheet steps with the keyboard and opens fully below the pill', async ({ page, isMobile }) => {
+// The grab handle steps detents from the keyboard, and full docks flush below the pill.
+test('the result sheet steps with the keyboard and opens fully flush below the pill', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the sheet is phone only')
   await page.goto(`/seed/${targets[0].id}`)
   // The name carries the detent, so match the handle by its prefix.
@@ -104,9 +104,12 @@ test('the result sheet steps with the keyboard and opens fully below the pill', 
   await handle.press('ArrowUp')
   await expect(handle).toHaveAccessibleName('Resize Seed details, fully open')
   await expect(handle).toBeFocused()
-  await page.waitForTimeout(700)
+  await page.waitForTimeout(1500) // let the no-bounce spring settle fully
   const [pill, sheet] = await page.evaluate(() => ['.pill', '.sheet'].map((s) => document.querySelector(s)!.getBoundingClientRect()))
-  expect(sheet.top).toBeGreaterThanOrEqual(pill.bottom + 7.5)
+  // Flush: at or just below the pill's bottom edge, never above it and never with a visible gap
+  // (the old 8px float gap this used to assert is gone; a couple of px covers rounding, not a sliver).
+  expect(sheet.top).toBeGreaterThanOrEqual(pill.bottom - 0.5)
+  expect(sheet.top).toBeLessThan(pill.bottom + 3)
 })
 
 // A tap selects a site; the sheet then rises over the lower part of the map, and the map must lift the

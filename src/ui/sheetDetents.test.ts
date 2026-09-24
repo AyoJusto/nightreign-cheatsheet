@@ -10,12 +10,12 @@ describe('sheet detents come from measured elements', () => {
     expect(detentHeights({ ...phone, safeBottom: 0 }).peek).toBe(80)
   })
 
-  it('opens fully to 8px below the pill', () => {
-    expect(detentHeights(phone).full).toBe(852 - 119 - 8)
+  it('opens fully flush with the pill, docking below it', () => {
+    expect(detentHeights(phone).full).toBe(852 - 119)
   })
 
-  it('opens fully to 8px below the safe area when there is no pill', () => {
-    expect(detentHeights({ ...phone, pillBottom: 0 }).full).toBe(852 - 59 - 8)
+  it('opens fully flush with the safe area when there is no pill', () => {
+    expect(detentHeights({ ...phone, pillBottom: 0 }).full).toBe(852 - 59)
   })
 
   it('sizes half to the content when it fits', () => {
