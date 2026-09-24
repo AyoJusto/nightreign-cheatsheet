@@ -123,7 +123,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
         return items.length ? (
           <section key={layer} className="result-list">
             <h3>{heading}</h3>
-            <ul>{items.map((m, i) => <li key={i}>{m.label}</li>)}</ul>
+            <ul className="run-card">{items.map((m, i) => <RunRow key={`${i}:${m.label}`} value={m.label} />)}</ul>
           </section>
         ) : null
       })}
@@ -151,23 +151,27 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 }
 
 // A boss with notes in the data expands in place to show them; anything else is a plain row.
-function RunRow({ label, value }: { label: string; value: string }) {
+// With a label it is a run card row (dt/dd); without, an item in a list of names.
+function RunRow({ label, value }: { label?: string; value: string }) {
   const [open, setOpen] = useState(false)
   const notes = catalog.bossNotes(value)
+  const Row = label ? 'div' : 'li'
+  const Value = label ? 'dd' : 'span'
+  const Notes = label ? motion.dd : motion.p
   return (
-    <div className="run-row">
-      <dt>{label}</dt>
-      {notes ? (
-        <dd>
+    <Row className="run-row">
+      {label && <dt>{label}</dt>}
+      <Value className="run-value">
+        {notes ? (
           <button className="run-more" aria-expanded={open} onClick={() => setOpen(!open)}>
             {value}
-            <svg className="run-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg className="run-chevron" width="10" height="12" viewBox="1 0 10 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M4.5 2.5 8 6l-3.5 3.5" />
             </svg>
           </button>
-        </dd>
-      ) : <dd>{value}</dd>}
-      {open && <motion.dd className="run-notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{notes}</motion.dd>}
-    </div>
+        ) : value}
+      </Value>
+      {open && <Notes className="run-notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{notes}</Notes>}
+    </Row>
   )
 }
