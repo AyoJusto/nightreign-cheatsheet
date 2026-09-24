@@ -272,12 +272,15 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
   const certain = scouting.certainSlots()
   const focusSlots = new Set(focus ? scouting.structuresInPlay().find((p) => p.structure === focus)?.slots ?? [] : [])
 
-  if (!spawn) {
-    for (const { slot, remaining } of scouting.spawnOptions()) {
+  // Focus mode asks one question, so only its candidates stay gold: the spawn options dim with the rest of the
+  // map (a spawn option that could hold the structure is a candidate), and a tap on one cancels, recording nothing.
+  const spawnOptions = new Map(spawn ? [] : scouting.spawnOptions().map(({ slot, remaining }) => [slot, remaining]))
+  if (spawn) {
+    pins.push({ slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: null, label: 'Your spawn point' })
+  } else if (!focus) {
+    for (const [slot, remaining] of spawnOptions) {
       pins.push({ slot, ...coords[slot], state: 'spawn-option', structure: null, label: `Possible spawn point, leaves ${remaining}` })
     }
-  } else {
-    pins.push({ slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: null, label: 'Your spawn point' })
   }
   const taken = new Set(pins.map((p) => p.slot))
   for (const slot of Object.keys(coords)) {
@@ -289,6 +292,8 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
     } else if (focusSlots.has(slot)) {
       // A certain slot can still be confirmed in focus mode, so it joins the candidates.
       pins.push({ slot, ...coords[slot], state: 'candidate', structure: known, label: `${structureName(focus!)} here?` })
+    } else if (spawnOptions.has(slot)) {
+      pins.push({ slot, ...coords[slot], state: 'dimmed', structure: null, label: `Possible spawn point, leaves ${spawnOptions.get(slot)}` })
     } else if (known) {
       pins.push({ slot, ...coords[slot], state: 'certain', structure: known, label: `${structureName(known)}, certain` })
     } else if (scouting.possibilitiesAt(slot).some((p) => p.option !== 'nothing')) {

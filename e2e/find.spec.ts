@@ -237,3 +237,43 @@ test('result map pins are named images, not buttons', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Spawn point' })).toBeAttached()
   await expect(page.locator('.map-frame button')).toHaveCount(0)
 })
+
+// Focus mode before the spawn is set: only the candidates stay gold, the spawn options dim with the map,
+// and a tap on one cancels focus without recording a spawn (iter-8 M1; spec: "tap one to confirm or elsewhere to cancel").
+test('in focus mode a tap on a dimmed spawn option cancels and records nothing', async ({ page }) => {
+  const target = targets[0]
+  await page.goto(`/find/${target.nightlord}/${target.earth}`)
+  await expect(page.locator('.pin-spawn-option').first()).toBeAttached()
+  const spawnSlots = await page.locator('.pin-spawn-option').evaluateAll((els) => els.map((el) => el.getAttribute('data-slot')!))
+  expect(spawnSlots.length).toBeGreaterThan(0)
+  // Enter focus mode on the first structure, expanding its kind first when it comes in elements.
+  const kind = page.locator('[data-kind]').first()
+  if (await kind.getAttribute('aria-expanded')) await kind.click()
+  await page.getByRole('button', { name: /^Find / }).first().click()
+  await expect(page.locator('.pin-candidate').first()).toBeAttached()
+  await expect(page.locator('.pin-spawn-option')).toHaveCount(0)
+  await page.waitForTimeout(600) // let the pins settle
+  const frame = (await page.locator('.map-frame').boundingBox())!
+  const candidates = await page.locator('.pin-candidate').evaluateAll((els) => els.map((el) => {
+    const r = el.getBoundingClientRect()
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+  }))
+  for (const slot of spawnSlots) {
+    const pin = page.locator(`.pin-dimmed[data-slot="${slot}"]`)
+    if (!(await pin.count())) continue // this spawn option is a candidate
+    const box = (await pin.boundingBox())!
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    // On the open map, and out of any candidate's reach, so the tap is plainly on the spawn option.
+    if (x < 30 || y < 90 || x > frame.width - 30 || y > frame.height - 110) continue
+    if (candidates.some((c) => Math.hypot(c.x - x, c.y - y) < 60)) continue
+    await page.mouse.click(x, y + 4)
+    await expect(page.locator('.pin-candidate')).toHaveCount(0)
+    await expect(page.locator('[aria-pressed="true"]')).toHaveCount(0)
+    expect(new URL(page.url()).searchParams.get('s')).toBeNull()
+    // Leaving focus brings the spawn options back, gold.
+    await expect(page.locator('.pin-spawn-option')).toHaveCount(spawnSlots.length)
+    return
+  }
+  throw new Error('no dimmed spawn option on screen clear of the candidates')
+})
