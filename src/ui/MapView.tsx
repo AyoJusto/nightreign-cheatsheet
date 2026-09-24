@@ -25,6 +25,8 @@ export interface MapContent {
   onBackground?: () => void
   /** The pins the current step asks for: a tap in reach of one goes to it, even if another pin is nearer. */
   preferred?: (pin: Pin) => boolean
+  /** A mouse pointer entered a pin (or left it, with null). Touch never hovers, so it never fires there. */
+  onHover?: (pin: Pin | null) => void
 }
 
 export function MapView(props: MapContent & {
@@ -247,6 +249,9 @@ export function MapView(props: MapContent & {
             initial={{ opacity: 0 }}
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : p.state === 'certain' ? 0.7 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
+            // buttons === 0: a pan that sweeps across pins is not hovering them.
+            onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !e.buttons) props.onHover?.(p) }}
+            onPointerLeave={(e) => { if (e.pointerType === 'mouse') props.onHover?.(null) }}
             onClick={(e) => {
               // Pointer taps bubble to the frame, which snaps them; keyboard activation has no point to snap.
               if (e.detail) return

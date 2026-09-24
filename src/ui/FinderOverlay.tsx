@@ -30,6 +30,8 @@ export function FinderOverlay(props: {
   const [focus, setFocus] = useState<StructureKey | null>(null)
   // The strip kind whose element variants are expanded.
   const [open, setOpen] = useState<string | null>(null)
+  // Desktop: the site under the mouse, previewed in the side panel until the pointer leaves it.
+  const [hover, setHover] = useState<SlotId | null>(null)
   const [detent, setDetent] = useState<Detent>('peek')
   const coords = catalog.slotsOf(props.earth)
   const count = scouting.candidates().length
@@ -52,7 +54,8 @@ export function FinderOverlay(props: {
     return () => clearTimeout(t)
   }, [scouting, props.go])
 
-  const close = useCallback(() => { setFocus(null); setOpen(null); setSelected(null); setDetent('peek') }, [])
+  // Also drops the hover preview: a sighting can remove the hovered pin, and a removed pin never reports leaving.
+  const close = useCallback(() => { setFocus(null); setOpen(null); setHover(null); setSelected(null); setDetent('peek') }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
@@ -86,8 +89,10 @@ export function FinderOverlay(props: {
     // The step's own pins win a tap in reach: candidates in focus mode, spawn options until the spawn is set.
     // Any other pin still answers a tap on its own; in focus mode that cancels, like the background.
     const preferred = focus ? (p: Pin) => p.state === 'candidate' : (p: Pin) => p.state === 'spawn-option'
-    props.setMap({ pins, dim: focus !== null, selected, onPin, onBackground: close, preferred })
-  }, [pins, focus, selected, onPin, close, props.setMap])
+    // Spawn pins set the spawn when clicked, so there is nothing about the site to preview.
+    const onHover = wide ? (p: Pin | null) => setHover(p && p.state !== 'spawn' && p.state !== 'spawn-option' ? p.slot : null) : undefined
+    props.setMap({ pins, dim: focus !== null, selected, onPin, onBackground: close, preferred, onHover })
+  }, [pins, focus, selected, onPin, close, props.setMap, wide])
 
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
   const atSpawn = selected !== null && spawn?.slot === selected
@@ -130,6 +135,22 @@ export function FinderOverlay(props: {
       }} />
   )
   const choicesTitle = atSpawn ? 'Spawn point' : "What's here?"
+  // Read-only: the same rows as the choices, but nothing to click until the site itself is clicked.
+  const preview = wide && hover && hover !== selected && (
+    <section>
+      <h3 className="side-heading">Could be here</h3>
+      <ul className="options">
+        {scouting.possibilitiesAt(hover).map(({ option, remaining }) => (
+          <li key={option} className="option option-preview">
+            <StructureIcon structure={option === 'nothing' ? null : option} size={40} />
+            <span className="option-name">{option === 'nothing' ? 'Nothing here' : structureName(option)}</span>
+            <span className="num option-count"><Icon name="arrow" size={15} />{remaining}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="hint">Click the site to record what you see.</p>
+    </section>
+  )
 
   return (
     <>
@@ -150,12 +171,12 @@ export function FinderOverlay(props: {
         <aside className="side-panel" aria-label="Scouting">
           <h2 className="side-title">{nightlordName(props.nightlord)} · {earthName(props.earth)}</h2>
           <p className="side-count"><Count value={count} /> possible</p>
-          {choices ? (
+          {preview || (choices ? (
             <section>
               <h3 className="side-heading">{choicesTitle}</h3>
               {choices}
             </section>
-          ) : <p className="hint">Select a slot or a structure.</p>}
+          ) : <p className="hint">Select a site on the map or a structure.</p>)}
           {groups.length > 0 && (
             <section>
               <h3 className="side-heading">Structures still possible</h3>
