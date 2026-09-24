@@ -184,13 +184,13 @@ export function MapView(props: MapContent & {
     if (props.selected) touched.current = true
     const target = reveal()
     if (target !== undefined) animate(y, target, move)
-    const onInset = () => {
+    // The frame or the overlays around it changed size.
+    const onResize = () => {
       if (!touched.current) fit()
       else if (!active.current.drag && !active.current.pinch) settle()
     }
-    const offTop = props.topInset.on('change', onInset)
-    const offBottom = props.bottomInset.on('change', onInset)
-    return () => { offTop(); offBottom() }
+    const offs = [size, props.topInset, props.bottomInset].map((v) => v.on('change', onResize))
+    return () => offs.forEach((off) => off())
   }, [props.topInset, props.bottomInset, props.selected, props.pins])
 
   // A tap goes to the nearest tappable slot within reach, not to whichever overlapping hit area is on top.
@@ -207,11 +207,7 @@ export function MapView(props: MapContent & {
   }
 
   useEffect(() => {
-    const observer = new ResizeObserver(([entry]) => {
-      size.set({ w: entry.contentRect.width, h: entry.contentRect.height })
-      if (!touched.current) fit()
-      else settle()
-    })
+    const observer = new ResizeObserver(([entry]) => size.set({ w: entry.contentRect.width, h: entry.contentRect.height }))
     observer.observe(frame.current!)
     return () => observer.disconnect()
   }, [])
