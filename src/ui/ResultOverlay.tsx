@@ -4,6 +4,7 @@ import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { useWide } from './useWide'
+import { useMeasure, pillBottom } from './useMeasure'
 import { decodeSightings, encodeSightings } from './useSightings'
 import { catalog } from '../data/catalog'
 import { earthName, nightlordName, structureName } from '../domain/names'
@@ -22,10 +23,12 @@ const LAYER_NAMES: Record<Layer, string> = {
 const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
-export function ResultOverlay({ seed, go, bottomInset, setMap }: {
-  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; setMap: (content: MapContent) => void
+export function ResultOverlay({ seed, go, bottomInset, topInset, setMap }: {
+  seed: Seed; go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>
+  setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
+  const pillRef = useMeasure(topInset, pillBottom)
   const [detent, setDetent] = useState<Detent>('peek')
   const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
   const [toast, setToast] = useState<string | null>(null)
@@ -128,7 +131,7 @@ export function ResultOverlay({ seed, go, bottomInset, setMap }: {
 
   return (
     <>
-      <Glass className="pill">
+      <Glass className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={back}>‹</button>
         <div className="chips" role="group" aria-label="Map layers">
           {available.map((l) => (

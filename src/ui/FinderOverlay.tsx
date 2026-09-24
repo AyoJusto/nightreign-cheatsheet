@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence, animate, type MotionValue } from 'motion/react'
+import { motion, AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
@@ -7,6 +7,7 @@ import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
 import { useSightings, encodeSightings } from './useSightings'
 import { useWide } from './useWide'
+import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
 import { structureName, nightlordName, earthName, type EarthId, type NightlordId, type SlotId, type StructureKey } from '../domain/names'
 import type { Seed } from '../domain/seed'
@@ -14,9 +15,14 @@ import { Scouting, type Sighting } from '../domain/scouting'
 
 export function FinderOverlay(props: {
   pool: readonly Seed[]; nightlord: NightlordId; earth: EarthId
-  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; setMap: (content: MapContent) => void
+  go: (path: string, replace?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>
+  setMap: (content: MapContent) => void
 }) {
   const wide = useWide()
+  const pillRef = useMeasure(props.topInset, pillBottom)
+  const stripInset = useMotionValue(0)
+  // The strip's height plus its offset from the bottom edge; a hidden (empty) strip covers nothing.
+  const stripRef = useMeasure(stripInset, (el) => (el.offsetHeight ? el.offsetHeight + parseFloat(getComputedStyle(el).bottom) : 0))
   const [scouting, setScouting] = useSightings(props.pool)
   const [selected, setSelected] = useState<SlotId | null>(null)
   const [focus, setFocus] = useState<StructureKey | null>(null)
@@ -50,10 +56,12 @@ export function FinderOverlay(props: {
     return () => removeEventListener('keydown', onKey)
   }, [])
 
-  // With the sheet closed, only the strip covers the bottom of the map.
+  // With the sheet closed, only the strip covers the bottom of the map. The map springs to the new inset itself.
   useEffect(() => {
-    if (!selected) animate(props.bottomInset, 72, { type: 'spring', visualDuration: 0.5, bounce: 0 })
-  }, [selected, props.bottomInset])
+    if (selected) return
+    props.bottomInset.set(stripInset.get())
+    return stripInset.on('change', (v) => props.bottomInset.set(v))
+  }, [selected, props.bottomInset, stripInset])
 
   const apply = (next: Scouting) => { setScouting(next); close() }
   // Memoized: MapView re-reveals the selected pin whenever the pins array changes identity.
@@ -115,7 +123,7 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      <Glass className="pill">
+      <Glass className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}>‹</button>
         <span className="pill-text">
           {spawn ? <><Count value={count} /> possible</> : <>Tap where you spawned · <Count value={count} /></>}
@@ -126,7 +134,7 @@ export function FinderOverlay(props: {
           onClick={() => apply(Scouting.start(props.pool))}>⟲</button>
       </Glass>
       {!wide && (
-        <Glass className="strip" role="toolbar" aria-label="Structures still possible">{structureButtons}</Glass>
+        <Glass className="strip" ref={stripRef} role="toolbar" aria-label="Structures still possible">{structureButtons}</Glass>
       )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">

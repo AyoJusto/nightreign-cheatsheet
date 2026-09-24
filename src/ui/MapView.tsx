@@ -1,9 +1,11 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { motion, useMotionValue, useTransform, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
+import { catalog } from '../data/catalog'
+import { playableBox } from './mapGeometry'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
@@ -22,32 +24,52 @@ export interface MapContent {
   onBackground?: () => void
 }
 
-export function MapView(props: MapContent & { earth: EarthId; bottomInset: MotionValue<number> }) {
+export function MapView(props: MapContent & {
+  earth: EarthId
+  /** Screen y of the top overlay's bottom edge, and the height covered at the bottom: the map frames itself between them. */
+  topInset: MotionValue<number>
+  bottomInset: MotionValue<number>
+}) {
   const frame = useRef<HTMLDivElement>(null)
-  const layer = useRef<HTMLDivElement>(null)
+  // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
+  const size = useRef({ w: 0, h: 0 })
+  const box = useMemo(() => playableBox(Object.values(catalog.slotsOf(props.earth))), [props.earth])
+  // Until the user moves the map, it keeps itself framed on the playable area as insets settle.
+  const touched = useRef(false)
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const scale = useMotionValue(1)
   const pinScale = useTransform(scale, (s) => 1 / s)
 
+  const side = (s = scale.get()) => Math.max(size.current.w, size.current.h) * s
+  // The image always covers the frame; its bottom edge may rise to whatever covers the bottom of the screen.
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
   const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
-    if (!frame.current || !layer.current) return v
-    const r = frame.current.getBoundingClientRect()
-    const size = layer.current.offsetWidth * s
-    const view = axis === 'x' ? r.width : r.height - props.bottomInset.get()
-    const slack = Math.max(0, (size - view) / 2) + 24
-    return Math.min(slack, Math.max(-slack, v))
+    const slack = Math.max(0, (side(s) - (axis === 'x' ? size.current.w : size.current.h)) / 2)
+    const min = axis === 'x' ? -slack : -slack - props.bottomInset.get()
+    return Math.min(slack, Math.max(min, v))
   }
   // If the selected pin would sit under the sheet, pan it up into the visible area.
   const reveal = (s = scale.get()): number | undefined => {
     const pin = props.pins.find((p) => p.slot === props.selected)
-    if (!pin || !frame.current || !layer.current) return undefined
-    const r = frame.current.getBoundingClientRect()
-    const size = layer.current.offsetWidth * s
-    const pinY = r.height / 2 + y.get() + (pin.y / 1000 - 0.5) * size
-    const visibleBottom = r.height - props.bottomInset.get() - 56
+    if (!pin) return undefined
+    const { h } = size.current
+    const pinY = h / 2 + y.get() + (pin.y / 1000 - 0.5) * side(s)
+    const visibleBottom = h - props.bottomInset.get() - 56
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
+  }
+  // Fit the playable area into the space between the top and bottom overlays, as far as covering the frame allows.
+  const fit = () => {
+    const { w, h } = size.current
+    if (!w || !h) return
+    const top = props.topInset.get()
+    const bottom = h - props.bottomInset.get()
+    const s = boundScale(Math.min(w / (((box.x1 - box.x0) / 1000) * side(1)), (bottom - top) / (((box.y1 - box.y0) / 1000) * side(1))))
+    const centerX = ((box.x0 + box.x1) / 2000 - 0.5) * side(s)
+    const centerY = ((box.y0 + box.y1) / 2000 - 0.5) * side(s)
+    scale.jump(s)
+    x.jump(clamp(-centerX, 'x', s))
+    y.jump(clamp((top + bottom) / 2 - h / 2 - centerY, 'y', s))
   }
   // Which gestures own the motion values right now; the sheet-driven settle must not fight them.
   const active = useRef({ drag: false, pinch: false })
@@ -56,6 +78,7 @@ export function MapView(props: MapContent & { earth: EarthId; bottomInset: Motio
   // so stopping here freezes the map exactly where the finger landed.
   const grab = (gesture: 'drag' | 'pinch') => {
     active.current[gesture] = true
+    touched.current = true
     x.stop()
     y.stop()
     scale.stop()
@@ -113,6 +136,7 @@ export function MapView(props: MapContent & { earth: EarthId; bottomInset: Motio
         event.preventDefault()
         // Trackpad pinch arrives as ctrl+wheel and is already handled by onPinch.
         if (event.ctrlKey) return
+        touched.current = true
         scale.set(boundScale(scale.get() * (1 - dy / 500)))
         settle()
       },
@@ -141,18 +165,33 @@ export function MapView(props: MapContent & { earth: EarthId; bottomInset: Motio
   // Keep the selected pin above the sheet as it rises, and reveal a newly selected pin.
   // Re-subscribing on selected/pins changes means the listener never reads stale props.
   useEffect(() => {
+    if (props.selected) touched.current = true
     const target = reveal()
     if (target !== undefined) animate(y, target, snap)
-    return props.bottomInset.on('change', () => {
-      if (!active.current.drag && !active.current.pinch) settle()
+    const onInset = () => {
+      if (!touched.current) fit()
+      else if (!active.current.drag && !active.current.pinch) settle()
+    }
+    const offTop = props.topInset.on('change', onInset)
+    const offBottom = props.bottomInset.on('change', onInset)
+    return () => { offTop(); offBottom() }
+  }, [props.topInset, props.bottomInset, props.selected, props.pins])
+
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => {
+      size.current = { w: entry.contentRect.width, h: entry.contentRect.height }
+      if (!touched.current) fit()
+      else settle()
     })
-  }, [props.bottomInset, props.selected, props.pins])
+    observer.observe(frame.current!)
+    return () => observer.disconnect()
+  }, [])
 
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   // Pin clicks stop propagation, so this only sees taps on the map itself.
   return (
     <div ref={frame} className="map-frame" onClick={() => props.onBackground?.()}>
-      <motion.div ref={layer} className="map-layer" style={{ x, y, scale, width: 'min(100vw, 100dvh)', height: 'min(100vw, 100dvh)' }}>
+      <motion.div className="map-layer" style={{ x, y, scale }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.markers?.map((m, i) => (
