@@ -217,6 +217,102 @@ function reportCoverage(seeds: any[], bossNotes: Record<string, string>) {
   console.log('structure keys without any icon:', noIcon.length ? noIcon.sort().join(', ') : 'none')
 }
 
+/** How much of a pixel is map (1) rather than background (0). */
+export type Coverage = (r: number, g: number, b: number, a: number) => number
+
+// A flat baked ocean: within HARD of its colour is ocean, beyond SOFT is land, between is the anti-aliased coast.
+export const oceanCoverage = ([or, og, ob]: readonly number[], hard = 24, soft = 72): Coverage => (r, g, b) => {
+  const d = Math.hypot(r - or, g - og, b - ob)
+  return Math.min(1, Math.max(0, (d - hard) / (soft - hard)))
+}
+// A translucent haze around the map (Great Hollow): faint is background, near opaque is map.
+export const hazeCoverage = (clear = 180, solid = 250): Coverage => (_r, _g, _b, a) =>
+  Math.min(1, Math.max(0, (a - clear) / (solid - clear)))
+
+/**
+ * Makes the background that touches the image edges transparent, so the map sits on the app's black.
+ * A flood fill from the edges, not a colour key: water enclosed by land keeps its colour. The fill
+ * only climbs toward the map (or stays level), so it follows a coast's soft edge without leaking
+ * through it into inland water. `feather` px of the coastline are then softened inward, never
+ * outward, so no background colour shows as a fringe. Specks of map no taller than `streak` px,
+ * with cleared background above and below, are cleared too (see below).
+ */
+export function keyBackground(
+  rgba: Uint8Array, width: number, height: number, coverage: Coverage,
+  { feather = 2, streak = 12 }: { feather?: number; streak?: number } = {},
+): Uint8Array {
+  const n = width * height
+  const at = (p: number) => coverage(rgba[p * 4], rgba[p * 4 + 1], rgba[p * 4 + 2], rgba[p * 4 + 3])
+  const cover = new Float32Array(n).fill(1)
+  const seen = new Uint8Array(n)
+  const queue = new Int32Array(n)
+  let head = 0
+  let tail = 0
+  const visit = (p: number, from: number) => {
+    if (seen[p]) return
+    const c = at(p)
+    if (c >= 1 || c + 0.15 < from) return
+    seen[p] = 1
+    cover[p] = c
+    queue[tail++] = p
+  }
+  for (let x = 0; x < width; x++) { visit(x, 0); visit((height - 1) * width + x, 0) }
+  for (let y = 0; y < height; y++) { visit(y * width, 0); visit(y * width + width - 1, 0) }
+  while (head < tail) {
+    const p = queue[head++]
+    const x = p % width
+    const c = cover[p]
+    if (x > 0) visit(p - 1, c)
+    if (x < width - 1) visit(p + 1, c)
+    if (p >= width) visit(p - width, c)
+    if (p < n - width) visit(p + width, c)
+  }
+  // The Limveld sources carry 1-3 px tall grey streaks in the ocean along the coast (a broken
+  // shadow band). A run that short, with cleared ocean above and below, is a streak, not land.
+  const cleared = (p: number) => seen[p] === 1 && cover[p] === 0
+  for (let x = 0; x < width; x++) {
+    let start = -1
+    for (let y = 0; y <= height; y++) {
+      const p = y * width + x
+      const keep = y < height && cover[p] > 0
+      if (keep && start < 0) start = y
+      if (keep || start < 0) continue
+      const above = start === 0 || cleared((start - 1) * width + x)
+      const below = y === height || cleared(p)
+      if (y - start <= streak && above && below) for (let k = start; k < y; k++) cover[k * width + x] = 0
+      start = -1
+    }
+  }
+  const soft = feather > 0 ? boxBlur(cover, width, height, feather) : cover
+  const out = new Uint8Array(rgba)
+  for (let p = 0; p < n; p++) {
+    const c = Math.min(cover[p], soft[p])
+    if (c < 1) out[p * 4 + 3] = Math.round(rgba[p * 4 + 3] * c)
+  }
+  return out
+}
+
+function boxBlur(src: Float32Array, width: number, height: number, r: number): Float32Array {
+  const pass = (from: Float32Array, horizontal: boolean) => {
+    const to = new Float32Array(from.length)
+    const [lines, len] = horizontal ? [height, width] : [width, height]
+    for (let l = 0; l < lines; l++) {
+      const idx = (i: number) => (horizontal ? l * width + i : i * width + l)
+      for (let i = 0; i < len; i++) {
+        let sum = 0
+        let count = 0
+        for (let k = Math.max(0, i - r); k <= Math.min(len - 1, i + r); k++) { sum += from[idx(k)]; count++ }
+        to[idx(i)] = sum / count
+      }
+    }
+    return to
+  }
+  return pass(pass(src, true), false)
+}
+
+// The Limveld maps' baked ocean colour.
+const OCEAN = [73, 119, 153]
+
 async function copyAssets() {
   mkdirSync('public/maps', { recursive: true })
   const maps: Record<string, string> = {
@@ -230,7 +326,12 @@ async function copyAssets() {
     // Great Hollow's source encodes far less cleanly than the others (878 KB at 2000px/q78, over the
     // 500 KB budget); the slot grid is percentage-based, so a smaller image is a safe way to shrink it.
     const [size, quality] = earth === 'great-hollow' ? [1400, 70] : [2000, 78]
-    await image.resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
+    // The baked ocean (or Great Hollow's haze) becomes transparent, so the map sits on the app's black.
+    const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    const coverage = earth === 'great-hollow' ? hazeCoverage() : oceanCoverage(OCEAN)
+    const keyed = keyBackground(data, info.width, info.height, coverage)
+    await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
+      .resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
   }
   mkdirSync('public/structures', { recursive: true })
   for (const file of readdirSync('data/raw/assets/icons')) {
