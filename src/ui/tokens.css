@@ -40,19 +40,30 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .hidden { display: none !important; }
 
-.home { max-width: 960px; margin: 0 auto; padding: calc(var(--safe-top) + 24px) 16px calc(var(--safe-bottom) + 140px); }
+.home { max-width: 960px; margin: 0 auto; padding: calc(var(--safe-top) + 24px) 16px calc(var(--safe-bottom) + 24px); }
 .home-title { font-size: 28px; font-weight: 400; margin: 8px 0 20px; }
-.nightlord-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; list-style: none; margin: 0; padding: 0; }
-.nightlord { width: 100%; }
-@media (min-width: 900px) { .nightlord-grid { grid-template-columns: repeat(5, 1fr); } }
-.nightlord { display: grid; gap: 8px; padding: 10px; border-radius: 20px; background: var(--surface); text-align: left; min-height: 44px; }
-.nightlord[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--accent); }
-.portrait { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; background: var(--surface-2); }
+/* Three across on phone, so the whole roster fits in about a screen; a short last row is centred. */
+.nightlord-grid { --cols: 3; --gap: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px var(--gap); list-style: none; margin: 0; padding: 0; }
+.nightlord-grid > li { width: calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); }
+@media (min-width: 900px) { .nightlord-grid { --cols: 5; --gap: 24px; row-gap: 28px; } }
+.nightlord { width: 100%; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.portrait { width: 88%; aspect-ratio: 1; object-fit: cover; border-radius: 50%; background: var(--surface); }
+.nightlord[aria-pressed='true'] .portrait { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
 .monogram { display: grid; place-items: center; font-size: 34px; color: var(--label-2); }
-.nightlord-name { font-size: 15px; font-weight: 600; }
-.earth-row { position: fixed; left: 8px; right: 8px; bottom: calc(var(--safe-bottom) + 8px); display: flex; gap: 8px; overflow-x: auto; padding: 8px; border-radius: 26px; }
-.earth { flex: 0 0 auto; display: flex; gap: 10px; align-items: center; min-height: 48px; padding: 0 18px; border-radius: var(--radius-capsule); font-weight: 600; background: var(--fill); }
-.earth-count { color: var(--label-2); font-weight: 400; }
+.nightlord-name { font-size: 13px; font-weight: 600; line-height: 1.25; }
+@media (min-width: 900px) { .nightlord-name { font-size: 15px; } .portrait { width: 100%; } }
+/* Phone: sticky glass over the grid's bottom edge (8px from the screen edges). Desktop: plain, under the grid. */
+.earth-bar { position: sticky; z-index: 10; bottom: calc(var(--safe-bottom) + 8px); margin: 20px -8px 0; padding: 10px; border-radius: 26px; }
+.earths:not(.earth-bar) { max-width: 760px; margin: 40px auto 0; }
+.earth-heading { margin: 2px 6px 8px; font-size: 13px; font-weight: 600; color: var(--label-2); }
+.earths:not(.earth-bar) .earth-heading { text-align: center; }
+/* All six at once: three across, two down, name over count. Inner radius = bar radius - padding. */
+.earth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+@media (min-width: 900px) { .earth-grid { grid-template-columns: repeat(6, 1fr); gap: 8px; } }
+.earth { min-width: 0; min-height: 56px; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 8px 6px; border-radius: 16px; background: var(--fill); text-align: center; }
+.earths:not(.earth-bar) .earth { background: var(--surface); }
+.earth-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.earth-count { font-size: 13px; color: var(--label-2); }
 .home-footer { margin-top: 32px; color: var(--label-2); font-size: 15px; }
 .home-footer button { min-height: 44px; padding: 0 12px; }
 

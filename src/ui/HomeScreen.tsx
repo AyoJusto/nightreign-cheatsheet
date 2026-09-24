@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { useWide } from './useWide'
 import { NIGHTLORDS, earthName, type NightlordId } from '../domain/names'
 import { catalog } from '../data/catalog'
 
@@ -14,6 +15,7 @@ function Portrait({ id, name }: { id: NightlordId; name: string }) {
 }
 
 export function HomeScreen({ go }: { go: (path: string) => void }) {
+  const wide = useWide()
   const [picked, setPicked] = useState<NightlordId | null>(null)
   return (
     <main className="home">
@@ -36,21 +38,27 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
       </ul>
       <AnimatePresence>
         {picked && (
+          // One bar for every pick, so switching Nightlord updates the counts instead of replaying the entrance.
+          // It sits in the page flow under the grid. On phone it is sticky glass: it floats over the grid while
+          // there is more to scroll, and its own space in the flow means it never covers the last row at the end.
           <motion.nav
-            key={picked}
-            className="earth-row glass"
-            aria-label="Shifting Earth"
+            key="earths"
+            className={wide ? 'earths' : 'earths earth-bar glass'}
+            aria-labelledby="earth-heading"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
             transition={spring}
           >
-            {catalog.earthsFor(picked).map((earth) => (
-              <button key={earth} className="earth" onClick={() => go(`/find/${picked}/${earth}`)}>
-                <span>{earthName(earth)}</span>
-                <span className="num earth-count">{catalog.seedsFor(picked, earth).length}</span>
-              </button>
-            ))}
+            <h2 id="earth-heading" className="earth-heading">Shifting Earth</h2>
+            <div className="earth-grid">
+              {catalog.earthsFor(picked).map((earth) => (
+                <button key={earth} className="earth" onClick={() => go(`/find/${picked}/${earth}`)}>
+                  <span className="earth-name">{earthName(earth)}</span>
+                  <span className="num earth-count">{catalog.seedsFor(picked, earth).length} seeds</span>
+                </button>
+              ))}
+            </div>
           </motion.nav>
         )}
       </AnimatePresence>
