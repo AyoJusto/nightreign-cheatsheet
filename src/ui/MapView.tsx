@@ -242,6 +242,7 @@ export function MapView(props: MapContent & {
             key={`${p.slot}:${p.structure ?? p.state}`}
             className={`pin pin-${p.state}`}
             aria-label={p.label}
+            data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
             style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
             initial={{ opacity: 0 }}
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : p.state === 'certain' ? 0.7 : 1 }}

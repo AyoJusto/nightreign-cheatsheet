@@ -28,12 +28,12 @@ const shots: [string, Shot][] = [
     // Before any sighting the candidate pool is unfiltered, so an open slot's sheet
     // (not a spawn-option pin, which applies immediately) lists many more options.
     await p.goto(`${base}/find/tricephalos/default`)
-    await p.getByRole('button', { name: /^Slot \d+$/ }).first().click()
+    await p.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
   }],
   ['finder-after-spawn', async (p) => { await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn}`) }],
   ['finder-sheet', async (p) => {
     await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn}`)
-    await p.getByRole('button', { name: /^Slot \d+$/ }).first().click()
+    await p.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
   }],
   ['finder-focus', async (p) => {
     // Structure buttons live in the bottom strip on phone and the side panel on desktop,

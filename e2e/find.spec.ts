@@ -20,15 +20,16 @@ for (const target of targets) {
     await page.getByRole('button', { name: new RegExp(`^${earthName(target.earth)}`) }).click()
     await expect(page).toHaveURL(new RegExp(`/find/${target.nightlord}/${target.earth}`))
 
-    await page.getByRole('button', { name: new RegExp(`^Spawn point, slot ${target.spawn},`) }).click()
+    // Labels speak player vocabulary; data-slot says which place a pin is.
+    await page.getByRole('button', { name: /^Possible spawn point, leaves / }).and(page.locator(`[data-slot="${target.spawn}"]`)).click()
 
     for (const [slot, key] of Object.entries<string | null>(target.slots)) {
       if (/\/seed\//.test(page.url())) break
-      const pin = page.getByRole('button', { name: `Slot ${slot}`, exact: true })
+      const pin = page.getByRole('button', { name: 'Unknown site', exact: true }).and(page.locator(`[data-slot="${slot}"]`))
       if (!(await pin.isVisible())) continue // certain or empty slots cannot narrow further
       await pin.click()
       const option = key ? `${structureName(key)}, leaves` : 'Nothing here, leaves'
-      await page.getByRole('list', { name: `Slot ${slot}` }).getByRole('button', { name: new RegExp(`^${escapeRe(option)}`) }).click()
+      await page.locator(`.options[data-slot="${slot}"]`).getByRole('button', { name: new RegExp(`^${escapeRe(option)}`) }).click()
     }
 
     await expect(page).toHaveURL(new RegExp(`/seed/${target.id}`), { timeout: 5000 })
@@ -58,12 +59,12 @@ test('the map frame never scrolls under the map, so taps still land', async ({ p
 
   // Tap the first spawn option that is on screen, by its point, and expect that exact spawn.
   const viewport = page.viewportSize()!
-  for (const pin of await page.getByRole('button', { name: /^Spawn point, slot / }).all()) {
+  for (const pin of await page.getByRole('button', { name: /^Possible spawn point, / }).all()) {
     const box = (await pin.boundingBox())!
     const x = box.x + box.width / 2
     const y = box.y + box.height / 2
     if (x < 30 || y < 90 || x > viewport.width - 30 || y > viewport.height - 110) continue
-    const slot = (await pin.getAttribute('aria-label'))!.match(/slot (\d+)/)![1]
+    const slot = (await pin.getAttribute('data-slot'))!
     await page.mouse.click(x, y)
     await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}$`))
     return
@@ -75,9 +76,9 @@ test('the map frame never scrolls under the map, so taps still land', async ({ p
 test('a slot sheet at half scrolls to its last option', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the sheet is phone only')
   await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
-  await page.getByRole('button', { name: /^Slot \d+$/ }).first().click()
-  const list = page.getByRole('list', { name: /^Slot / })
-  await expect(page.getByRole('button', { name: /^Resize Slot .*, half open$/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
+  const list = page.locator('.options')
+  await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
   await page.waitForTimeout(700) // let the sheet rise
   const last = await list.evaluate((el) => {
     const body = el.closest('.sheet-body') as HTMLElement

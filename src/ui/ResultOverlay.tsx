@@ -44,10 +44,10 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const pins = useMemo<Pin[]>(() => {
     const coords = catalog.slotsOf(seed.earth)
     const list: Pin[] = []
-    if (on.has('spawn')) list.push({ slot: seed.spawn, ...coords[seed.spawn], state: 'spawn', structure: null, label: `Spawn, slot ${seed.spawn}` })
+    if (on.has('spawn')) list.push({ slot: seed.spawn, ...coords[seed.spawn], state: 'spawn', structure: null, label: 'Spawn point' })
     if (on.has('structures')) {
       for (const [slot, key] of Object.entries(seed.slots)) {
-        if (key && slot !== seed.spawn) list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: `Slot ${slot}, ${structureName(key)}` })
+        if (key && slot !== seed.spawn) list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: structureName(key) })
       }
     }
     return list

@@ -94,7 +94,8 @@ export function FinderOverlay(props: {
   const options = selected && !atSpawn ? scouting.possibilitiesAt(selected) : []
   const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
   const choices = selected && (
-    <ul className="options" aria-label={`Slot ${selected}`}>
+    // Named by the heading or sheet title around it; data-slot is for tests, players never see slot numbers.
+    <ul className="options" data-slot={selected}>
       {/* First, so the half-height sheet never cuts it off. */}
       {sightedHere && (
         <li><button className="option option-clear" onClick={() => apply(scouting.retract(selected))}>Clear</button></li>
@@ -149,14 +150,15 @@ export function FinderOverlay(props: {
           <p className="side-count"><Count value={count} /> possible</p>
           {choices ? (
             <section>
-              <h3 className="side-heading">{choicesTitle} · Slot {selected}</h3>
+              <h3 className="side-heading">{choicesTitle}</h3>
               {choices}
             </section>
           ) : <p className="hint">Select a slot or a structure.</p>}
           {groups.length > 0 && (
             <section>
               <h3 className="side-heading">Structures still possible</h3>
-              <div className="structure-grid" role="toolbar" aria-label="Structures still possible">{structureButtons}</div>
+              {/* The heading above names it; a matching aria-label would be announced twice. */}
+              <div className="structure-grid">{structureButtons}</div>
             </section>
           )}
           {scouting.sightings.length > 0 && (
@@ -172,7 +174,7 @@ export function FinderOverlay(props: {
         <AnimatePresence>
           {selected && (
             <Sheet detent={detent} onDetent={(d) => (d === 'peek' ? setSelected(null) : setDetent(d))}
-              height={props.bottomInset} top={props.topInset} label={`Slot ${selected}`}
+              height={props.bottomInset} top={props.topInset} label={choicesTitle}
               header={<h2 className="sheet-title">{choicesTitle}</h2>}>
               {choices}
             </Sheet>
@@ -185,8 +187,9 @@ export function FinderOverlay(props: {
 
 const targetOf = (s: Sighting) => (s.type === 'spawn' ? 'spawn' : s.slot)
 
+// Player vocabulary: what is (or could be) at a place, never its internal slot number.
 const sightingLabel = (s: Sighting) =>
-  s.type === 'spawn' ? `Spawn, slot ${s.slot}` : `Slot ${s.slot}, ${s.type === 'structure' ? structureName(s.structure) : 'nothing here'}`
+  s.type === 'spawn' ? 'Spawn point' : s.type === 'structure' ? structureName(s.structure) : 'Nothing here'
 
 function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: number }>, focus: StructureKey | null): Pin[] {
   const pins: Pin[] = []
@@ -197,10 +200,10 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
 
   if (!spawn) {
     for (const { slot, remaining } of scouting.spawnOptions()) {
-      pins.push({ slot, ...coords[slot], state: 'spawn-option', structure: null, label: `Spawn point, slot ${slot}, leaves ${remaining}` })
+      pins.push({ slot, ...coords[slot], state: 'spawn-option', structure: null, label: `Possible spawn point, leaves ${remaining}` })
     }
   } else {
-    pins.push({ slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: null, label: `Spawn, slot ${spawn.slot}` })
+    pins.push({ slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: null, label: 'Your spawn point' })
   }
   const taken = new Set(pins.map((p) => p.slot))
   for (const slot of Object.keys(coords)) {
@@ -208,14 +211,14 @@ function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: nu
     const s = sighted.get(slot)
     const known = certain.get(slot) ?? null
     if (s) {
-      pins.push({ slot, ...coords[slot], state: 'sighted', structure: s.type === 'structure' ? s.structure : null, label: sightingLabel(s) })
+      pins.push({ slot, ...coords[slot], state: 'sighted', structure: s.type === 'structure' ? s.structure : null, label: `${sightingLabel(s)}, sighted` })
     } else if (focusSlots.has(slot)) {
       // A certain slot can still be confirmed in focus mode, so it joins the candidates.
-      pins.push({ slot, ...coords[slot], state: 'candidate', structure: known, label: known ? `Slot ${slot}, ${structureName(known)}` : `Slot ${slot}` })
+      pins.push({ slot, ...coords[slot], state: 'candidate', structure: known, label: `${structureName(focus!)} here?` })
     } else if (known) {
-      pins.push({ slot, ...coords[slot], state: 'certain', structure: known, label: `Slot ${slot}, ${structureName(known)}` })
+      pins.push({ slot, ...coords[slot], state: 'certain', structure: known, label: `${structureName(known)}, certain` })
     } else if (scouting.possibilitiesAt(slot).some((p) => p.option !== 'nothing')) {
-      pins.push({ slot, ...coords[slot], state: focus ? 'dimmed' : 'open', structure: null, label: `Slot ${slot}` })
+      pins.push({ slot, ...coords[slot], state: focus ? 'dimmed' : 'open', structure: null, label: 'Unknown site' })
     }
   }
   return pins
