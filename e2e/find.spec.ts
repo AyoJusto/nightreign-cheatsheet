@@ -277,3 +277,33 @@ test('in focus mode a tap on a dimmed spawn option cancels and records nothing',
   }
   throw new Error('no dimmed spawn option on screen clear of the candidates')
 })
+
+// Desktop: picking the spawn keeps keyboard focus on the new spawn pin, never the document body, and Tab
+// reaches the pill and the side panel before the dozens of map pins (iter-8 m1).
+for (const how of ['keyboard', 'pointer'] as const) {
+  test(`desktop: a spawn picked by ${how} keeps focus on the spawn pin`, async ({ page, isMobile }) => {
+    test.skip(isMobile, 'the side panel is desktop only')
+    await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+    const option = page.locator('.pin-spawn-option .pin-hit').first()
+    const slot = (await option.getAttribute('data-slot'))!
+    if (how === 'keyboard') {
+      await option.focus()
+      await page.keyboard.press('Enter')
+    } else {
+      await option.click()
+    }
+    await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}$`))
+    await expect(page.locator(`.pin-hit[data-slot="${slot}"]`)).toBeFocused()
+    await expect(page.locator(`.pin-hit[data-slot="${slot}"]`)).toHaveAccessibleName('Your spawn point')
+  })
+}
+
+test('desktop: Tab reaches the controls and the side panel before the map pins', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the side panel is desktop only')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  await expect(page.locator('.pin-hit').first()).toBeAttached()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Back' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.locator('.side-panel button').first()).toBeFocused()
+})

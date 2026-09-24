@@ -21,13 +21,15 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, r
   const seed = route.name === 'seed' ? catalog.seed(route.id)! : null
   const { nightlord, earth } = seed ?? (route as Extract<MapRoute, { name: 'find' }>)
   const pool = useMemo(() => catalog.seedsFor(nightlord, earth), [nightlord, earth])
+  // The overlay comes first in the document, so Tab reaches its controls and side panel before the map's
+  // dozens of pins. Every overlay surface has a z-index, so this order does not change what draws on top.
   return (
     <>
-      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} />
       {seed
         ? <ResultOverlay seed={seed} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />
         // Keyed by pool so a pool change on a mounted screen starts a fresh Scouting.
         : <FinderOverlay key={`${nightlord}/${earth}`} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />}
+      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} />
     </>
   )
 }

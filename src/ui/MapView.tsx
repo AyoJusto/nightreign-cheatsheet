@@ -310,7 +310,9 @@ export function MapView(props: MapContent & {
         {props.pins.map((p) => (
           <motion.span
             // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
-            key={`${p.slot}:${p.structure ?? p.state}`}
+            // A dot keeps its element through state changes (spawn option to spawn, open to candidate), so a
+            // keyboard user's focus on it survives the change instead of falling to the document body.
+            key={`${p.slot}:${p.structure ?? 'dot'}`}
             className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}`}
             // A pin that does nothing (the result map) is a named image, not a Tab stop or a button to VoiceOver.
             {...(props.onPin ? {} : { role: 'img', 'aria-label': p.label })}

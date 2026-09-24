@@ -100,14 +100,22 @@ export function FinderOverlay(props: {
 
   // Stable between sightings, so publishing it to the map only happens when something changed.
   const onPin = useCallback((slot: SlotId, state: Pin['state']) => {
-    if (state === 'spawn-option') return apply(scouting.sight({ type: 'spawn', slot }))
+    if (state === 'spawn-option') {
+      // Desktop: focus goes to the new spawn pin (the same element: MapView keys dots by place), whether the pick
+      // came from the keyboard or a click that snapped to it, and not back to a site selected earlier.
+      if (wide) {
+        lastSelected.current = null
+        document.querySelector<HTMLElement>(`.pin-hit[data-slot="${slot}"]`)?.focus()
+      }
+      return apply(scouting.sight({ type: 'spawn', slot }))
+    }
     if (state === 'candidate' && focus) return apply(scouting.sight({ type: 'structure', slot, structure: focus }))
     // The spawn pin stays lit in focus mode to orient by; landing on it is not a request to cancel.
     if (focus && state === 'spawn') return
     if (focus) return setFocus(null)
     setSelected(slot)
     setDetent('half')
-  }, [scouting, focus])
+  }, [scouting, focus, wide])
   // Layout effect, so the map has these pins before the first paint.
   useLayoutEffect(() => {
     // The step's own pins win a tap in reach: candidates in focus mode, spawn options until the spawn is set.
