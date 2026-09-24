@@ -173,6 +173,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .sheet-layer.glass { box-shadow: var(--glass-edge); }
 .sheet-solid { background: var(--surface); box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.1); }
 .sheet-grab { position: relative; touch-action: none; padding: 22px 16px 14px; cursor: grab; user-select: none; -webkit-user-select: none; }
+/* The header's hairline, shown only while content has scrolled up under it (Sheet sets data-scrolled). */
+.sheet-grab::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 0.5px; background: var(--separator); opacity: 0; transition: opacity 0.2s ease-out; pointer-events: none; }
+.sheet-grab[data-scrolled]::after { opacity: 1; }
 /* A 44px target around the 36x5 bar; it overlaps the top of the header, which is plain text there. */
 .sheet-handle { position: absolute; z-index: 1; top: 0; left: calc(50% - 44px); width: 88px; height: 44px; border-radius: 12px; cursor: grab; }
 .sheet-handle > span { position: absolute; top: 7px; left: 26px; width: 36px; height: 5px; border-radius: 3px; background: var(--label-3); }

@@ -307,3 +307,25 @@ test('desktop: Tab reaches the controls and the side panel before the map pins',
   await page.keyboard.press('Tab')
   await expect(page.locator('.side-panel button').first()).toBeFocused()
 })
+
+// Content scrolled under the full sheet's header meets a hairline there, as on iOS, not a hard cut (iter-8 m2).
+test('the full result sheet shows a hairline under its header once content scrolls under it', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the sheet is phone only')
+  await page.goto(`/seed/${targets[0].id}`)
+  const handle = page.getByRole('button', { name: /^Resize Seed details/ })
+  await handle.focus()
+  await handle.press('ArrowUp')
+  await handle.press('ArrowUp')
+  await expect(handle).toHaveAccessibleName('Resize Seed details, fully open')
+  await page.waitForTimeout(900)
+  const hairline = () => page.locator('.sheet-grab').evaluate((el) => {
+    const after = getComputedStyle(el, '::after')
+    return { opacity: parseFloat(after.opacity), color: after.backgroundColor, height: after.height }
+  })
+  expect((await hairline()).opacity).toBe(0)
+  await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 40 })
+  await expect.poll(async () => (await hairline()).opacity).toBe(1)
+  expect(await hairline()).toMatchObject({ color: 'rgba(84, 84, 88, 0.6)', height: '0.5px' })
+  await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 0 })
+  await expect.poll(async () => (await hairline()).opacity).toBe(0)
+})

@@ -37,6 +37,9 @@ export function Sheet(props: {
   const [m, setM] = useState<SheetMeasure>(() => ({ frame: innerHeight, grab: 0, content: 0, safeTop: 0, safeBottom: 0, safeLeft: 0, safeRight: 0, pillBottom: 0 }))
   const h = detentHeights(m)
   const measured = m.grab > 0
+  // Content scrolled up under the header: a hairline marks the header's edge, as on iOS. Not at peek, where the
+  // body is hidden and the capsule has no edge to mark.
+  const [scrolled, setScrolled] = useState(false)
 
   // Measure, don't guess: detents follow the real header, content, pill, safe areas and viewport.
   useLayoutEffect(() => {
@@ -171,7 +174,7 @@ export function Sheet(props: {
           it is a capsule floating FLOAT off every edge. No clip-path: it would cut the glass off from the map behind. */}
       <motion.div className="sheet-layer glass" style={{ bottom: 'auto', height: h.peek, opacity: fade, visibility: glassVisibility }} aria-hidden />
       <motion.div className="sheet-layer sheet-solid" style={{ opacity: solidShown }} aria-hidden />
-      <motion.div className="sheet-grab" ref={grab} style={{ opacity: fade }} onPointerDown={(e) => { frozenPeek.current = null; controls.start(e) }}>
+      <motion.div className="sheet-grab" ref={grab} data-scrolled={scrolled && props.detent !== 'peek' ? '' : undefined} style={{ opacity: fade }} onPointerDown={(e) => { frozenPeek.current = null; controls.start(e) }}>
         <button
           className="sheet-handle"
           aria-label={`Resize ${props.label}, ${DETENT_NAMES[props.detent]}`}
@@ -188,7 +191,7 @@ export function Sheet(props: {
         {props.header}
       </motion.div>
       {/* Scrolls at half too; the bottom padding lets the end of the content rise above the screen edge. */}
-      <motion.div className="sheet-body" style={{ opacity: solidShown, overflowY: props.detent === 'peek' ? 'hidden' : 'auto', paddingBottom: h.full - h[props.detent] }}>
+      <motion.div className="sheet-body" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)} style={{ opacity: solidShown, overflowY: props.detent === 'peek' ? 'hidden' : 'auto', paddingBottom: h.full - h[props.detent] }}>
         <div className="sheet-half" ref={content}>{props.children}</div>
         {props.more && <div className="sheet-more">{props.more}</div>}
       </motion.div>
