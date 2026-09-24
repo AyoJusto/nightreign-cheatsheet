@@ -188,7 +188,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* The fade sits on the scrolling row, not the glass, so the capsule itself keeps a crisp edge. */
 .strip-scroll {
   --fade-left: 0px; --fade-right: 0px;
-  position: relative; flex: 1; min-width: 0; display: flex; gap: 4px; padding: 6px; overflow-x: auto; scrollbar-width: none;
+  position: relative; flex: 1; min-width: 0; display: flex; gap: var(--gutter); padding: 6px; overflow-x: auto; scrollbar-width: none;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
   mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
 }
@@ -204,7 +204,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* A kind that comes in elements: its elements' two-letter codes in one quiet chip, the map badge's style,
    centred on the art's base. A neutral rim, since the codes each carry their own colour. */
 .element-codes {
-  position: absolute; left: 0; right: 0; bottom: 2px; width: fit-content; margin: 0 auto; display: flex; gap: 3px;
+  position: absolute; left: 0; right: 0; bottom: 2px; width: fit-content; max-width: 100%; margin: 0 auto; display: flex; gap: 3px;
   height: 13px; padding: 0 3px; box-sizing: border-box; border-radius: 6.5px; font-size: 11px; line-height: 13px; font-weight: 700; letter-spacing: -0.02em;
   background: rgba(28, 28, 30, 0.92); color: var(--label-2); box-shadow: inset 0 0 0 0.75px rgba(235, 235, 245, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.6);
 }

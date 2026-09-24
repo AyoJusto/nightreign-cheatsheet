@@ -34,8 +34,8 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
     const expanded = open === kind
     const elements = variants.flatMap((v) => splitStructure(v).element ?? [])
     const typeNames = variants.map((v) => { const { element } = splitStructure(v); return element ? ELEMENT_NAMES[element] : 'no element' })
-    // Three codes fit the tile; past that, two and how many more, so the chip never outgrows the art.
-    const shown = elements.length > 3 ? elements.slice(0, 2) : elements
+    // Three codes fit the tile; past that, one code and how many more, so the chip never outgrows the art.
+    const shown = elements.length > 3 ? elements.slice(0, 1) : elements
     return [
       <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(kindName(kind))}
         aria-label={`${kindName(kind)}, ${variants.length} types: ${typeNames.join(', ')}`}
