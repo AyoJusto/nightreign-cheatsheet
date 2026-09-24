@@ -4,6 +4,18 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  build: {
+    // seeds.json is data, not app code: its own chunk keeps the main bundle under the 200 KB gzip budget.
+    // Raw size is large (it's JSON) but gzips small, so the default 500 KB warning doesn't apply here.
+    chunkSizeWarningLimit: 1100,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: 'seeds-data', test: /src[\\/]data[\\/]seeds\.json/ }],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -15,7 +27,11 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#000000',
-        icons: [],
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
     }),
   ],
