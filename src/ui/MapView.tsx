@@ -160,14 +160,20 @@ export function MapView(props: MapContent & {
     {
       onDrag: ({ offset: [ox, oy], pinching, cancel, tap }) => {
         if (pinching) return cancel()
-        if (tap) return
+        // A tap never becomes an intentional drag, so onDragEnd does not run for it: the tap's pointer-up
+        // (the only call with `tap` set) ends the grab here. Left set, it would block the settle that keeps
+        // a selected pin above the rising sheet. A tap can also stop a glide mid-bounce; settle puts it back.
+        if (tap) {
+          active.current.drag = false
+          return settle()
+        }
         x.set(band(ox, 'x'))
         y.set(band(oy, 'y'))
       },
       onDragEnd: ({ velocity: [vx, vy], direction: [dx, dy], tap, canceled }) => {
         active.current.drag = false
         if (canceled) return
-        // A tap can stop a glide mid-bounce, out of bounds; settle puts it back. Reduced motion skips the glide.
+        // Reduced motion skips the glide.
         if (tap || reduce) return settle()
         // use-gesture reports speed in px/ms with a separate sign; Motion wants signed px/s.
         const velocityX = vx * dx * 1000
