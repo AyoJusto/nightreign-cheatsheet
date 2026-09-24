@@ -77,6 +77,14 @@ export function Sheet(props: {
   const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
   const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
   const radius = useTransform(y, (v) => 12 + 16 * clamp01(v / Math.max(1, h.full - h.half)))
+  // The box only moves down, so collapsed it would run off the bottom of the screen. Clipping it at the
+  // float line makes it a capsule FLOAT off every edge; from half up it reaches the bottom edge, square.
+  const clip = useTransform(() => {
+    const v = y.get()
+    const r = radius.get()
+    const bottom = r * towardPeek(v)
+    return `inset(0 0 ${Math.max(0, v)}px 0 round ${r}px ${r}px ${bottom}px ${bottom}px)`
+  })
   const solid = useTransform(y, (v) => 1 - towardPeek(v))
 
   // Publish what the sheet covers, including the starting value, so the map can inset itself.
@@ -107,7 +115,7 @@ export function Sheet(props: {
       className="sheet"
       role="dialog"
       aria-label={props.label}
-      style={{ y, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius }}
+      style={{ y, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius, clipPath: clip, WebkitClipPath: clip }}
       drag="y"
       dragListener={false}
       dragControls={controls}

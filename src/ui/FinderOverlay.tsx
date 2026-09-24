@@ -169,7 +169,7 @@ export function FinderOverlay(props: {
       )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
-          <h2 className="side-title">{nightlordName(props.nightlord)} · {earthName(props.earth)}</h2>
+          <h2 className="side-title"><span className="title side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
           <p className="side-count"><Count value={count} /> possible</p>
           {preview || (choices ? (
             <section>

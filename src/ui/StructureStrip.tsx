@@ -15,18 +15,22 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant }: {
   return groups.flatMap(({ kind, variants }) => {
     if (variants.length === 1) {
       const [only] = variants
+      const { element } = splitStructure(only)
+      // An elemental kind with one variant names its element, like the expanded chips do.
       return [
-        <motion.button key={kind} layout className="strip-item" data-kind={kind} aria-label={`Find ${structureName(only)}`}
+        <motion.button key={kind} layout className={element ? 'strip-variant' : 'strip-item'} data-kind={kind}
+          data-name={structureName(only)} aria-label={`Find ${structureName(only)}`}
           aria-pressed={focus === only} onClick={() => onVariant(only)}>
-          <StructureIcon structure={only} size={48} />
+          <StructureIcon structure={only} size={element ? 36 : 44} />
+          {element && <span>{ELEMENT_NAMES[element]}</span>}
         </motion.button>,
       ]
     }
     const expanded = open === kind
     return [
-      <motion.button key={kind} layout className="strip-item" data-kind={kind} aria-label={`${kindName(kind)}, ${variants.length} types`}
+      <motion.button key={kind} layout className="strip-item" data-kind={kind} data-name={kindName(kind)} aria-label={`${kindName(kind)}, ${variants.length} types`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
-        <StructureIcon structure={kind} size={48} />
+        <StructureIcon structure={kind} size={44} />
         <span className="num variant-count" aria-hidden>{variants.length}</span>
       </motion.button>,
       ...(expanded ? variants.map((v) => {
