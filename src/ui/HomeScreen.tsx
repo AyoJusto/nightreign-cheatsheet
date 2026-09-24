@@ -38,7 +38,7 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
         {picked && (
           <motion.nav
             key={picked}
-            className="earth-row"
+            className="earth-row glass"
             aria-label="Shifting Earth"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -46,7 +46,7 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
             transition={spring}
           >
             {catalog.earthsFor(picked).map((earth) => (
-              <button key={earth} className="earth glass" onClick={() => go(`/find/${picked}/${earth}`)}>
+              <button key={earth} className="earth" onClick={() => go(`/find/${picked}/${earth}`)}>
                 <span>{earthName(earth)}</span>
                 <span className="num earth-count">{catalog.seedsFor(picked, earth).length}</span>
               </button>

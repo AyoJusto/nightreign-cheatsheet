@@ -51,6 +51,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .monogram { display: grid; place-items: center; font-size: 34px; color: var(--accent); }
 .nightlord-name { font-size: 15px; font-weight: 600; }
 .earth-row { position: fixed; left: 8px; right: 8px; bottom: calc(var(--safe-bottom) + 8px); display: flex; gap: 8px; overflow-x: auto; padding: 8px; border-radius: 26px; }
-.earth { flex: 0 0 auto; display: flex; gap: 10px; align-items: center; min-height: 48px; padding: 0 18px; border-radius: var(--radius-capsule); font-weight: 600; }
+.earth { flex: 0 0 auto; display: flex; gap: 10px; align-items: center; min-height: 48px; padding: 0 18px; border-radius: var(--radius-capsule); font-weight: 600; background: var(--fill); }
 .earth-count { color: var(--label-2); font-weight: 400; }
 .home-footer { margin-top: 32px; color: var(--label-2); font-size: 15px; }
+.home-footer button { min-height: 44px; padding: 0 12px; }
