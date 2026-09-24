@@ -338,7 +338,8 @@ async function copyAssets() {
     const raw = file.replace(/\.webp$/, '')
     if (raw.endsWith('_spawn')) continue
     const key = toStructureKey(raw)!
-    copyFileSync(`data/raw/assets/icons/${file}`, `public/structures/${key.replace(':', '--')}.webp`)
+    // The art sits in wide transparent margins; trimmed, it fills the box it is drawn in.
+    await sharp(`data/raw/assets/icons/${file}`).trim().webp({ quality: 90 }).toFile(`public/structures/${key.replace(':', '--')}.webp`)
   }
   mkdirSync('public/nightlords', { recursive: true })
   for (const file of readdirSync('data/raw/assets/nightlords')) {
