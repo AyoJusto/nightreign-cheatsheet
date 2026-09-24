@@ -255,7 +255,7 @@ export function MapView(props: MapContent & {
             }}
           >
             <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
-              {p.state === 'spawn-option' || p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} /> : <span className="open-dot" />}
+              {p.state === 'spawn-option' ? <span className="spawn-ring" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} /> : <span className="open-dot" />}
             </motion.span>
           </motion.button>
         ))}

@@ -75,6 +75,8 @@ export function FinderOverlay(props: {
   const onPin = useCallback((slot: SlotId, state: Pin['state']) => {
     if (state === 'spawn-option') return apply(scouting.sight({ type: 'spawn', slot }))
     if (state === 'candidate' && focus) return apply(scouting.sight({ type: 'structure', slot, structure: focus }))
+    // The spawn pin stays lit in focus mode to orient by; landing on it is not a request to cancel.
+    if (focus && state === 'spawn') return
     if (focus) return setFocus(null)
     setSelected(slot)
     setDetent('half')

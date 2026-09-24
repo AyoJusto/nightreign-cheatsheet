@@ -48,7 +48,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .nightlord { display: grid; gap: 8px; padding: 10px; border-radius: 20px; background: var(--surface); text-align: left; min-height: 44px; }
 .nightlord[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--accent); }
 .portrait { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; background: var(--surface-2); }
-.monogram { display: grid; place-items: center; font-size: 34px; color: var(--accent); }
+.monogram { display: grid; place-items: center; font-size: 34px; color: var(--label-2); }
 .nightlord-name { font-size: 15px; font-weight: 600; }
 .earth-row { position: fixed; left: 8px; right: 8px; bottom: calc(var(--safe-bottom) + 8px); display: flex; gap: 8px; overflow-x: auto; padding: 8px; border-radius: 26px; }
 .earth { flex: 0 0 auto; display: flex; gap: 10px; align-items: center; min-height: 48px; padding: 0 18px; border-radius: var(--radius-capsule); font-weight: 600; background: var(--fill); }
@@ -65,7 +65,10 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .pin { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; }
 .pin > span { display: grid; place-items: center; }
 .open-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--label); box-shadow: 0 0 0 3px rgba(0,0,0,.55); display: block; }
-.spawn-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(201,165,92,.35); display: block; }
+/* Gold is kept for what is active: the candidates in focus mode. Spawn pins are white and shaped apart:
+   an option is a hollow ring, the chosen spawn a haloed "you are here" puck. */
+.spawn-ring { width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--label); background: rgba(0,0,0,.35); box-shadow: 0 0 0 2px rgba(0,0,0,.45); display: block; }
+.spawn-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--label); box-shadow: 0 0 0 3px var(--bg), 0 0 0 7px rgba(235,235,245,.45); display: block; }
 .pin-candidate .open-dot { background: var(--accent); }
 .structure-icon { position: relative; display: inline-grid; place-items: center; }
 .structure-icon img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.8)); }
@@ -74,7 +77,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* A zero-size anchor on the point: the dot centres on it, the label hangs below and is slid sideways by MapView. */
 .marker { position: absolute; width: 0; height: 0; pointer-events: none; }
 .marker-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--label); box-shadow: 0 0 0 1.5px rgba(0,0,0,.7); }
-.marker-circle .marker-dot { background: var(--accent); }
 .marker-boss .marker-dot { background: transparent; border: 1.5px solid var(--label); box-sizing: border-box; }
 .marker-label {
   position: absolute; top: 8px; left: 0; width: max-content; max-width: 180px;
@@ -134,7 +136,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .result-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .result-title { font-size: 22px; margin: 0; font-weight: 400; white-space: nowrap; }
 .result-sub { margin: 2px 0 0; color: var(--label-2); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.event-badge { min-width: 0; padding: 2px 8px; border-radius: 8px; background: rgba(201,165,92,.18); color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-badge { min-width: 0; padding: 2px 8px; border-radius: 8px; background: var(--fill); color: var(--label); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; background: var(--fill); display: grid; place-items: center; }
 .run-card { margin: 12px 0 0; padding: 0; list-style: none; border-radius: 14px; overflow: hidden; display: grid; gap: 1px; background: var(--separator); }
 .run-row { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; column-gap: 8px; min-height: 44px; box-sizing: border-box; padding: 10px 14px; background: var(--surface-2); font-size: 15px; }
@@ -174,4 +176,4 @@ li.run-row .run-more { justify-content: space-between; text-align: left; font-we
 .structure-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 .about p { color: var(--label-2); line-height: 1.5; }
 .about h2 { font-size: 17px; margin-top: 28px; }
-.about-back { min-height: 44px; display: inline-flex; align-items: center; gap: 2px; margin-left: -6px; color: var(--accent); font-weight: 600; }
+.about-back { min-height: 44px; display: inline-flex; align-items: center; gap: 2px; margin-left: -6px; font-weight: 600; }
