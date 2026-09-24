@@ -21,6 +21,15 @@ describe('a tap snaps to the nearest slot', () => {
     expect(nearestPin(one, { x: gh['9'].x + 31, y: gh['9'].y }, 30)).toBeNull()
   })
 
+  it('lets the pins the current step asks for win over a nearer other pin within reach', () => {
+    const isEighteen = (p: { slot: string }) => p.slot === '18'
+    const nearNine = { x: gh['9'].x, y: gh['9'].y - 5 } // 5 from slot 9, 27 from slot 18
+    expect(nearestPin(pins, nearNine, 30, isEighteen)?.slot).toBe('18')
+    // Out of the preferred pin's reach, the nearest other pin still answers.
+    const belowNine = { x: gh['9'].x, y: gh['9'].y + 10 } // 42 from slot 18
+    expect(nearestPin(pins, belowNine, 30, isEighteen)?.slot).toBe('9')
+  })
+
   it('finds nothing when no pin can be tapped', () => {
     expect(nearestPin([], { x: 500, y: 500 }, 30)).toBeNull()
   })

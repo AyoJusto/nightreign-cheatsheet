@@ -23,8 +23,8 @@ export interface MapContent {
   selected?: SlotId | null
   onPin: (slot: SlotId, state: PinState) => void
   onBackground?: () => void
-  /** Which pins a tap can land on in the current step; the rest count as the background. */
-  tappable?: (pin: Pin) => boolean
+  /** The pins the current step asks for: a tap in reach of one goes to it, even if another pin is nearer. */
+  preferred?: (pin: Pin) => boolean
 }
 
 export function MapView(props: MapContent & {
@@ -210,7 +210,7 @@ export function MapView(props: MapContent & {
     return () => offs.forEach((off) => off())
   }, [props.topInset, props.restInset, props.bottomInset, props.selected, props.pins])
 
-  // A tap goes to the nearest tappable slot within reach, not to whichever overlapping hit area is on top.
+  // A tap goes to the nearest slot within reach, preferring the step's own pins, not to whichever hit area is on top.
   const tapAt = (clientX: number, clientY: number) => {
     const r = frame.current!.getBoundingClientRect()
     const s = side()
@@ -218,7 +218,7 @@ export function MapView(props: MapContent & {
       x: ((clientX - r.left - r.width / 2 - x.get()) / s + 0.5) * 1000,
       y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
     }
-    const pin = nearestPin(props.tappable ? props.pins.filter(props.tappable) : props.pins, point, (TAP_REACH / s) * 1000)
+    const pin = nearestPin(props.pins, point, (TAP_REACH / s) * 1000, props.preferred)
     if (pin) props.onPin(pin.slot, pin.state)
     else props.onBackground?.()
   }

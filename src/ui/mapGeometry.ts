@@ -22,8 +22,17 @@ export function playableBox(points: Iterable<{ x: number; y: number }>): Box {
   }
 }
 
-/** The pin closest to `point`, if one lies within `radius` (all in image units). */
-export function nearestPin<P extends { x: number; y: number }>(pins: readonly P[], point: { x: number; y: number }, radius: number): P | null {
+/**
+ * The pin closest to `point` within `radius` (all in image units). A `preferred` pin in reach wins
+ * over any nearer other pin, so the pins the current step asks for are never out-tapped by a neighbour.
+ */
+export function nearestPin<P extends { x: number; y: number }>(
+  pins: readonly P[], point: { x: number; y: number }, radius: number, preferred?: (pin: P) => boolean,
+): P | null {
+  return (preferred && closest(pins.filter(preferred), point, radius)) || closest(pins, point, radius)
+}
+
+function closest<P extends { x: number; y: number }>(pins: readonly P[], point: { x: number; y: number }, radius: number): P | null {
   let best: P | null = null
   let bestDistance = Infinity
   for (const pin of pins) {
