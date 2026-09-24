@@ -81,11 +81,19 @@ export function Sheet(props: {
   // same spring it rose on (from wherever it is, so a drag-down close carries on from the finger), or under
   // reduced motion fades out. Re-opened before it has gone, it turns around from where it is.
   const [present, safeToRemove] = usePresence()
+  // While leaving, the capsule/solid morph holds its exit-start value, so the sheet slides down whole, like an
+  // Apple sheet, instead of dissolving into an empty glass capsule. Re-opened mid-exit, it holds until it is back
+  // at its detent, so it does not pop to a capsule where it is; a grab hands the morph back to the finger.
+  const frozenPeek = useRef<number | null>(null)
   useEffect(() => {
     if (present) {
-      if (measured) moveTo(h.full - h[props.detent])
+      if (!measured) return
+      const move = moveTo(h.full - h[props.detent])
+      if (frozenPeek.current !== null) move?.then(() => { frozenPeek.current = null })
       return
     }
+    // Under reduced motion it fades where it is; there is no slide to hold the look for.
+    if (!reduce) frozenPeek.current = towardPeek(y.get())
     let cancelled = false
     const gone = () => {
       if (cancelled) return
@@ -99,7 +107,7 @@ export function Sheet(props: {
   }, [present, props.detent, h.peek, h.half, h.full, measured])
 
   // 0 at half and above, 1 at peek: drives the float inset, the radius, the glass crossfade and the body fade.
-  const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
+  const towardPeek = (v: number) => frozenPeek.current ?? clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
   const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
   // Left and right add the notch's own inset on top of the float, so a landscape sheet never floats under it.
   const insetLeft = useTransform(y, (v) => FLOAT * towardPeek(v) + m.safeLeft)
@@ -159,7 +167,7 @@ export function Sheet(props: {
           it is a capsule floating FLOAT off every edge. No clip-path: it would cut the glass off from the map behind. */}
       <motion.div className="sheet-layer glass" style={{ bottom: 'auto', height: h.peek, opacity: fade }} aria-hidden />
       <motion.div className="sheet-layer sheet-solid" style={{ opacity: solidShown }} aria-hidden />
-      <motion.div className="sheet-grab" ref={grab} style={{ opacity: fade }} onPointerDown={(e) => controls.start(e)}>
+      <motion.div className="sheet-grab" ref={grab} style={{ opacity: fade }} onPointerDown={(e) => { frozenPeek.current = null; controls.start(e) }}>
         <button
           className="sheet-handle"
           aria-label={`Resize ${props.label}, ${DETENT_NAMES[props.detent]}`}
