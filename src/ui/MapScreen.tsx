@@ -11,10 +11,10 @@ type MapRoute = Extract<Route, { name: 'find' | 'seed' }>
 
 export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, replace?: boolean) => void }) {
   const wide = useWide()
-  const bottomInset = useMotionValue(96)
+  const bottomInset = useMotionValue(0)
   const noInset = useMotionValue(0) // desktop: the side panel never covers the map
   const topInset = useMotionValue(0) // bottom edge of the overlay's top pill, measured by the overlay
-  const restInset = useMotionValue(96) // what the overlay covers at the bottom when no sheet is open
+  const restInset = useMotionValue(0) // what the overlay covers at the bottom when no sheet is open
   // One map for both modes: the overlays hand it their pins, so finder to result keeps the map in place.
   const [content, setContent] = useState<MapContent>({ pins: [] })
   // parseRoute only yields a seed route for ids that exist.
