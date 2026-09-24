@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence, type MotionValue } from 'motion/react'
+import { AnimatePresence, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
+import { StructureButtons, StructureStrip } from './StructureStrip'
+import { groupByKind } from './structureGroups'
 import { Icon } from './Icon'
 import { useSightings, encodeSightings } from './useSightings'
 import { useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
-import { structureName, nightlordName, earthName, type EarthId, type NightlordId, type SlotId, type StructureKey } from '../domain/names'
+import { splitStructure, structureName, nightlordName, earthName, type EarthId, type NightlordId, type SlotId, type StructureKey } from '../domain/names'
 import type { Seed } from '../domain/seed'
 import { Scouting, type Sighting } from '../domain/scouting'
 
@@ -26,6 +28,8 @@ export function FinderOverlay(props: {
   const [scouting, setScouting] = useSightings(props.pool)
   const [selected, setSelected] = useState<SlotId | null>(null)
   const [focus, setFocus] = useState<StructureKey | null>(null)
+  // The strip kind whose element variants are expanded.
+  const [open, setOpen] = useState<string | null>(null)
   const [detent, setDetent] = useState<Detent>('peek')
   const coords = catalog.slotsOf(props.earth)
   const count = scouting.candidates().length
@@ -48,7 +52,7 @@ export function FinderOverlay(props: {
     return () => clearTimeout(t)
   }, [scouting, props.go])
 
-  const close = useCallback(() => { setFocus(null); setSelected(null); setDetent('peek') }, [])
+  const close = useCallback(() => { setFocus(null); setOpen(null); setSelected(null); setDetent('peek') }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
@@ -88,9 +92,7 @@ export function FinderOverlay(props: {
   const sightedHere = selected ? scouting.sightings.find((s) => s.type !== 'spawn' && s.slot === selected) : undefined
   // The spawn pin holds the spawn sighting, not a structure question.
   const options = selected && !atSpawn ? scouting.possibilitiesAt(selected) : []
-  // Sorted by key so kinds group together and icons keep their place between sightings.
-  const inPlay = [...scouting.structuresInPlay()].sort((a, b) => a.structure.localeCompare(b.structure))
-
+  const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
   const choices = selected && (
     <ul className="options" aria-label={`Slot ${selected}`}>
       {/* First, so the half-height sheet never cuts it off. */}
@@ -115,13 +117,15 @@ export function FinderOverlay(props: {
       ))}
     </ul>
   )
-  const structureButtons = inPlay.map(({ structure }) => (
-    <motion.button key={structure} layout className="strip-item" aria-label={`Find ${structureName(structure)}`}
-      aria-pressed={focus === structure}
-      onClick={() => { setSelected(null); setFocus(focus === structure ? null : structure) }}>
-      <StructureIcon structure={structure} size={32} />
-    </motion.button>
-  ))
+  const structureButtons = (
+    <StructureButtons groups={groups} open={open} focus={focus}
+      onKind={(kind) => { setSelected(null); setFocus(null); setOpen(open === kind ? null : kind) }}
+      onVariant={(v) => {
+        setSelected(null)
+        setFocus(focus === v ? null : v)
+        if (splitStructure(v).kind !== open) setOpen(null)
+      }} />
+  )
   const choicesTitle = atSpawn ? 'Spawn point' : "What's here?"
 
   return (
@@ -137,7 +141,7 @@ export function FinderOverlay(props: {
           onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
       </Glass>
       {!wide && (
-        <Glass className="strip" ref={stripRef} role="toolbar" aria-label="Structures still possible">{structureButtons}</Glass>
+        <StructureStrip glassRef={stripRef} open={open} hidden={!groups.length}>{structureButtons}</StructureStrip>
       )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
@@ -149,7 +153,7 @@ export function FinderOverlay(props: {
               {choices}
             </section>
           ) : <p className="hint">Select a slot or a structure.</p>}
-          {inPlay.length > 0 && (
+          {groups.length > 0 && (
             <section>
               <h3 className="side-heading">Structures still possible</h3>
               <div className="structure-grid" role="toolbar" aria-label="Structures still possible">{structureButtons}</div>
