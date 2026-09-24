@@ -82,6 +82,9 @@ export function Sheet(props: {
   const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
   const radius = useTransform(y, (v) => 12 + 16 * clamp01(v / Math.max(1, h.full - h.half)))
   const solid = useTransform(y, (v) => 1 - towardPeek(v))
+  // The reduced-motion fade goes on each layer, never the section: opacity on an ancestor of the glass would
+  // cut its blur off from the map behind for the length of the fade.
+  const solidShown = useTransform(() => solid.get() * fade.get())
 
   // Publish what the sheet covers, including the starting value, so the map can inset itself.
   useEffect(() => {
@@ -111,7 +114,7 @@ export function Sheet(props: {
       className="sheet"
       role="dialog"
       aria-label={props.label}
-      style={{ y, opacity: fade, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius }}
+      style={{ y, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius }}
       drag="y"
       dragListener={false}
       dragControls={controls}
@@ -124,9 +127,9 @@ export function Sheet(props: {
       {/* Glass when collapsed, solid when open: the solid layer fades over the glass, so the blur radius never animates.
           The box itself runs past the bottom of the screen, so the glass is only as tall as the peek: collapsed,
           it is a capsule floating FLOAT off every edge. No clip-path: it would cut the glass off from the map behind. */}
-      <div className="sheet-layer glass" style={{ bottom: 'auto', height: h.peek }} aria-hidden />
-      <motion.div className="sheet-layer sheet-solid" style={{ opacity: solid }} aria-hidden />
-      <div className="sheet-grab" ref={grab} onPointerDown={(e) => controls.start(e)}>
+      <motion.div className="sheet-layer glass" style={{ bottom: 'auto', height: h.peek, opacity: fade }} aria-hidden />
+      <motion.div className="sheet-layer sheet-solid" style={{ opacity: solidShown }} aria-hidden />
+      <motion.div className="sheet-grab" ref={grab} style={{ opacity: fade }} onPointerDown={(e) => controls.start(e)}>
         <button
           className="sheet-handle"
           aria-label={`Resize ${props.label}, ${DETENT_NAMES[props.detent]}`}
@@ -141,9 +144,9 @@ export function Sheet(props: {
           <span aria-hidden />
         </button>
         {props.header}
-      </div>
+      </motion.div>
       {/* Scrolls at half too; the bottom padding lets the end of the content rise above the screen edge. */}
-      <motion.div className="sheet-body" style={{ opacity: solid, overflowY: props.detent === 'peek' ? 'hidden' : 'auto', paddingBottom: h.full - h[props.detent] }}>
+      <motion.div className="sheet-body" style={{ opacity: solidShown, overflowY: props.detent === 'peek' ? 'hidden' : 'auto', paddingBottom: h.full - h[props.detent] }}>
         <div className="sheet-half" ref={content}>{props.children}</div>
         {props.more && <div className="sheet-more">{props.more}</div>}
       </motion.div>
