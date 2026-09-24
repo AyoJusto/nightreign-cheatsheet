@@ -26,7 +26,8 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
             <motion.button
               className="nightlord"
               aria-pressed={picked === n.id}
-              animate={{ scale: picked === n.id ? 1.04 : 1, opacity: picked && picked !== n.id ? 0.5 : 1 }}
+              // The gold ring marks the pick; no scale, which would drop its name out of line with its row.
+              animate={{ opacity: picked && picked !== n.id ? 0.5 : 1 }}
               transition={spring}
               onClick={() => setPicked(n.id)}
             >
