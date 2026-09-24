@@ -183,8 +183,13 @@ test('the count is announced as a full phrase', async ({ page, isMobile }) => {
   await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
   const live = page.locator('[aria-live]')
   await expect(live).toHaveText(isMobile ? /^Tap where you spawned, \d+ possible$/ : /^\d+ possible$/)
-  await page.getByRole('button', { name: /^Possible spawn point, leaves / }).first().click()
-  await expect(live).toHaveText(/^\d+ possible$/)
+  // The same live element must carry the new count: a remounted one arrives pre-filled and may go unannounced.
+  await live.evaluate((el) => { el.dataset.probe = 'kept' })
+  const spawn = page.getByRole('button', { name: /^Possible spawn point, leaves / }).first()
+  const leaves = (await spawn.getAttribute('aria-label'))!.match(/leaves (\d+)/)![1]
+  await spawn.click()
+  await expect(live).toHaveText(`${leaves} possible`)
+  await expect(live).toHaveAttribute('data-probe', 'kept')
 })
 
 // Desktop: selecting a site should not force a keyboard user to tab past every other pin to reach its

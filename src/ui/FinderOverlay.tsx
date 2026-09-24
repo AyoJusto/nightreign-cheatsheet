@@ -188,10 +188,12 @@ export function FinderOverlay(props: {
         {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
         {!wide && (
           <span className="pill-text">
-            {/* The live region carries the whole phrase, so the words around the digits are hidden from screen readers. */}
-            {spawn
-              ? <><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></>
-              : <><span aria-hidden>{verb} where you spawned · </span><Count value={count} phrase={`${verb} where you spawned, ${count} possible`} /></>}
+            {/* The live region carries the whole phrase, so the words around the digits are hidden from screen readers.
+                Count keeps one slot in both states: remounted, the digits would not roll and a pre-filled live region
+                may never be announced. */}
+            {!spawn && <span aria-hidden>{verb} where you spawned · </span>}
+            <Count value={count} phrase={spawn ? `${count} possible` : `${verb} where you spawned, ${count} possible`} />
+            {spawn && <span aria-hidden> possible</span>}
           </span>
         )}
         <div className="pill-trailing">
