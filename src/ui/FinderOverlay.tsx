@@ -5,6 +5,7 @@ import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
 import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
+import { Icon } from './Icon'
 import { useSightings, encodeSightings } from './useSightings'
 import { useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
@@ -108,7 +109,7 @@ export function FinderOverlay(props: {
           >
             <StructureIcon structure={option === 'nothing' ? null : option} size={40} />
             <span className="option-name">{option === 'nothing' ? 'Nothing here' : structureName(option)}</span>
-            <span className="num option-count">→ {remaining}</span>
+            <span className="num option-count"><Icon name="arrow" size={15} />{remaining}</span>
           </button>
         </li>
       ))}
@@ -126,14 +127,14 @@ export function FinderOverlay(props: {
   return (
     <>
       <Glass className="pill" ref={pillRef}>
-        <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}>‹</button>
+        <button className="pill-back" aria-label="Back" onClick={() => props.go('/')}><Icon name="back" /></button>
         <span className="pill-text">
           {spawn ? <><Count value={count} /> possible</> : <>Tap where you spawned · <Count value={count} /></>}
         </span>
         <button aria-label="Undo" disabled={!scouting.sightings.length}
-          onClick={() => apply(scouting.retract(targetOf(scouting.sightings[scouting.sightings.length - 1])))}>↶</button>
+          onClick={() => apply(scouting.retract(targetOf(scouting.sightings[scouting.sightings.length - 1])))}><Icon name="undo" /></button>
         <button aria-label="Reset" disabled={!scouting.sightings.length}
-          onClick={() => apply(Scouting.start(props.pool))}>⟲</button>
+          onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
       </Glass>
       {!wide && (
         <Glass className="strip" ref={stripRef} role="toolbar" aria-label="Structures still possible">{structureButtons}</Glass>

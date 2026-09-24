@@ -3,6 +3,7 @@ import { motion, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { Glass } from './Glass'
+import { Icon } from './Icon'
 import { useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { decodeSightings, encodeSightings } from './useSightings'
@@ -96,9 +97,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
         <p className="result-sub">{nightlordName(seed.nightlord)} · {earthName(seed.earth)}</p>
       </div>
       <button className="share" aria-label="Share" onClick={share}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M12 3v12M8 7l4-4 4 4M7 11H5v10h14V11h-2" />
-        </svg>
+        <Icon name="share" />
       </button>
     </div>
   )
@@ -133,7 +132,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   return (
     <>
       <Glass className="pill" ref={pillRef}>
-        <button className="pill-back" aria-label="Back" onClick={back}>‹</button>
+        <button className="pill-back" aria-label="Back" onClick={back}><Icon name="back" /></button>
         <div className="chips" role="group" aria-label="Map layers">
           {available.map((l) => (
             <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
@@ -167,9 +166,7 @@ function RunRow({ label, value }: { label?: string; value: string }) {
         {notes ? (
           <button className="run-more" aria-expanded={open} onClick={() => setOpen(!open)}>
             {value}
-            <svg className="run-chevron" width="10" height="12" viewBox="1 0 10 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M4.5 2.5 8 6l-3.5 3.5" />
-            </svg>
+            <Icon name="chevron" size={14} className="run-chevron" />
           </button>
         ) : value}
       </Value>
