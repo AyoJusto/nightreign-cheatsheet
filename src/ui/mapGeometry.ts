@@ -60,7 +60,8 @@ export interface Rect { x0: number; y0: number; x1: number; y1: number }
 
 /**
  * Where a label goes around a point, as its top-left corner in frame px: below, above, right or left of
- * the point, then the four diagonals, kept `edge` px inside the frame. The point's own glyph (`mark` px
+ * the point, then the four diagonals, kept `edge` px inside the frame. The frame's visible band runs from
+ * `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph (`mark` px
  * around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
  * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first
  * that covers none of `obstacles` wins; if every one covers something, the one covering the least area,
@@ -69,13 +70,14 @@ export interface Rect { x0: number; y0: number; x1: number; y1: number }
 export function placeLabel(
   point: { x: number; y: number },
   label: { w: number; h: number },
-  frame: { w: number; h: number },
+  frame: { w: number; h: number; top?: number },
   obstacles: Rect[],
   gap: number,
   edge: number,
   mark = 0,
 ): { x: number; y: number; clear: boolean } {
-  const keepIn = (v: number, size: number, room: number) => Math.max(edge, Math.min(room - edge - size, v))
+  const top = frame.top ?? 0
+  const keepIn = (v: number, size: number, start: number, end: number) => Math.max(start + edge, Math.min(end - edge - size, v))
   const spots = [
     { x: point.x - label.w / 2, y: point.y + gap },
     { x: point.x - label.w / 2, y: point.y - gap - label.h },
@@ -85,7 +87,7 @@ export function placeLabel(
     { x: point.x - gap * 0.7 - label.w, y: point.y + gap * 0.7 },
     { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
     { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
-  ].map((s) => ({ x: keepIn(s.x, label.w, frame.w), y: keepIn(s.y, label.h, frame.h) }))
+  ].map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
   const overlap = (s: { x: number; y: number }, o: Rect) => {
     const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
     const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)

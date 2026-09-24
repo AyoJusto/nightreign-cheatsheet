@@ -326,7 +326,7 @@ export function MapView(props: MapContent & {
           </motion.span>
         ))}
         {/* After the pins, so a label is never under a structure; MapMarker also places it off every pin. */}
-        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} bottomInset={props.bottomInset} pinScale={pinScale} artOf={artOf} dotScale={dotScale} />)}
+        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} topInset={props.topInset} bottomInset={props.bottomInset} pinScale={pinScale} artOf={artOf} dotScale={dotScale} />)}
       </motion.div>
     </div>
   )
@@ -342,13 +342,14 @@ const MARK_RADIUS = 6
  * A glyph on the exact point, with its label beside it: below, above, right or left, whichever covers no
  * pin (structures stay visible), kept inside the frame. Placement is live through pan and zoom (transform only).
  */
-function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, artOf, dotScale }: {
+function MapMarker({ marker, pins, x, y, scale, size, topInset, bottomInset, pinScale, artOf, dotScale }: {
   marker: Marker
   pins: Pin[]
   x: MotionValue<number>
   y: MotionValue<number>
   scale: MotionValue<number>
   size: MotionValue<{ w: number; h: number }>
+  topInset: MotionValue<number>
   bottomInset: MotionValue<number>
   pinScale: MotionValue<number>
   artOf: (p: Pin) => MotionValue<number>
@@ -374,16 +375,21 @@ function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, art
       const r = p.structure ? (ART_SIZE / 2 + 4) * artOf(p).get() : 10 * dotScale.get()
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
-    // The visible frame stops at whatever covers the bottom right now (the sheet at half), so no label is sliced by it.
-    const visible = { w, h: h - bottomInset.get() }
+    // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
+    // so no label is sliced by the sheet or drawn under the pill's controls.
+    const visible = { w, top: topInset.get(), h: h - bottomInset.get() }
     const spot = placeLabel(point, box.get(), visible, obstacles, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
-    return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear }
+    // A point under the pill or the sheet has no place for its label: clamped into the band, it would
+    // float away from its glyph, and a fully open sheet would stack every such label under the pill.
+    const inBand = point.y >= visible.top && point.y <= visible.h
+    return { x: spot.x - point.x, y: spot.y - point.y, clear: spot.clear, inBand }
   })
   const labelX = useTransform(offset, (o) => o.x)
   const labelY = useTransform(offset, (o) => o.y)
-  // A night's circle always keeps its short chip. Other labels (field bosses, evergaols…) step aside when
-  // there is no free spot, leaving the glyph: their names are listed in the sheet, and a structure matters more.
-  const labelOpacity = useTransform(offset, (o) => (o.clear || marker.layer === 'circle' ? 1 : 0))
+  // A night's circle keeps its short chip while its point is in sight. Other labels (field bosses, evergaols…)
+  // also step aside when there is no free spot, leaving the glyph: their names are listed in the sheet, and a
+  // structure matters more.
+  const labelOpacity = useTransform(offset, (o) => (o.inBand && (o.clear || marker.layer === 'circle') ? 1 : 0))
   // Measured after the transforms above: Motion re-subscribes them in its own layout effects, and a write
   // made before that in the same commit would be missed, leaving the label placed as if it had no size.
   useLayoutEffect(() => box.set({ w: label.current!.offsetWidth, h: label.current!.offsetHeight }), [text, box])

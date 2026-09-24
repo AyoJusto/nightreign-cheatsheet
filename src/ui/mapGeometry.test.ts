@@ -106,6 +106,21 @@ describe('placeLabel', () => {
     expect(coversPoint(spot, point)).toBe(false)
   })
 
+  it('keeps the label below a top pill that covers the frame top', () => {
+    // A point just under a pill whose bottom edge is at y=60: "above" would put the label under the pill.
+    const point = { x: 200, y: 70 }
+    const pinBelow = { x0: 150, y0: 75, x1: 250, y1: 120 }
+    const spot = placeLabel(point, label, { w: 400, h: 600, top: 60 }, [pinBelow], 9, 8, 6)
+    expect(spot.y).toBeGreaterThanOrEqual(60 + 8)
+    expect(coversPoint(spot, point)).toBe(false)
+  })
+
+  it('in a band that leaves no room above, clamps every spot below the top inset', () => {
+    // Fully open sheet: only the pill's own band would be free, so no spot may rise into it.
+    const spot = placeLabel({ x: 200, y: 40 }, label, { w: 400, h: 600, top: 60 }, [], 9, 8, 6)
+    expect(spot.y).toBeGreaterThanOrEqual(68)
+  })
+
   it('in a corner, still finds a spot clear of the point', () => {
     const point = { x: 4, y: 4 }
     const spot = placeLabel(point, label, frame, [], 9, 8, 6)
