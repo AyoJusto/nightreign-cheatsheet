@@ -13,6 +13,12 @@ export const hasCjk = (s: string) => /[\u3000-\u9FFF\uFF00-\uFFEF]/.test(s)
 export const normalizeBossName = (name: string) =>
   name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]/g, '')
 
+// Great Hollow "stack" labels join several bosses in one string ("A, B, C"); a plain `resolve(label)`
+// never matches, since the alias map keys on one boss's name. Apply it to each name, then rejoin.
+// A no-op for a plain single-boss label, so every bossName() call site can go through this.
+export const applyPerName = (label: string, resolve: (name: string) => string) =>
+  label.split(', ').map(resolve).join(', ')
+
 export function toStructureKey(raw: string): string | null {
   if (raw === '' || raw === 'empty_spawn') return null
   const value = raw.replace(/_spawn$/, '')
@@ -135,7 +141,7 @@ function main() {
     if (earth === 'great-hollow') {
       for (const [pos, entry] of Object.entries<any>(remote.greatHollow.seeds[id] ?? {})) {
         const at = remote.greatHollowPositions.positions[pos]
-        if (at && entry.kind !== 'label') markers.push({ layer: 'boss', x: at.x, y: at.y, label: bossName(entry.label) })
+        if (at && entry.kind !== 'label') markers.push({ layer: 'boss', x: at.x, y: at.y, label: applyPerName(entry.label, bossName) })
       }
       const spot = remote.greatHollowMerchant.seeds[id]
       if (spot) markers.push({ layer: 'merchant', ...remote.greatHollowMerchant.positions[spot], label: 'Town Merchant' })

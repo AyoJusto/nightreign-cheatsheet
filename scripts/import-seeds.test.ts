@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName } from './import-seeds.ts'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
@@ -68,15 +68,19 @@ describe('import translation', () => {
       expect(normalizeBossName('Tree Sentinel')).not.toBe(normalizeBossName('Tree Sentinels'))
     })
     // The regression this catches: the source spelled one boss two ways, and both spellings shipped.
+    // Great Hollow "stack" markers join several bosses in one label ("A, B, C"), so each label is
+    // split on ", " first: otherwise a spelling that only ever appears inside a joined label (as
+    // this one did) would never collide with its lone-boss spelling elsewhere.
     it('gives every distinct boss, castle and marker name in the shipped data its own key', () => {
       const seeds = JSON.parse(readFileSync('src/data/seeds.json', 'utf8'))
       const names = new Set<string>()
+      const addAll = (label: string) => { for (const name of label.split(', ')) names.add(name) }
       for (const s of seeds.seeds) {
-        if (s.nights[1].boss) names.add(s.nights[1].boss)
-        if (s.nights[2].boss) names.add(s.nights[2].boss)
-        if (s.castle?.basement) names.add(s.castle.basement)
-        if (s.castle?.rooftop) names.add(s.castle.rooftop)
-        for (const m of s.markers) if (m.layer === 'boss' || m.layer === 'evergaol') names.add(m.label)
+        if (s.nights[1].boss) addAll(s.nights[1].boss)
+        if (s.nights[2].boss) addAll(s.nights[2].boss)
+        if (s.castle?.basement) addAll(s.castle.basement)
+        if (s.castle?.rooftop) addAll(s.castle.rooftop)
+        for (const m of s.markers) if (m.layer === 'boss' || m.layer === 'evergaol') addAll(m.label)
       }
       const byKey = new Map<string, string>()
       for (const name of names) {
@@ -84,6 +88,16 @@ describe('import translation', () => {
         expect(byKey.get(key), `"${name}" and "${byKey.get(key)}" normalize to the same key`).toBeUndefined()
         byKey.set(key, name)
       }
+    })
+  })
+
+  describe('applyPerName (comma-joined labels)', () => {
+    it('resolves each name in a joined label and rejoins them', () => {
+      const resolve = (n: string) => (n === 'A' ? 'Z' : n)
+      expect(applyPerName('A, B, C', resolve)).toBe('Z, B, C')
+    })
+    it('is a no-op shape for a single, unjoined name', () => {
+      expect(applyPerName('Solo Boss', (n) => n)).toBe('Solo Boss')
     })
   })
 })
