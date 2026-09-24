@@ -177,8 +177,10 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .pill button:disabled { opacity: 0.3; cursor: default; }
 /* A title centres on the pill's own width (which spans the screen), not in whatever space the buttons leave:
    two equal flexible edge columns hold the leading and trailing controls, however many there are on each side,
-   so the middle column (the title) always lands on the pill's true centre, like an iOS nav bar. */
-.pill-titled { display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; }
+   so the middle column (the title) always lands on the pill's true centre, like an iOS nav bar.
+   minmax(0, 1fr), not plain 1fr: plain 1fr's implicit auto minimum is each side's own content width, so one
+   button vs. two stayed unequal; a 0 minimum lets both sides take a truly equal share of the leftover space. */
+.pill-titled { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); }
 .pill-leading, .pill-trailing { display: flex; align-items: center; gap: 2px; }
 .pill-leading { grid-column: 1; justify-self: start; }
 .pill-trailing { grid-column: 3; justify-self: end; }
