@@ -58,7 +58,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .nightlord-grid > li { width: calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); }
 @media (min-width: 900px) {
   .home { padding-top: calc(var(--safe-top) + 48px); }
-  .home-title { font-size: 34px; line-height: 41px; text-align: center; margin-bottom: 40px; }
+  .home-title { font-size: 34px; line-height: 41px; margin-bottom: 40px; }
+  /* Only Home centres its title over the grid; About keeps it in line with its Back button and text. */
+  .home:not(.about) .home-title { text-align: center; }
   .nightlord-grid { --cols: 5; --gap: 32px; row-gap: 32px; justify-content: center; }
 }
 .nightlord { width: 100%; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; border-radius: 16px; }
