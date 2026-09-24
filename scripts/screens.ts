@@ -41,6 +41,11 @@ const shots: [string, Shot][] = [
     await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn}`)
     await p.getByRole('button', { name: /^Find / }).first().click()
   }],
+  ['finder-certain-slot', async (p) => {
+    // Slot 24 (church) on this seed leaves two candidates that agree on several other slots, so those
+    // reveal as certain (ghosted) without narrowing to one seed and leaving the finder (m6).
+    await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn},24@church`)
+  }],
   ['result-peek', async (p) => { await p.goto(`${base}/seed/${seed.id}`) }],
   ['about', async (p) => { await p.goto(`${base}/about`) }],
   ['great-hollow', async (p) => { await p.goto(`${base}/find/dreglord/great-hollow`) }],
