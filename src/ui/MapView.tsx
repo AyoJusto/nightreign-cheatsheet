@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import type { EarthId, SlotId, StructureKey } from '../domain/names'
@@ -36,7 +36,7 @@ export function MapView(props: MapContent & {
 }) {
   const frame = useRef<HTMLDivElement>(null)
   // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
-  const size = useRef({ w: 0, h: 0 })
+  const size = useMotionValue({ w: 0, h: 0 })
   const box = useMemo(() => playableBox(Object.values(catalog.slotsOf(props.earth))), [props.earth])
   // Until the user moves the map, it keeps itself framed on the playable area as insets settle.
   const touched = useRef(false)
@@ -48,11 +48,11 @@ export function MapView(props: MapContent & {
   const reduce = useReducedMotion()
   const move = reduce ? { duration: 0 } : snap
 
-  const side = (s = scale.get()) => Math.max(size.current.w, size.current.h) * s
+  const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
   // The image always covers the frame; its bottom edge may rise to whatever covers the bottom of the screen.
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
   const bounds = (axis: 'x' | 'y', s = scale.get()) => {
-    const slack = Math.max(0, (side(s) - (axis === 'x' ? size.current.w : size.current.h)) / 2)
+    const slack = Math.max(0, (side(s) - (axis === 'x' ? size.get().w : size.get().h)) / 2)
     return { min: axis === 'x' ? -slack : -slack - props.bottomInset.get(), max: slack }
   }
   const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
@@ -62,20 +62,20 @@ export function MapView(props: MapContent & {
   // Under the finger the map may go past its bounds, with resistance; release springs it back.
   const band = (v: number, axis: 'x' | 'y') => {
     const { min, max } = bounds(axis)
-    return rubberband(v, min, max, axis === 'x' ? size.current.w : size.current.h)
+    return rubberband(v, min, max, axis === 'x' ? size.get().w : size.get().h)
   }
   // If the selected pin would sit under the sheet, pan it up into the visible area.
   const reveal = (s = scale.get()): number | undefined => {
     const pin = props.pins.find((p) => p.slot === props.selected)
     if (!pin) return undefined
-    const { h } = size.current
+    const { h } = size.get()
     const pinY = h / 2 + y.get() + (pin.y / 1000 - 0.5) * side(s)
     const visibleBottom = h - props.bottomInset.get() - 56
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
   }
   // Fit the playable area into the space between the top and bottom overlays, as far as covering the frame allows.
   const fit = () => {
-    const { w, h } = size.current
+    const { w, h } = size.get()
     if (!w || !h) return
     const top = props.topInset.get()
     const bottom = h - props.bottomInset.get()
@@ -208,7 +208,7 @@ export function MapView(props: MapContent & {
 
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
-      size.current = { w: entry.contentRect.width, h: entry.contentRect.height }
+      size.set({ w: entry.contentRect.width, h: entry.contentRect.height })
       if (!touched.current) fit()
       else settle()
     })
@@ -222,15 +222,7 @@ export function MapView(props: MapContent & {
       <motion.div className="map-layer" style={{ x, y, scale }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
-        {props.markers?.map((m, i) => (
-          <motion.span
-            key={i}
-            className={`marker marker-${m.layer}`}
-            style={{ left: `${m.x / 10}%`, top: `${m.y / 10}%`, x: '-50%', y: '-50%', scale: pinScale }}
-          >
-            <span className="marker-label">{m.label}</span>
-          </motion.span>
-        ))}
+        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} x={x} scale={scale} size={size} pinScale={pinScale} />)}
         {props.pins.map((p) => (
           <motion.button
             // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
@@ -255,5 +247,34 @@ export function MapView(props: MapContent & {
         ))}
       </motion.div>
     </div>
+  )
+}
+
+// Gap kept between a marker label and the frame's side edges.
+const LABEL_EDGE = 8
+
+/** A dot on the exact point, with its label below it, slid inward so it never runs off the side of the frame. */
+function MapMarker({ marker, x, scale, size, pinScale }: {
+  marker: Marker
+  x: MotionValue<number>
+  scale: MotionValue<number>
+  size: MotionValue<{ w: number; h: number }>
+  pinScale: MotionValue<number>
+}) {
+  const label = useRef<HTMLSpanElement>(null)
+  const width = useMotionValue(0)
+  useLayoutEffect(() => width.set(label.current!.offsetWidth), [marker.label, width])
+  // Screen px equal the label's own px here: the marker counter-scales the map's zoom.
+  const shift = useTransform(() => {
+    const { w, h } = size.get()
+    const point = w / 2 + x.get() + (marker.x / 1000 - 0.5) * Math.max(w, h) * scale.get()
+    const left = Math.max(LABEL_EDGE, Math.min(w - LABEL_EDGE - width.get(), point - width.get() / 2))
+    return left - point
+  })
+  return (
+    <motion.span className={`marker marker-${marker.layer}`} style={{ left: `${marker.x / 10}%`, top: `${marker.y / 10}%`, scale: pinScale }}>
+      <span className="marker-dot" />
+      <motion.span ref={label} className="marker-label" style={{ x: shift }}>{marker.label}</motion.span>
+    </motion.span>
   )
 }
