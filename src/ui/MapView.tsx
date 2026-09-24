@@ -1,5 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionStyle, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import type { EarthId, SlotId, StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
@@ -11,6 +11,11 @@ export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' |
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
 
 const MAX_ZOOM = 4
+// Structure art keeps one on-screen size once the map is at least this wide (px), and shrinks with it
+// below that, down to ART_MIN, so close neighbours on a phone's zoomed-out map stop covering each other.
+const ART_FULL_SIDE = 800
+const ART_MIN = 0.7
+const ART_SIZE = 32
 // How far (CSS px on screen) a tap may land from a slot and still count as that slot.
 const TAP_REACH = 32
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
@@ -48,6 +53,12 @@ export function MapView(props: MapContent & {
   const y = useMotionValue(0)
   const scale = useMotionValue(1)
   const pinScale = useTransform(scale, (s) => 1 / s)
+  const artScale = useTransform(() => {
+    const { w, h } = size.get()
+    return Math.min(1, Math.max(ART_MIN, (Math.max(w, h) * scale.get()) / ART_FULL_SIDE))
+  })
+  // Element badges stay legible: they undo the art's shrink (a CSS transform, see .pin .element-badge).
+  const badgeUp = useTransform(artScale, (f) => 1 / f)
   // MotionConfig only reaches declarative animations; imperative ones jump when motion is reduced.
   const reduce = useReducedMotion()
   const move = reduce ? { duration: 0 } : snap
@@ -234,15 +245,14 @@ export function MapView(props: MapContent & {
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className="map-layer" style={{ x, y, scale }}>
+      <motion.div className="map-layer" style={{ x, y, scale, '--badge-up': badgeUp } as MotionStyle}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
-        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} x={x} scale={scale} size={size} pinScale={pinScale} />)}
         {props.pins.map((p) => (
           <motion.button
             // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
             key={`${p.slot}:${p.structure ?? p.state}`}
-            className={`pin pin-${p.state}`}
+            className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}`}
             aria-label={p.label}
             data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
             style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
@@ -259,11 +269,15 @@ export function MapView(props: MapContent & {
               props.onPin(p.slot, p.state)
             }}
           >
-            <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
-              {p.state === 'spawn-option' ? <span className="spawn-ring" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} /> : <span className="open-dot" />}
+            <motion.span className="pin-body" style={p.structure ? { scale: artScale } : undefined}>
+              <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
+                {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
+              </motion.span>
             </motion.span>
           </motion.button>
         ))}
+        {/* After the pins, so a circle or boss label is never hidden under a structure. */}
+        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} x={x} scale={scale} size={size} pinScale={pinScale} />)}
       </motion.div>
     </div>
   )
