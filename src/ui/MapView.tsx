@@ -48,6 +48,17 @@ export function MapView(props: {
     const visibleBottom = r.height - props.bottomInset.get() - 56
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
   }
+  // Which gestures own the motion values right now; the sheet-driven settle must not fight them.
+  const active = useRef({ drag: false, pinch: false })
+  // MotionValue.set does not stop a running animation, so a new gesture must stop the glide or
+  // settle spring itself. use-gesture calls `from` at pointer-down, before any handler runs,
+  // so stopping here freezes the map exactly where the finger landed.
+  const grab = (gesture: 'drag' | 'pinch') => {
+    active.current[gesture] = true
+    x.stop()
+    y.stop()
+    scale.stop()
+  }
   const settle = () => {
     const s = boundScale(scale.get())
     if (s !== scale.get()) animate(scale, s, snap)
@@ -64,13 +75,20 @@ export function MapView(props: {
         y.set(oy)
       },
       onDragEnd: ({ velocity: [vx, vy], direction: [dx, dy], tap, canceled }) => {
-        if (tap || canceled) return
+        active.current.drag = false
+        if (canceled) return
+        // A tap can stop a glide mid-bounce, out of bounds; settle puts it back.
+        if (tap) return settle()
         // use-gesture reports speed in px/ms with a separate sign; Motion wants signed px/s.
-        // Inertia ignores the target, but Motion skips an animation whose target equals the current
-        // value when velocity is 0, so the clamped target keeps the rubber-band snap-back alive.
+        const velocityX = vx * dx * 1000
+        const velocityY = vy * dy * 1000
         const inertia = { type: 'inertia', power: 0.3, bounceStiffness: 300, bounceDamping: 30 } as const
-        animate(x, clamp(x.get(), 'x'), { ...inertia, velocity: vx * dx * 1000, modifyTarget: (t: number) => clamp(t, 'x') })
-        animate(y, clamp(y.get(), 'y'), { ...inertia, velocity: vy * dy * 1000, modifyTarget: (t: number) => clamp(t, 'y') })
+        // Inertia computes its own end point, but Motion skips any 'inertia' animation whose target
+        // equals the current value, so pass the same projected, clamped end point as the target.
+        const glideX = clamp(x.get() + velocityX * inertia.power, 'x')
+        const glideY = clamp(y.get() + velocityY * inertia.power, 'y')
+        animate(x, glideX, { ...inertia, velocity: velocityX, modifyTarget: (t: number) => clamp(t, 'x') })
+        animate(y, glideY, { ...inertia, velocity: velocityY, modifyTarget: (t: number) => clamp(t, 'y') })
       },
       onPinch: ({ origin: [ox, oy], first, offset: [s], memo }) => {
         if (first) {
@@ -86,7 +104,10 @@ export function MapView(props: {
         scale.set(s)
         return memo
       },
-      onPinchEnd: settle,
+      onPinchEnd: () => {
+        active.current.pinch = false
+        settle()
+      },
       onWheel: ({ event, delta: [, dy] }) => {
         event.preventDefault()
         // Trackpad pinch arrives as ctrl+wheel and is already handled by onPinch.
@@ -98,8 +119,21 @@ export function MapView(props: {
     {
       target: frame,
       eventOptions: { passive: false },
-      drag: { from: () => [x.get(), y.get()], filterTaps: true },
-      pinch: { scaleBounds: { min: 1, max: MAX_ZOOM }, rubberband: true, from: () => [scale.get(), 0] },
+      drag: {
+        filterTaps: true,
+        from: (): [number, number] => {
+          grab('drag')
+          return [x.get(), y.get()]
+        },
+      },
+      pinch: {
+        scaleBounds: { min: 1, max: MAX_ZOOM },
+        rubberband: true,
+        from: (): [number, number] => {
+          grab('pinch')
+          return [scale.get(), 0]
+        },
+      },
     },
   )
 
@@ -108,7 +142,9 @@ export function MapView(props: {
   useEffect(() => {
     const target = reveal()
     if (target !== undefined) animate(y, target, snap)
-    return props.bottomInset.on('change', settle)
+    return props.bottomInset.on('change', () => {
+      if (!active.current.drag && !active.current.pinch) settle()
+    })
   }, [props.bottomInset, props.selected, props.pins])
 
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
