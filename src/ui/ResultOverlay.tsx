@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { motion, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
+import { collapseRepeats } from './collapseRepeats'
 import { Glass } from './Glass'
 import { Icon } from './Icon'
 import { useWide } from './useWide'
@@ -133,11 +134,12 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const lists = (
     <>
       {LISTS.map(([layer, heading]) => {
-        const items = markers.filter((m) => m.layer === layer)
-        return items.length ? (
+        // Two of the same field boss read as a rendering bug side by side; a count tells them apart.
+        const groups = collapseRepeats(markers.filter((m) => m.layer === layer), (m) => m.label)
+        return groups.length ? (
           <section key={layer} className="result-list">
             <h3>{heading}</h3>
-            <ul className="run-card">{items.map((m, i) => <RunRow key={`${i}:${m.label}`} value={m.label} />)}</ul>
+            <ul className="run-card">{groups.map((g, i) => <RunRow key={`${i}:${g.item.label}`} value={g.item.label} count={g.count} />)}</ul>
           </section>
         ) : null
       })}
@@ -168,9 +170,11 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 
 // A boss with notes in the data expands in place to show them; anything else is a plain row.
 // With a label it is a run card row (dt/dd); without, an item in a list of names.
-function RunRow({ label, value }: { label?: string; value: string }) {
+// `count` is display only (e.g. two identical field bosses -> "Name ×2"); notes still key off the plain name.
+function RunRow({ label, value, count }: { label?: string; value: string; count?: number }) {
   const [open, setOpen] = useState(false)
   const notes = catalog.bossNotes(value)
+  const shown = count && count > 1 ? `${value} ×${count}` : value
   const Row = label ? 'div' : 'li'
   const Value = label ? 'dd' : 'span'
   const Notes = label ? motion.dd : motion.p
@@ -180,10 +184,10 @@ function RunRow({ label, value }: { label?: string; value: string }) {
       <Value className="run-value">
         {notes ? (
           <button className="run-more" aria-expanded={open} onClick={() => setOpen(!open)}>
-            {value}
+            {shown}
             <Icon name="chevron" size={14} className="run-chevron" />
           </button>
-        ) : value}
+        ) : shown}
       </Value>
       {open && <Notes className="run-notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{notes}</Notes>}
     </Row>
