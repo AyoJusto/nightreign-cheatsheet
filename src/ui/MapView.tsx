@@ -1,7 +1,7 @@
-import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { motion, useMotionValue, useMotionValueEvent, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
+import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionStyle, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
-import type { EarthId, SlotId, StructureKey } from '../domain/names'
+import { splitStructure, type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
@@ -18,6 +18,8 @@ const MAX_ZOOM = 4
 // Dots only grow, from DOT_FULL_SIDE up to DOT_MAX.
 const ART_FULL_SIDE = 800
 const ART_MIN = 0.7
+// Elemental art keeps more of its size: its badge holds 11px letters, and on smaller art it would outweigh the art.
+const ELEMENTAL_ART_MIN = 0.9
 const ART_MAX = 1.3
 const ART_SIZE = 32
 const DOT_FULL_SIDE = 900
@@ -65,11 +67,12 @@ export function MapView(props: MapContent & {
   const pinScale = useTransform(scale, (s) => 1 / s)
   const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
   const artScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ART_MIN, ART_MAX))
+  const elementalArtScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ELEMENTAL_ART_MIN, ART_MAX))
+  const artOf = (p: Pin) => (p.structure && splitStructure(p.structure).element ? elementalArtScale : artScale)
   const dotScale = useTransform(mapWidth, (m) => clampTo(m / DOT_FULL_SIDE, 1, DOT_MAX))
-  // Element badges scale with the art, so they never outweigh it. Their 11px letters need the art at full size
-  // or larger; below that (a phone's zoomed-out map) each badge is a small dot in its element's colour.
-  const [smallArt, setSmallArt] = useState(() => artScale.get() < 1)
-  useMotionValueEvent(artScale, 'change', (f) => setSmallArt(f < 1))
+  // Element badges scale with the art, except that their letters never go under 11px: below full-size art
+  // they hold at that floor (a CSS transform, see .pin .element-badge), and no larger.
+  const badgeHold = useTransform(elementalArtScale, (f) => Math.max(1, 1 / f))
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
   const reduce = useReducedMotion()
   const fade = useMotionValue(1)
@@ -275,7 +278,7 @@ export function MapView(props: MapContent & {
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className={`map-layer${smallArt ? ' small-art' : ''}`} style={{ x, y, scale, opacity: fade }}>
+      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade, '--badge-hold': badgeHold } as MotionStyle}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {props.pins.map((p) => (
@@ -291,7 +294,7 @@ export function MapView(props: MapContent & {
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : p.state === 'certain' ? 0.7 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
           >
-            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : dotScale }}>
+            <motion.span className="pin-body" style={{ scale: p.structure ? artOf(p) : dotScale }}>
               <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
                 {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
               </motion.span>
@@ -316,7 +319,7 @@ export function MapView(props: MapContent & {
           </motion.span>
         ))}
         {/* After the pins, so a label is never under a structure; MapMarker also places it off every pin. */}
-        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} bottomInset={props.bottomInset} pinScale={pinScale} artScale={artScale} dotScale={dotScale} />)}
+        {props.markers?.map((m, i) => <MapMarker key={i} marker={m} pins={props.pins} x={x} y={y} scale={scale} size={size} bottomInset={props.bottomInset} pinScale={pinScale} artOf={artOf} dotScale={dotScale} />)}
       </motion.div>
     </div>
   )
@@ -332,7 +335,7 @@ const MARK_RADIUS = 6
  * A glyph on the exact point, with its label beside it: below, above, right or left, whichever covers no
  * pin (structures stay visible), kept inside the frame. Placement is live through pan and zoom (transform only).
  */
-function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, artScale, dotScale }: {
+function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, artOf, dotScale }: {
   marker: Marker
   pins: Pin[]
   x: MotionValue<number>
@@ -341,7 +344,7 @@ function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, art
   size: MotionValue<{ w: number; h: number }>
   bottomInset: MotionValue<number>
   pinScale: MotionValue<number>
-  artScale: MotionValue<number>
+  artOf: (p: Pin) => MotionValue<number>
   dotScale: MotionValue<number>
 }) {
   const label = useRef<HTMLSpanElement>(null)
@@ -361,7 +364,7 @@ function MapMarker({ marker, pins, x, y, scale, size, bottomInset, pinScale, art
     const obstacles = pins.map((p) => {
       const c = toScreen(p.x, p.y)
       // Art plus its badge's overhang, or a dot with its halo.
-      const r = p.structure ? (ART_SIZE / 2 + 4) * artScale.get() : 10 * dotScale.get()
+      const r = p.structure ? (ART_SIZE / 2 + 4) * artOf(p).get() : 10 * dotScale.get()
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
     // The visible frame stops at whatever covers the bottom right now (the sheet at half), so no label is sliced by it.

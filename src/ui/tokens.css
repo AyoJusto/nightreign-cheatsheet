@@ -123,12 +123,12 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
   /* A dark chip with the element's colour in its letters and rim, so the art stays the loudest thing on the map. */
   background: rgba(28, 28, 30, 0.92); color: var(--element); box-shadow: inset 0 0 0 1px var(--element), 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.5);
 }
-/* On the map the badge scales with the art, so the art stays the loudest thing there. Its letters would drop
-   under 11px on art below full size, so there (a phone's zoomed-out map, .small-art from MapView) it is a
-   small dot in the element's colour, and the letters return once the map is zoomed in. */
-.small-art .pin .element-badge {
-  min-width: 0; width: 10px; height: 10px; padding: 0; right: -1px; bottom: -1px; border-radius: 50%; font-size: 0;
-  background: var(--element); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5);
+/* On the map: a quieter, tighter chip (13px, hairline rim) that scales with the art but holds its letters at
+   the 11px floor when the art shrinks on a phone (--badge-hold from MapView), so it never swells past it. */
+.pin .element-badge {
+  min-width: 13px; height: 13px; padding: 0 2px; right: -2px; bottom: -2px; border-radius: 6.5px; line-height: 13px;
+  box-shadow: inset 0 0 0 0.75px var(--element), 0 0 0 1px rgba(0, 0, 0, 0.6);
+  transform: scale(var(--badge-hold, 1)); transform-origin: 100% 100%;
 }
 
 /* A zero-size anchor on the point: the glyph centres on it, MapView places the label beside it, clear of pins. */
