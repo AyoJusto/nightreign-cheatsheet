@@ -11,11 +11,17 @@ export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' |
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
 
 const MAX_ZOOM = 4
-// Structure art keeps one on-screen size once the map is at least this wide (px), and shrinks with it
-// below that, down to ART_MIN, so close neighbours on a phone's zoomed-out map stop covering each other.
+// Pins follow the map's on-screen width a little: structure art is full size when the map is ART_FULL_SIDE px
+// wide, shrinks below that (down to ART_MIN, so close neighbours on a phone's zoomed-out map stop covering
+// each other) and grows modestly above it (up to ART_MAX, so a large desktop map is not dotted with specks).
+// Dots only grow, from DOT_FULL_SIDE up to DOT_MAX.
 const ART_FULL_SIDE = 800
 const ART_MIN = 0.7
+const ART_MAX = 1.3
 const ART_SIZE = 32
+const DOT_FULL_SIDE = 900
+const DOT_MAX = 1.35
+const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 // How far (CSS px on screen) a tap may land from a slot and still count as that slot.
 const TAP_REACH = 32
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
@@ -53,11 +59,10 @@ export function MapView(props: MapContent & {
   const y = useMotionValue(0)
   const scale = useMotionValue(1)
   const pinScale = useTransform(scale, (s) => 1 / s)
-  const artScale = useTransform(() => {
-    const { w, h } = size.get()
-    return Math.min(1, Math.max(ART_MIN, (Math.max(w, h) * scale.get()) / ART_FULL_SIDE))
-  })
-  // Element badges stay legible: they undo the art's shrink (a CSS transform, see .pin .element-badge).
+  const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
+  const artScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ART_MIN, ART_MAX))
+  const dotScale = useTransform(mapWidth, (m) => clampTo(m / DOT_FULL_SIDE, 1, DOT_MAX))
+  // Element badges keep one legible size: they undo the art's scale (a CSS transform, see .pin .element-badge).
   const badgeUp = useTransform(artScale, (f) => 1 / f)
   // MotionConfig only reaches declarative animations; imperative ones jump when motion is reduced.
   const reduce = useReducedMotion()
@@ -269,7 +274,7 @@ export function MapView(props: MapContent & {
               props.onPin(p.slot, p.state)
             }}
           >
-            <motion.span className="pin-body" style={p.structure ? { scale: artScale } : undefined}>
+            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : dotScale }}>
               <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
                 {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
               </motion.span>
