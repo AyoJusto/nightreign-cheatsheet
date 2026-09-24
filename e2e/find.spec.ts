@@ -178,6 +178,32 @@ for (const reduced of [false, true]) {
   })
 }
 
+// Picking another site while the sheet is still leaving turns the one sheet around for the new site:
+// no second sheet, and nothing left inert.
+test('a site picked while the sheet is leaving reopens it for that site', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the sheet is phone only')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  const sites = page.getByRole('button', { name: 'Unknown site', exact: true })
+  const first = (await sites.nth(0).getAttribute('data-slot'))!
+  const second = (await sites.nth(1).getAttribute('data-slot'))!
+  await sites.nth(0).click()
+  await expect(page.locator(`.options[data-slot="${first}"]`)).toBeVisible()
+  await page.waitForTimeout(900) // let it rise and settle
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(150)
+  await expect(page.locator('.sheet')).toHaveCount(1) // still leaving
+  await sites.nth(1).click()
+  await expect(page.locator('.sheet')).toHaveCount(1)
+  await expect(page.locator('.sheet')).not.toHaveAttribute('inert')
+  await expect(page.locator('.sheet .options')).toHaveAttribute('data-slot', second)
+  await expect(page.locator('.pin-selected')).toHaveAttribute('data-slot', second)
+  await page.waitForTimeout(900)
+  // Settled at half and usable: its first option takes a tap.
+  await expect(page.locator('.sheet')).toHaveCount(1)
+  await expect(page.locator('.sheet .options button').first()).toBeInViewport()
+  await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
+})
+
 // The live region speaks the count as a phrase, never a bare number (iter-6 m3).
 test('the count is announced as a full phrase', async ({ page, isMobile }) => {
   await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
