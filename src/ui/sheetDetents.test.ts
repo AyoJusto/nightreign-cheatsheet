@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { detentHeights, HALF_MAX } from './sheetDetents'
 
 // iPhone 15 in standalone mode: 852pt tall, 59pt status bar, 34pt home indicator, pill bottom at 119.
-const phone = { frame: 852, grab: 80, content: 300, safeTop: 59, safeBottom: 34, pillBottom: 119 }
+const phone = { frame: 852, grab: 80, content: 300, safeTop: 59, safeBottom: 34, safeLeft: 0, safeRight: 0, pillBottom: 119 }
 
 describe('sheet detents come from measured elements', () => {
   it('peeks with the grab area plus the home indicator inset', () => {

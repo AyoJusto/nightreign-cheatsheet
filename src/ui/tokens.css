@@ -26,6 +26,8 @@
   --font-title: Mantinia, Georgia, serif;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   color-scheme: dark;
 }
 
@@ -155,8 +157,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 
 /* ---------- Sheet ---------- */
 
-/* Sheet.tsx reads both safe-area insets from here: padding-bottom, and scroll-margin-top (which does nothing else on a fixed element). */
-.sheet { position: fixed; z-index: 20; display: flex; flex-direction: column; padding-bottom: var(--safe-bottom); scroll-margin-top: var(--safe-top); }
+/* Sheet.tsx reads all four safe-area insets from here: padding-bottom, and scroll-margin-top/left/right
+   (which do nothing else on a fixed element; scroll-margin has no bottom-right conflict with padding-bottom). */
+.sheet { position: fixed; z-index: 20; display: flex; flex-direction: column; padding-bottom: var(--safe-bottom); scroll-margin-top: var(--safe-top); scroll-margin-left: var(--safe-left); scroll-margin-right: var(--safe-right); }
 .sheet-layer { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
 .sheet-layer.glass { box-shadow: var(--glass-edge); }
 .sheet-solid { background: var(--surface); box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.1); }
@@ -173,8 +176,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 
 /* ---------- Floating controls ---------- */
 
-/* Phone: the pill and the strip span one column, 8px in from each edge, so the two floating controls line up. */
-.pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: var(--gutter); right: var(--gutter); display: flex; align-items: center; gap: 2px; padding: 4px; height: 52px; box-sizing: border-box; }
+/* Phone: the pill and the strip span one column, 8px in from each edge (plus the notch's own inset in
+   landscape), so the two floating controls line up and never sit under the sensor housing. */
+.pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); display: flex; align-items: center; gap: 2px; padding: 4px; height: 52px; box-sizing: border-box; }
 .pill button { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; }
 .pill button:not(:disabled):hover { background: var(--fill-2); }
 .pill button:disabled { opacity: 0.3; cursor: default; }
@@ -189,7 +193,7 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .pill-trailing { grid-column: 3; justify-self: end; }
 .pill-text { grid-column: 2; justify-self: center; min-width: 0; padding: 0 6px; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* The pill's column; items sit centred in it, and a row too long for it scrolls. */
-.strip { position: fixed; z-index: 10; left: var(--gutter); right: var(--gutter); bottom: calc(var(--safe-bottom) + var(--gutter)); display: flex; overflow: hidden; }
+.strip { position: fixed; z-index: 10; left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); bottom: calc(var(--safe-bottom) + var(--gutter)); display: flex; overflow: hidden; }
 /* The fade sits on the scrolling row, not the glass, so the capsule itself keeps a crisp edge. */
 .strip-scroll {
   --fade-left: 0px; --fade-right: 0px;
@@ -232,7 +236,9 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .pill .chip[aria-pressed='true'] { color: var(--label); font-weight: 600; }
 .pill .chip[aria-pressed='true']::before { background: var(--fill); }
 .chips { isolation: isolate; }
-.toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 12px 18px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+/* Centred, but never lets its own padding reach past the notch: a max-width built from the same side
+   gutter (plus the safe inset) the other floating controls use. */
+.toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 12px 18px; font-size: 15px; font-weight: 600; white-space: nowrap; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter) - var(--safe-left) - var(--safe-right)); }
 
 /* ---------- Lists: inset grouped, hairlines inset from the leading edge ---------- */
 

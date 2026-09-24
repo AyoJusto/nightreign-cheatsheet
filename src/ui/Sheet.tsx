@@ -34,7 +34,7 @@ export function Sheet(props: {
   const section = useRef<HTMLElement>(null)
   const grab = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
-  const [m, setM] = useState<SheetMeasure>(() => ({ frame: innerHeight, grab: 0, content: 0, safeTop: 0, safeBottom: 0, pillBottom: 0 }))
+  const [m, setM] = useState<SheetMeasure>(() => ({ frame: innerHeight, grab: 0, content: 0, safeTop: 0, safeBottom: 0, safeLeft: 0, safeRight: 0, pillBottom: 0 }))
   const h = detentHeights(m)
   const measured = m.grab > 0
 
@@ -48,6 +48,8 @@ export function Sheet(props: {
         content: content.current!.offsetHeight,
         safeTop: parseFloat(css.scrollMarginTop) || 0,
         safeBottom: parseFloat(css.paddingBottom) || 0,
+        safeLeft: parseFloat(css.scrollMarginLeft) || 0,
+        safeRight: parseFloat(css.scrollMarginRight) || 0,
         pillBottom: props.top.get(),
       }
       setM((prev) => (sameMeasure(prev, next) ? prev : next))
@@ -82,6 +84,9 @@ export function Sheet(props: {
   // 0 at half and above, 1 at peek: drives the float inset, the radius, the glass crossfade and the body fade.
   const towardPeek = (v: number) => clamp01((v - (h.full - h.half)) / Math.max(1, h.half - h.peek))
   const inset = useTransform(y, (v) => FLOAT * towardPeek(v))
+  // Left and right add the notch's own inset on top of the float, so a landscape sheet never floats under it.
+  const insetLeft = useTransform(y, (v) => FLOAT * towardPeek(v) + m.safeLeft)
+  const insetRight = useTransform(y, (v) => FLOAT * towardPeek(v) + m.safeRight)
   // Full to half rounds the top corners; half to peek grows them into a capsule (half the peek's height),
   // the same shape as the pill above it.
   const radius = useTransform(y, (v) =>
@@ -119,7 +124,7 @@ export function Sheet(props: {
       className="sheet"
       role="dialog"
       aria-label={props.label}
-      style={{ y, left: inset, right: inset, bottom: inset, height: h.full, borderRadius: radius }}
+      style={{ y, left: insetLeft, right: insetRight, bottom: inset, height: h.full, borderRadius: radius }}
       drag="y"
       dragListener={false}
       dragControls={controls}

@@ -7,6 +7,8 @@ export interface SheetMeasure {
   content: number // what the half detent should show below the header
   safeTop: number
   safeBottom: number
+  safeLeft: number
+  safeRight: number
   pillBottom: number
 }
 
