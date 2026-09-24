@@ -178,6 +178,15 @@ for (const reduced of [false, true]) {
   })
 }
 
+// The live region speaks the count as a phrase, never a bare number (iter-6 m3).
+test('the count is announced as a full phrase', async ({ page, isMobile }) => {
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  const live = page.locator('[aria-live]')
+  await expect(live).toHaveText(isMobile ? /^Tap where you spawned, \d+ possible$/ : /^\d+ possible$/)
+  await page.getByRole('button', { name: /^Possible spawn point, leaves / }).first().click()
+  await expect(live).toHaveText(/^\d+ possible$/)
+})
+
 // Desktop: selecting a site should not force a keyboard user to tab past every other pin to reach its
 // options, and closing it should not drop focus to the document body (m5).
 test('desktop: selecting a site focuses its first option, and Escape returns focus to the pin', async ({ page, isMobile }) => {

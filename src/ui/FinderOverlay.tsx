@@ -188,7 +188,10 @@ export function FinderOverlay(props: {
         {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
         {!wide && (
           <span className="pill-text">
-            {spawn ? <><Count value={count} /> possible</> : <>{verb} where you spawned · <Count value={count} /></>}
+            {/* The live region carries the whole phrase, so the words around the digits are hidden from screen readers. */}
+            {spawn
+              ? <><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></>
+              : <><span aria-hidden>{verb} where you spawned · </span><Count value={count} phrase={`${verb} where you spawned, ${count} possible`} /></>}
           </span>
         )}
         <div className="pill-trailing">
@@ -204,7 +207,7 @@ export function FinderOverlay(props: {
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
           <h2 className="side-title"><span className="title side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
-          <p className="side-count"><Count value={count} /> possible</p>
+          <p className="side-count"><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></p>
           {preview || (choices ? (
             <section>
               <h3 className="side-heading">{choicesTitle}</h3>
