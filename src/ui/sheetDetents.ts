@@ -13,8 +13,10 @@ export interface SheetMeasure {
 }
 
 // Half never covers much more than half the screen, so the map stays usable; longer content scrolls.
-// 0.6, not 0.5: a six-row run card under the header needs about 58% of Safari's 659px iPhone 15 viewport.
-export const HALF_MAX = 0.6
+// 0.66, not 0.5: a six-row run card under the header needs 58% of Safari's 659px iPhone 15 viewport, and 66%
+// when both Night names wrap to two lines (seed 000). Names stay whole rather than truncate; a third of the
+// screen still shows the map above the sheet.
+export const HALF_MAX = 0.66
 // Fully open, the sheet docks flush under the pill (spec: "like Apple Maps on iOS 26"), no gap for the map to show through.
 const PILL_GAP = 0
 

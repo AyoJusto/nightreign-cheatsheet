@@ -26,6 +26,12 @@ describe('sheet detents come from measured elements', () => {
     expect(detentHeights({ ...phone, content: 2000 }).half).toBe(Math.round(852 * HALF_MAX))
   })
 
+  it("shows seed 000's whole run card at half in Safari on iPhone 15 (659pt viewport), wrapped Night names included", () => {
+    // Measured in WebKit's iPhone 15 profile: header plus a six-row card whose Night 1 and 2 names wrap needs 435pt.
+    const safari = { ...phone, frame: 659, safeTop: 0, safeBottom: 0, pillBottom: 68, grab: 108, content: 435 - 108 }
+    expect(detentHeights(safari).half).toBe(435)
+  })
+
   it('never sets half below peek or above full', () => {
     const { peek, half } = detentHeights({ ...phone, content: 0 })
     expect(half).toBe(peek)
