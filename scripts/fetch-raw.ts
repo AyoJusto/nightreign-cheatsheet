@@ -5,11 +5,10 @@ import sharp from 'sharp'
 
 const OBSERVER = 'https://raw.githubusercontent.com/stockholm754-source/nightreign-seed-observer/main'
 const OLD_REPO = 'https://raw.githubusercontent.com/abhishek-nerella/Nightreign-Seed-Finder'
-const OLD_APP = `${OLD_REPO}/main/public`
 // The old app repo (abhishek-nerella/Nightreign-Seed-Finder) was deleted from GitHub on or
-// before 2026-09-23. Its font and per-Nightlord portraits in data/raw/assets were instead
-// copied by hand from a local clone taken that day, before the deletion — this fetch script
-// will skip-and-warn on the now-dead URLs below rather than reproduce those two outputs.
+// before 2026-09-23. Its per-Nightlord portraits in data/raw/assets were instead copied by
+// hand from a local clone taken that day, before the deletion — this fetch script will
+// skip-and-warn on the now-dead URLs below rather than reproduce that output.
 
 const files: Record<string, string> = {
   'data/raw/observer.json': `${OBSERVER}/data/nightreign-data.json`,
@@ -20,7 +19,6 @@ const files: Record<string, string> = {
   'data/raw/assets/maps/RottedWoods.png': `${OBSERVER}/assets/RottedWoods.png`,
   'data/raw/assets/maps/Noklateo.png': `${OBSERVER}/assets/Noklateo.png`,
   'data/raw/assets/maps/GreatHollow.webp': `${OBSERVER}/assets/GreatHollow.webp`,
-  'data/raw/assets/fonts/Mantinia.otf': `${OLD_APP}/fonts/Mantinia%20Regular/Mantinia%20Regular.otf`,
 }
 
 // Fextralife's map-icon images for the three location kinds missing from OBSERVER's icon set

@@ -397,8 +397,6 @@ async function copyAssets() {
   for (const file of readdirSync('data/raw/assets/nightlords')) {
     copyFileSync(`data/raw/assets/nightlords/${file}`, `public/nightlords/${toNightlord(file.replace('.webp', '') + '_')}.webp`)
   }
-  mkdirSync('public/fonts', { recursive: true })
-  copyFileSync('data/raw/assets/fonts/Mantinia.otf', 'public/fonts/Mantinia.otf')
   console.log('assets copied')
 }
 
