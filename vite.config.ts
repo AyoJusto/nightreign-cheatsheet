@@ -20,7 +20,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: { globPatterns: ['**/*.{js,css,html,webp,otf,json}'], maximumFileSizeToCacheInBytes: 4_000_000 },
+      workbox: { globPatterns: ['**/*.{js,css,html,webp,png,otf,json}'], maximumFileSizeToCacheInBytes: 4_000_000 },
       manifest: {
         name: 'Bonfire Buddy',
         short_name: 'Bonfire Buddy',
