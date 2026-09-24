@@ -120,6 +120,10 @@ export function Sheet(props: {
   // The reduced-motion fade goes on each layer, never the section: opacity on an ancestor of the glass would
   // cut its blur off from the map behind for the length of the fade.
   const solidShown = useTransform(() => solid.get() * fade.get())
+  // At half and full the solid layer covers the glass completely, so the glass is hidden there: its blur costs GPU
+  // and counts toward the three blurred surfaces while nobody sees it. It toggles only while fully covered, so the
+  // switch never shows and the blur radius itself never animates.
+  const glassVisibility = useTransform(solid, (s) => (s >= 1 ? 'hidden' : 'visible'))
 
   // Publish what the sheet covers, including the starting value, so the map can inset itself.
   useEffect(() => {
@@ -165,7 +169,7 @@ export function Sheet(props: {
       {/* Glass when collapsed, solid when open: the solid layer fades over the glass, so the blur radius never animates.
           The box itself runs past the bottom of the screen, so the glass is only as tall as the peek: collapsed,
           it is a capsule floating FLOAT off every edge. No clip-path: it would cut the glass off from the map behind. */}
-      <motion.div className="sheet-layer glass" style={{ bottom: 'auto', height: h.peek, opacity: fade }} aria-hidden />
+      <motion.div className="sheet-layer glass" style={{ bottom: 'auto', height: h.peek, opacity: fade, visibility: glassVisibility }} aria-hidden />
       <motion.div className="sheet-layer sheet-solid" style={{ opacity: solidShown }} aria-hidden />
       <motion.div className="sheet-grab" ref={grab} style={{ opacity: fade }} onPointerDown={(e) => { frozenPeek.current = null; controls.start(e) }}>
         <button
