@@ -142,8 +142,10 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
    structure icon there, so the row never reads as blank. */
 .icon-empty { display: block; box-sizing: border-box; border: 1.5px dashed var(--label-2); border-radius: 50%; }
 /* The game's element emblem, a small square picture with the game's slightly rounded corners. A thin dark
-   rim lifts it off the art and the map; set in the art's corner, where the game puts it, and about 0.45 of the
-   art's box (the game's own ratio is about 0.4), so the art stays the loudest thing. */
+   rim lifts it off the art and the map; set in the art's corner, where the game puts it, at about 0.45 of
+   the art's box (the game's own ratio is about 0.4). That ratio only holds at full art size: on the map
+   the badge is held to a 12px floor as the art shrinks (--badge-hold below), so at a phone's smallest
+   scale the emblem reads about as loud as the art, not quieter. */
 .element-emblem, .element-badge {
   display: block; box-sizing: border-box; object-fit: cover; border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -162,8 +164,12 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .marker { position: absolute; z-index: 2; width: 0; height: 0; pointer-events: none; }
 /* A night's closing circle: a small target. */
 .marker-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--label); background: rgba(0, 0, 0, 0.5); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.6); }
-/* Everything else: a small white diamond. */
+/* Everything else: a small white diamond by default. */
 .marker:not(.marker-circle) .marker-dot { width: 8px; height: 8px; margin: -4px 0 0 -4px; border: 0; border-radius: 1.5px; background: var(--label); transform: rotate(45deg); }
+/* Bosses (the diamond above), Evergaols and Chests get their own shape, so a marker whose label has no
+   free spot (placeLabels) is still told apart by its glyph alone, same size and weight as the diamond. */
+.marker.marker-evergaol .marker-dot { box-sizing: border-box; border: 1.5px solid var(--label); border-radius: 50%; background: transparent; transform: none; }
+.marker.marker-chest .marker-dot { border-radius: 1px; transform: none; }
 .marker-label {
   position: absolute; top: 0; left: 0; width: max-content; max-width: 180px; box-sizing: border-box;
   font-size: 12px; line-height: 15px; font-weight: 600; padding: 4px 8px; border-radius: 8px;
