@@ -32,7 +32,7 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, b
         // Keyed by pool so a pool change on a mounted screen starts a fresh Scouting.
         : <FinderOverlay key={`${nightlord}/${earth}`} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />}
       {/* After the overlay and before the map in Tab order; it stays mounted from finder to result, like the map. */}
-      <NightlordMedallion nightlord={nightlord} result={seed !== null} lift={bottomInset} rest={restInset} top={topInset} corner={corner} />
+      <NightlordMedallion nightlord={nightlord} result={seed !== null} lift={bottomInset} rest={restInset} corner={corner} />
       <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} corner={corner} />
     </>
   )

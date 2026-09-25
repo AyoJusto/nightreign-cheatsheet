@@ -542,7 +542,7 @@ test('works offline once the service worker has installed', async ({ page, conte
 })
 
 // The Nightlord in the bottom-left corner, as in the game: its medallion is named with what its card shows, and on
-// phone it rides above the sheet (never under it) and tucks away once the sheet is fully open.
+// phone it rides above the collapsed sheet (never under it) and tucks away once the sheet opens, coming back at peek.
 test.describe('the Nightlord medallion', () => {
   const seed = targets[0]
   const phrase = `${nightlordName(seed.nightlord)}: ${weaknessPhrase(data.weaknesses.nightlords[seed.nightlord])}`
@@ -562,12 +562,13 @@ test.describe('the Nightlord medallion', () => {
     await handle.focus()
     await handle.press('ArrowUp')
     await expect(handle).toHaveAccessibleName('Resize Seed details, half open')
+    // Open, the sheet leaves the map above it to the map: a night's ring there stays in sight.
+    await expect(medal).toBeHidden()
+    await handle.press('ArrowDown')
+    await expect(handle).toHaveAccessibleName('Resize Seed details, collapsed')
+    await expect(medal).toBeVisible()
     await page.waitForTimeout(1200)
     expect((await box(page, '.nl-medal')).bottom).toBeLessThanOrEqual((await box(page, '.sheet')).top)
-    await expect(medal).toBeVisible()
-    await handle.press('ArrowUp')
-    await expect(handle).toHaveAccessibleName('Resize Seed details, fully open')
-    await expect(medal).toBeHidden()
   })
 
   test('on phone, a tap on the medallion folds its card away and back', async ({ page, isMobile }) => {

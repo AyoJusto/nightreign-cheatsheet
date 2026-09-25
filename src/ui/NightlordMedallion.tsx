@@ -18,20 +18,18 @@ const cardMotion = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const
 /**
  * The Nightlord in the bottom-left corner, as the game shows it: its portrait in a stone medallion with a
  * bronze ring and a blue glow, and beside it a card of what it is weak to and resists. The corner belongs to
- * the screen, not the map: on phone it rides on the strip or sheet, and it tucks away once the sheet leaves
- * too little map above it. In the finder it also tucks while a site's sheet is up, so it never covers the
- * sites around the one being answered. The card starts open on a result; on phone, and in the finder, the medallion
+ * the screen, not the map: on phone it rides on the strip or the collapsed sheet, and tucks away as soon as a
+ * sheet rises past that, so it never covers the map left above an open sheet (a night's ring, or the sites
+ * around the one being answered). The card starts open on a result; on phone, and in the finder, the medallion
  * toggles it. Its facts are spoken as the medallion's name, so the card itself is hidden from screen readers.
  */
-export function NightlordMedallion({ nightlord, result, lift, rest, top, corner }: {
+export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
   nightlord: NightlordId
   result: boolean
   /** Height covered at the bottom right now (strip or sheet); 0 on desktop. */
   lift: MotionValue<number>
   /** Height covered at the bottom with no sheet open (the strip, or the result sheet at peek). */
   rest: MotionValue<number>
-  /** The top pill's bottom edge. */
-  top: MotionValue<number>
   /** Receives the medallion's and card's areas, so map names keep off them and the map can pan clear of them. */
   corner: MotionValue<CornerRect[]>
 }) {
@@ -49,19 +47,11 @@ export function NightlordMedallion({ nightlord, result, lift, rest, top, corner 
   const label = [nightlordName(nightlord), weaknessPhrase(weakness)].filter(Boolean).join(': ')
 
   const root = useRef<HTMLDivElement>(null)
-  const height = useRef(0) // the corner's own height, measured below
-  const inFinder = useRef(!result)
-  inFinder.current = !result
   const y = useTransform(lift, (v) => -v)
-  // Fades out as a rising sheet leaves too little map above it for the medallion and some map around it (past
-  // half on phone), and back in as it lowers. Tied to the sheet's own position, so it follows a drag. Desktop has
-  // no sheet, so it never tucks there.
-  const opacity = useTransform(() => {
-    const free = innerHeight - lift.get() - top.get() - height.current
-    const room = (free - 24) / 48
-    const sheetUp = inFinder.current ? (lift.get() - rest.get()) / 48 : 0
-    return Math.min(1, Math.max(0, Math.min(room, 1 - sheetUp)))
-  })
+  // Fades out over the first 48px a sheet rises above its resting height (the strip, or the result sheet at
+  // peek) and back in as it lowers, tied to the sheet's own position so it follows a drag. Desktop has no sheet,
+  // so it never tucks there.
+  const opacity = useTransform(() => Math.min(1, Math.max(0, 1 - (lift.get() - rest.get()) / 48)))
   const visibility = useTransform(opacity, (o) => (o > 0 ? 'visible' : 'hidden'))
 
   // Offsets ignore transforms, so the areas hold still while the corner rides on the sheet and the card slides in.
@@ -70,7 +60,6 @@ export function NightlordMedallion({ nightlord, result, lift, rest, top, corner 
     let rects = NONE
     const publish = () => corner.set(opacity.get() > 0.5 ? rects : NONE)
     const measure = () => {
-      height.current = el.offsetHeight
       const up = parseFloat(getComputedStyle(el).bottom) + el.offsetHeight
       rects = [...el.querySelectorAll<HTMLElement>(':scope > [data-corner]')].map((part) => ({
         x0: el.offsetLeft + part.offsetLeft,
