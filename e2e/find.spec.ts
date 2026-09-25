@@ -316,6 +316,21 @@ test('a tap on a crest calls out its name, and a second tap or a pan hides it', 
   await expect(callout).toHaveCount(0)
 })
 
+test("a callout on a mark whose name shows hides that name while it is open, and its plate is opaque", async ({ page }) => {
+  await page.goto('/seed/1003')
+  const mark = page.locator('.marker-boss').filter({ hasText: "Night's Cavalry" })
+  const own = mark.locator('.map-name')
+  await expect(own).toHaveCSS('opacity', '1')
+  const r = (await mark.locator('.marker-icon').boundingBox())!
+  await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
+  const callout = page.locator('.marker-callout .map-name')
+  await expect(callout).toHaveText("Night's Cavalry")
+  await expect(own).toHaveCSS('opacity', '0')
+  await expect(callout).toHaveCSS('background-color', 'rgb(14, 22, 40)')
+  await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
+  await expect(own).toHaveCSS('opacity', '1')
+})
+
 // Focus mode before the spawn is set: only the candidates stay gold, the spawn options dim with the map,
 // and a tap on one cancels focus without recording a spawn (iter-8 M1; spec: "tap one to confirm or elsewhere to cancel").
 test('in focus mode a tap on a dimmed spawn option cancels and records nothing', async ({ page }) => {

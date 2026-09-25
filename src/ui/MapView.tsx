@@ -465,6 +465,8 @@ export function MapView(props: MapContent & {
     const calloutX = Math.min(w - LABEL_EDGE - called.w, Math.max(LABEL_EDGE, (around.x0 + around.x1) / 2 - called.w / 2))
     const above = around.y0 - CALLOUT_GAP - called.h
     const calloutY = above >= visible.top + LABEL_EDGE ? above : around.y1 + CALLOUT_GAP
+    // The mark's own name steps aside while its callout says it, so the name is never written twice.
+    spots[calloutAt] = { ...spots[calloutAt], shown: false }
     return [...spots, { x: calloutX - point.x, y: calloutY - point.y, shown: true }]
   })
   // Tags measure their labels in their own layout effects, which run before this component's: published
