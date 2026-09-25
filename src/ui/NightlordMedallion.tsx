@@ -11,6 +11,13 @@ import { DAMAGE_NAMES, nightlordName, weaknessPhrase, type DamageKey, type Night
  * that whatever covers the bottom of the screen (the strip or the sheet) reaches, which the medallion rides on.
  */
 export interface CornerRect { x0: number; x1: number; bottom: number; top: number }
+/**
+ * `rects`: the medallion's and card's areas while they show (none while tucked), which map names keep off and
+ * the map may pan clear of. `reach`: how far the corner reaches up when it shows, the same tucked or not, which
+ * the map frames itself above: were it to follow the tuck, the map would jump as a sheet is dragged.
+ */
+export interface Corner { rects: CornerRect[]; reach: number }
+export const NO_CORNER: Corner = { rects: [], reach: 0 }
 
 const NONE: CornerRect[] = []
 const cardMotion = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const
@@ -31,7 +38,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
   /** Height covered at the bottom with no sheet open (the strip, or the result sheet at peek). */
   rest: MotionValue<number>
   /** Receives the medallion's and card's areas, so map names keep off them and the map can pan clear of them. */
-  corner: MotionValue<CornerRect[]>
+  corner: MotionValue<Corner>
 }) {
   const wide = useWide()
   const collapsible = !(wide && result)
@@ -58,7 +65,12 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
   useLayoutEffect(() => {
     const el = root.current!
     let rects = NONE
-    const publish = () => corner.set(opacity.get() > 0.5 ? rects : NONE)
+    let reach = 0
+    const publish = () => {
+      const shown = opacity.get() > 0.5 ? rects : NONE
+      const last = corner.get()
+      if (last.rects !== shown || last.reach !== reach) corner.set({ rects: shown, reach })
+    }
     const measure = () => {
       const up = parseFloat(getComputedStyle(el).bottom) + el.offsetHeight
       rects = [...el.querySelectorAll<HTMLElement>(':scope > [data-corner]')].map((part) => ({
@@ -67,6 +79,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
         bottom: up - part.offsetTop - part.offsetHeight,
         top: up - part.offsetTop,
       }))
+      reach = Math.max(0, ...rects.map((r) => r.top))
       publish()
     }
     measure()
@@ -76,7 +89,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
     return () => {
       observer.disconnect()
       off()
-      corner.set(NONE)
+      corner.set(NO_CORNER)
     }
   }, [corner, opacity])
 

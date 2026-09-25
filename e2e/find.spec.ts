@@ -571,6 +571,21 @@ test.describe('the Nightlord medallion', () => {
     expect((await box(page, '.nl-medal')).bottom).toBeLessThanOrEqual((await box(page, '.sheet')).top)
   })
 
+  // The map frames itself above the medallion; the medallion tucking as the sheet opens must not move the map.
+  test('the map holds still while the medallion tucks away', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'the sheet is phone only')
+    await page.goto(`/seed/${seed.id}`)
+    await page.waitForTimeout(1200)
+    const where = () => page.locator('.map-layer').evaluate((el) => getComputedStyle(el).transform)
+    const before = await where()
+    const handle = page.getByRole('button', { name: /^Resize Seed details/ })
+    await handle.focus()
+    await handle.press('ArrowUp')
+    await expect(page.locator('.nl-medal')).toBeHidden()
+    await page.waitForTimeout(1200)
+    expect(await where()).toBe(before)
+  })
+
   test('on phone, a tap on the medallion folds its card away and back', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'desktop keeps the card open on the result')
     await page.goto(`/seed/${seed.id}`)

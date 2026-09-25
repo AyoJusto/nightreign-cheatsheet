@@ -4,7 +4,7 @@ import { useGesture } from '@use-gesture/react'
 import { type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
-import type { CornerRect } from './NightlordMedallion'
+import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { isTrackpadScroll, labelRank, markSize, nearestPin, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
@@ -60,7 +60,7 @@ export function MapView(props: MapContent & {
   /** Height covered at the bottom right now, including an open sheet: pins are kept above it. */
   bottomInset: MotionValue<number>
   /** What is drawn over the map's bottom-left corner (the Nightlord medallion), measured up from bottomInset. */
-  corner?: MotionValue<CornerRect[]>
+  corner?: MotionValue<Corner>
 }) {
   const frame = useRef<HTMLDivElement>(null)
   // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
@@ -82,8 +82,9 @@ export function MapView(props: MapContent & {
   const fade = useMotionValue(1)
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
-  // How far the corner (the medallion and its card) reaches up from whatever covers the bottom of the screen.
-  const cornerUp = () => Math.max(0, ...(props.corner?.get() ?? []).map((r) => r.top))
+  // The medallion and its card while they show, measured up from whatever covers the bottom of the screen.
+  const cornerRects = () => props.corner?.get().rects ?? []
+  const cornerUp = () => Math.max(0, ...cornerRects().map((r) => r.top))
   // Per axis, an image larger than the frame keeps covering it and a smaller one (zoomed out to fit
   // the playable area) stays inside it, so the playable area is always reachable. The bottom edge may
   // also rise to whatever covers the bottom of the screen, and above the corner, so no pin stays under the medallion.
@@ -108,7 +109,7 @@ export function MapView(props: MapContent & {
     const { w, h } = size.get()
     const pinY = h / 2 + y.get() + (pin.y / 1000 - 0.5) * side(s)
     const pinX = w / 2 + x.get() + (pin.x / 1000 - 0.5) * side(s)
-    const over = (props.corner?.get() ?? []).filter((r) => pinX > r.x0 - 22 && pinX < r.x1 + 22).map((r) => r.top + 22)
+    const over = cornerRects().filter((r) => pinX > r.x0 - 22 && pinX < r.x1 + 22).map((r) => r.top + 22)
     const visibleBottom = h - props.bottomInset.get() - Math.max(56, ...over)
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
   }
@@ -134,7 +135,8 @@ export function MapView(props: MapContent & {
     // Centred above the corner's medallion where the playable area has the room (a phone's spare height), so no
     // site starts under it; where it has not, as high as it goes, which is where it was without the corner.
     const boxH = ((box.y1 - box.y0) / 1000) * side(s)
-    const mid = Math.max(top + boxH / 2, (top + bottom - cornerUp()) / 2)
+    // The corner's steady reach, not whether it shows right now: a tuck mid-drag must not move the map.
+    const mid = Math.max(top + boxH / 2, (top + bottom - (props.corner?.get().reach ?? 0)) / 2)
     scale.jump(s)
     x.jump(clamp(-centerX, 'x', s))
     y.jump(clamp(mid - h / 2 - centerY, 'y', s))
@@ -287,8 +289,16 @@ export function MapView(props: MapContent & {
     }
     // The frame or the resting overlays changed size: reframe until the user has moved the map.
     const onFrame = () => (touched.current ? onInset() : fit())
+    // Only the corner's reach frames the map; its tuck only changes what names avoid and how far the map pans.
+    let reach = props.corner?.get().reach
+    const onCorner = (c: Corner) => {
+      if (c.reach === reach) return
+      reach = c.reach
+      onFrame()
+    }
     const offs = [
-      ...[size, props.topInset, props.restInset, ...(props.corner ? [props.corner] : [])].map((v) => v.on('change', onFrame)),
+      ...[size, props.topInset, props.restInset].map((v) => v.on('change', onFrame)),
+      ...(props.corner ? [props.corner.on('change', onCorner)] : []),
       props.bottomInset.on('change', onInset),
     ]
     return () => offs.forEach((off) => off())
@@ -377,7 +387,7 @@ export function MapView(props: MapContent & {
     // so no label is sliced by the sheet or drawn under the pill's controls.
     const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
     // The medallion and its card are drawn over the map: names keep off them.
-    const blocked = (props.corner?.get() ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
+    const blocked = (props.corner?.get().rects ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
     return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked)
       .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
   })

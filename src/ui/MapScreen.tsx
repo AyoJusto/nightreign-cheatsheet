@@ -5,7 +5,7 @@ import { catalog } from '../data/catalog'
 import { MapView, type MapContent } from './MapView'
 import { FinderOverlay } from './FinderOverlay'
 import { ResultOverlay } from './ResultOverlay'
-import { NightlordMedallion, type CornerRect } from './NightlordMedallion'
+import { NightlordMedallion, NO_CORNER, type Corner } from './NightlordMedallion'
 import { useWide } from './useWide'
 
 type MapRoute = Extract<Route, { name: 'find' | 'seed' }>
@@ -16,7 +16,7 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, b
   const noInset = useMotionValue(0) // desktop: the side panel never covers the map
   const topInset = useMotionValue(0) // bottom edge of the overlay's top pill, measured by the overlay
   const restInset = useMotionValue(0) // what the overlay covers at the bottom when no sheet is open
-  const corner = useMotionValue<CornerRect[]>([]) // the Nightlord medallion and its card, drawn over the map
+  const corner = useMotionValue<Corner>(NO_CORNER) // the Nightlord medallion and its card, drawn over the map
   // One map for both modes: the overlays hand it their pins, so finder to result keeps the map in place.
   const [content, setContent] = useState<MapContent>({ pins: [] })
   // parseRoute only yields a seed route for ids that exist.
