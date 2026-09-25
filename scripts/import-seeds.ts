@@ -342,6 +342,25 @@ export async function withShadow(img: sharp.Sharp): Promise<sharp.Sharp> {
   return sharp(await sharp({ create: canvas }).composite([{ input: shadow, top: 2, left: 0 }, { input: art, top: 0, left: 0 }]).png().toBuffer())
 }
 
+/**
+ * The island's box on a keyed map, in map units (0-1000): the extent of its opaque pixels. The desktop map frames
+ * this, the land as drawn, rather than the square image or only the sites on it.
+ */
+export function islandBox(rgba: Uint8Array, width: number, height: number) {
+  let x0 = width, y0 = height, x1 = -1, y1 = -1
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (rgba[(y * width + x) * 4 + 3] < 128) continue
+      if (x < x0) x0 = x
+      if (x > x1) x1 = x
+      if (y < y0) y0 = y
+      if (y > y1) y1 = y
+    }
+  }
+  const unit = (v: number, size: number) => Math.round((v / size) * 1000)
+  return { x0: unit(x0, width), y0: unit(y0, height), x1: unit(x1 + 1, width), y1: unit(y1 + 1, height) }
+}
+
 /** How much of a pixel is map (1) rather than background (0). */
 export type Coverage = (r: number, g: number, b: number, a: number) => number
 
@@ -450,6 +469,7 @@ async function copyAssets() {
     default: 'Default.png', crater: 'Crater.png', mountaintop: 'Mountaintop.png',
     'rotted-woods': 'RottedWoods.png', noklateo: 'Noklateo.png', 'great-hollow': 'GreatHollow.webp',
   }
+  const islands: Record<string, ReturnType<typeof islandBox>> = {}
   for (const [earth, file] of Object.entries(maps)) {
     const image = sharp(`data/raw/assets/maps/${file}`)
     const { width, height } = await image.metadata()
@@ -461,6 +481,7 @@ async function copyAssets() {
     const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true })
     const coverage = earth === 'great-hollow' ? hazeCoverage() : oceanCoverage(OCEAN)
     const keyed = keyBackground(data, info.width, info.height, coverage)
+    islands[earth] = islandBox(keyed, info.width, info.height)
     await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
       .resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
     // Home's Shifting Earth cards: a small picture of the same keyed map (budget 25 KB each).
@@ -468,6 +489,8 @@ async function copyAssets() {
     await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
       .resize(240, 240).webp({ quality: 70 }).toFile(`public/maps/thumb/${earth}.webp`)
   }
+  writeFileSync('src/data/islands.json', `${JSON.stringify(islands, null, 2)}
+`)
   // Emptied first, so art the app no longer uses (the old per-element variant art) does not linger.
   rmSync('public/structures', { recursive: true, force: true })
   mkdirSync('public/structures', { recursive: true })

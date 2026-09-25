@@ -1,5 +1,7 @@
 import data from './seeds.json'
+import islands from './islands.json'
 import type { CastlePoints, Seed } from '../domain/seed'
+import type { Box } from '../ui/mapGeometry'
 import { EARTHS, mapFamily, type EarthId, type NightlordId, type SlotId, type Weakness } from '../domain/names'
 
 const all = data.seeds as unknown as Seed[]
@@ -17,5 +19,7 @@ export const catalog = {
   nightlordWeakness: (id: NightlordId): Weakness => weaknesses.nightlords[id],
   /** By the night boss name a seed shows; undefined when there is no trustworthy data (never guessed). */
   nightBossWeakness: (name: string): Weakness | undefined => weaknesses.bosses[name],
+  /** The island's box on this earth's map (map units), as the keyed map draws it (scripts/import-seeds.ts). */
+  islandOf: (earth: EarthId): Box => islands[earth],
   slotsOf: (earth: EarthId) => data.maps[mapFamily(earth)].slots as Record<SlotId, { x: number; y: number }>,
 }

@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside, toWeakness, weaknessTable } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, keyBackground, islandBox, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside, toWeakness, weaknessTable } from './import-seeds.ts'
 import { EXPEDITIONS } from '../data/raw/weaknesses/data/nightlords.ts'
 import { NIGHT_BOSSES } from '../data/raw/weaknesses/data/nightbosses.ts'
 
@@ -128,6 +128,12 @@ describe('map background keying', () => {
   }
   const alphaAt = (rgba: Uint8Array, size: number, x: number, y: number) => rgba[(y * size + x) * 4 + 3]
 
+  it("finds the island's box in map units, from the keyed map's opaque pixels", () => {
+    const { rgba, size } = island()
+    const out = keyBackground(rgba, size, size, oceanCoverage(OCEAN), { feather: 0, streak: 3 })
+    // Land runs from pixel 2 to 8 of 11: 2/11 to 9/11 of the map.
+    expect(islandBox(out, size, size)).toEqual({ x0: 182, y0: 182, x1: 818, y1: 818 })
+  })
   it('clears the ocean reached from the edges and keeps an enclosed lake of the same colour', () => {
     const { rgba, size } = island()
     const out = keyBackground(rgba, size, size, oceanCoverage(OCEAN), { feather: 0, streak: 3 })

@@ -61,11 +61,17 @@ export function MapView(props: MapContent & {
   bottomInset: MotionValue<number>
   /** What is drawn over the map's bottom-left corner (the Nightlord medallion), measured up from bottomInset. */
   corner?: MotionValue<Corner>
+  /** Frame the whole island as drawn (desktop, which has the room), not only the sites on it (phone). */
+  wholeIsland?: boolean
 }) {
   const frame = useRef<HTMLDivElement>(null)
   // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
   const size = useMotionValue({ w: 0, h: 0 })
-  const box = useMemo(() => playableBox(Object.values(catalog.slotsOf(props.earth))), [props.earth])
+  // What the map frames itself on: the island as drawn where there is room for it, else the sites on it.
+  const box = useMemo(
+    () => (props.wholeIsland ? catalog.islandOf(props.earth) : playableBox(Object.values(catalog.slotsOf(props.earth)))),
+    [props.earth, props.wholeIsland],
+  )
   // Until the user moves the map, it keeps itself framed on the playable area as insets settle.
   const touched = useRef(false)
   const x = useMotionValue(0)

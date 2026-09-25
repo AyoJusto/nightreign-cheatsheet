@@ -107,6 +107,22 @@ describe('game art for the new look', () => {
   })
 })
 
+describe('islands', () => {
+  it("frames each earth's whole island, every site on it", () => {
+    for (const { id } of EARTHS) {
+      const island = catalog.islandOf(id)
+      for (const slot of Object.values(catalog.slotsOf(id))) {
+        expect(slot.x, id).toBeGreaterThan(island.x0)
+        expect(slot.x, id).toBeLessThan(island.x1)
+        expect(slot.y, id).toBeGreaterThan(island.y0)
+        expect(slot.y, id).toBeLessThan(island.y1)
+      }
+      expect(island.x0, id).toBeGreaterThanOrEqual(0)
+      expect(island.x1, id).toBeLessThanOrEqual(1000)
+    }
+  })
+})
+
 describe('boss crests', () => {
   it("marks the bosses the game draws with its red great crest, and only those", () => {
     const seed = catalog.all.find((s) => s.id === '1003')!
