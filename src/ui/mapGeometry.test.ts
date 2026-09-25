@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, playableBox } from './mapGeometry'
 import { catalog } from '../data/catalog'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
@@ -330,11 +330,41 @@ describe('marks at game scale', () => {
     expect(share('art', 574)).toBeCloseTo(0.08, 3)
     expect(share('art', 1209)).toBeCloseTo(0.08, 3)
   })
-  it('scales orbs, crests and rings in proportion with the art', () => {
+  it('scales crests and rings in proportion with the art', () => {
     const ratio = (kind: Parameters<typeof markSize>[0]) => markSize(kind, 1209) / markSize('art', 1209)
-    expect(ratio('orb')).toBeCloseTo(0.65, 1)
     expect(ratio('icon')).toBeCloseTo(0.45, 1)
     expect(ratio('ring')).toBeCloseTo(1.38, 1)
+  })
+  // The finder's map, fitted as MapView fits it: a phone's width (393) spans the playable area; a desktop's map area
+  // (1080 x 900 under a 60px pill) fits the whole island.
+  const fitted = (earth: 'default' | 'great-hollow') => {
+    const box = playableBox(Object.values(catalog.slotsOf(earth)))
+    const island = catalog.islandOf(earth)
+    const w = (island.x1 - island.x0) / 1000
+    const h = (island.y1 - island.y0) / 1000
+    return { phone: 393 / ((box.x1 - box.x0) / 1000), desktop: Math.min(1080 / w, (900 - 60) / h) }
+  }
+  it('draws the unknown-site glow at 60 to 70% of its old size on phone (a 30px disc), and smaller on desktop', () => {
+    const { phone, desktop } = fitted('default')
+    const spacing = minSpacing(Object.values(catalog.slotsOf('default')))
+    expect(orbSize(phone, spacing) / 30).toBeGreaterThanOrEqual(0.6)
+    expect(orbSize(phone, spacing) / 30).toBeLessThanOrEqual(0.7)
+    // Desktop's old 63px disc sat on a map framed on the sites alone; framed on the whole island the map is smaller,
+    // and the two nearest sites leave the glow about 31px.
+    expect(orbSize(desktop, spacing)).toBeGreaterThan(28)
+    expect(orbSize(desktop, spacing) / 63).toBeLessThanOrEqual(0.7)
+  })
+  it('never lets two orbs overlap at the default zoom, on either map, phone or desktop', () => {
+    for (const earth of ['default', 'great-hollow'] as const) {
+      const slots = Object.values(catalog.slotsOf(earth))
+      const spacing = minSpacing(slots)
+      for (const width of Object.values(fitted(earth))) {
+        const disc = orbSize(width, spacing)
+        for (const a of slots) for (const b of slots) {
+          if (a !== b) expect(Math.hypot(a.x - b.x, a.y - b.y) * (width / 1000), `${earth} at ${width}`).toBeGreaterThanOrEqual(disc)
+        }
+      }
+    }
   })
   it('keeps a phone ring no smaller than 64 and a crest no smaller than 26', () => {
     expect(markSize('ring', 574)).toBe(64)

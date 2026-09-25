@@ -269,21 +269,37 @@ export const labelRank = (kind: NameKind) => NAME_ORDER.indexOf(kind)
  * like the game's own map, between a floor (still legible zoomed out on a phone) and a cap (zoomed in, it
  * would hide the ground it marks). Sizes are a share of the map as drawn, not fixed px, so a wider map gets larger
  * marks: structure art is 8% of its width at the fitted zoom (about 46px on a phone's 574px map and 97px on a
- * desktop's 1209px one), close to the reference's 9%; orbs, crests and rings keep their proportion to the art.
+ * desktop's 1209px one), close to the reference's 9%; crests and rings keep their proportion to the art.
  */
 const MARK_SIZES = {
-  // Structure art, and the orb's visible disc (its image carries a halo around it).
   art: { share: 0.08, min: 28, max: 140 },
-  orb: { share: 0.052, min: 22, max: 90 },
-  // Boss crests, evergaols, chests.
+  // The unknown-site glow's bright core (its image carries a softer halo around it); see orbSize.
+  orb: { share: 0.033, min: 16, max: 60 },
+  // Boss crests, evergaols, chests, and the player's own marker.
   icon: { share: 0.036, min: 26, max: 64 },
-  // A night's closing ring, with the boss's name written across it.
+  // A night's closing ring.
   ring: { share: 0.11, min: 64, max: 300 },
 } as const
 export type MarkKind = keyof typeof MARK_SIZES
 export function markSize(kind: MarkKind, mapWidth: number): number {
   const { share, min, max } = MARK_SIZES[kind]
   return Math.min(max, Math.max(min, mapWidth * share))
+}
+
+/**
+ * The unknown-site glow's core, in screen px: about the footprint of a structure's sprite, as the game's own, and
+ * never wider than the gap between the two nearest sites (`spacing`, in map units), so no two glows run together.
+ */
+export const orbSize = (mapWidth: number, spacing: number) =>
+  Math.min(markSize('orb', mapWidth), (spacing * mapWidth) / 1000 - 0.5)
+
+/** The distance between the two nearest of `points` (map units). */
+export function minSpacing(points: readonly { x: number; y: number }[]): number {
+  let least = Infinity
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) least = Math.min(least, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y))
+  }
+  return least
 }
 
 /** A night boss as its ring names it: the lead of a named pair ("Tree Sentinel and Royal Cavalrymen"). */

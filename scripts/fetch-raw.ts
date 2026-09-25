@@ -23,7 +23,7 @@ const files: Record<string, string> = {
 
 // Game map markers from the Fextralife wiki's Locations legend (https://eldenringnightreign.wiki.fextralife.com/Locations),
 // fetched 2026-09-24. The wiki has no "?" unexplored-site orb, player marker, great boss crest or caravan icon:
-// unknown.svg and player.svg in data/raw/assets/markers are drawn by hand, and the great boss crest is derived
+// unknown.svg, player.svg and caravan.svg in data/raw/assets/markers are drawn by hand, and the great boss crest is derived
 // from the field boss crest in import-seeds.ts. See data/raw/assets/SOURCES.md.
 const FEXTRALIFE = 'https://static0.fextralifeimages.com/file/eldenringnightreign'
 Object.assign(files, {

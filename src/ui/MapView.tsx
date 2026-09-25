@@ -7,7 +7,7 @@ import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
-import { isTrackpadScroll, labelRank, markSize, nearestPin, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
+import { isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
 import './map.css'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
@@ -15,7 +15,7 @@ export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' |
 export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string; name?: string }
 /**
  * A marker as the map draws it. Beyond the seed's own layers: the castle's bosses (a crest each) and its guard
- * (a name alone), and caravans, which stand on open ground and have no game icon, so they are a name alone too.
+ * (a name alone), and caravans, which stand on open ground where nothing is built (a cart, drawn for the app).
  */
 export interface MapMarker extends Omit<Marker, 'layer'> { layer: Marker['layer'] | 'castle' | 'caravan'; plain?: boolean }
 
@@ -24,10 +24,13 @@ const MAX_ZOOM = 4
 // so they grow and shrink with the map like the game's own. Laid out near their desktop size, they scale down
 // on a phone rather than up, and stay crisp.
 const ART_SIZE = 80
-// The orb's visible disc; its image is larger, with the glow around the disc (public/markers, about 53%).
+// The unknown-site glow's bright core; its image is twice as large, with the soft halo round the core.
 const ORB_SIZE = 50
-const ORB_BOX = Math.round(ORB_SIZE / 0.53)
+const ORB_DISC = 0.5
+const ORB_BOX = ORB_SIZE / ORB_DISC
 const ICON_SIZE = 36
+// The player's marker is drawn crest-sized: its disc is 0.48 of its image (public/markers/player.webp).
+const PLAYER_BOX = Math.round(ICON_SIZE / 0.48)
 const RING_SIZE = 110
 // How far (CSS px on screen) a tap may land from a slot and still count as that slot: at least 32, or the
 // art's own half-width once it is drawn larger.
@@ -72,6 +75,8 @@ export function MapView(props: MapContent & {
     () => (props.wholeIsland ? catalog.islandOf(props.earth) : playableBox(Object.values(catalog.slotsOf(props.earth)))),
     [props.earth, props.wholeIsland],
   )
+  // The gap between the two nearest sites, which no glow outgrows (orbSize).
+  const spacing = useMemo(() => minSpacing(Object.values(catalog.slotsOf(props.earth))), [props.earth])
   // Until the user moves the map, it keeps itself framed on the playable area as insets settle.
   const touched = useRef(false)
   const x = useMotionValue(0)
@@ -80,7 +85,7 @@ export function MapView(props: MapContent & {
   const pinScale = useTransform(scale, (s) => 1 / s)
   const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
   const artScale = useTransform(mapWidth, (m) => markSize('art', m) / ART_SIZE)
-  const orbScale = useTransform(mapWidth, (m) => markSize('orb', m) / ORB_SIZE)
+  const orbScale = useTransform(mapWidth, (m) => orbSize(m, spacing) / ORB_SIZE)
   const iconScale = useTransform(mapWidth, (m) => markSize('icon', m) / ICON_SIZE)
   const ringScale = useTransform(mapWidth, (m) => markSize('ring', m) / RING_SIZE)
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
@@ -361,13 +366,13 @@ export function MapView(props: MapContent & {
     const toScreen = (px: number, py: number) => ({ x: w / 2 + x.get() + (px / 1000 - 0.5) * s, y: h / 2 + y.get() + (py / 1000 - 0.5) * s })
     const art = markSize('art', s)
     const icon = markSize('icon', s)
-    const orb = markSize('orb', s)
+    const orb = orbSize(s, spacing)
     // A structure's art box, less its transparent margin: most game sprites are wider than tall.
     const artMark = art * ART_BODY
     // Pins with a name are placed as marks with a label (the tags); the rest only block.
     const pinRects = props.pins.filter((p) => !(p.name && p.structure)).map((p) => {
       const c = toScreen(p.x, p.y)
-      const r = p.structure ? artMark : orb / 2
+      const r = p.structure ? artMark : p.state === 'spawn' ? icon / 2 : orb / 2
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
     const boxes = labelBoxes.get()
@@ -432,11 +437,13 @@ export function MapView(props: MapContent & {
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
           >
-            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : orbScale }}>
+            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : p.state === 'spawn' ? iconScale : orbScale }}>
               <motion.span className={p.structure ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
                 {p.structure
                   ? <StructureIcon structure={p.structure} size={ART_SIZE} />
-                  : <img className="orb" src={ORB_ART[p.state] ?? ORB_ART.open} width={ORB_BOX} height={ORB_BOX} alt="" draggable={false} />}
+                  : p.state === 'spawn'
+                    ? <img className="orb" src={ORB_ART.spawn} width={PLAYER_BOX} height={PLAYER_BOX} data-disc={0.48} alt="" draggable={false} />
+                    : <img className="orb" src={ORB_ART[p.state] ?? ORB_ART.open} width={ORB_BOX} height={ORB_BOX} data-disc={ORB_DISC} alt="" draggable={false} />}
                 {/* A Church at the spawn point: the art stays whole and the player marker rides on its corner, so both show. */}
                 {p.state === 'spawn' && p.structure && <img className="spawn-badge" src={ORB_ART.spawn} alt="" draggable={false} />}
               </motion.span>
@@ -508,10 +515,10 @@ function tagOf(m: MapMarker): TagSpec {
 }
 const MARKER_ART: Partial<Record<MapMarker['layer'], string>> = {
   boss: '/markers/field-boss.webp', castle: '/markers/field-boss.webp', evergaol: '/markers/evergaol.webp',
-  chest: '/markers/chest.webp', merchant: '/markers/merchant.webp',
+  chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', caravan: '/markers/caravan.webp',
 }
 
-/** A marker's game icon, sized with the map; a plain name (the castle's guard, caravans) has none. */
+/** A marker's game icon, sized with the map; a plain name (the castle's guard) has none. */
 function MarkerIcon({ marker, scale }: { marker: MapMarker; scale: MotionValue<number> }) {
   const src = marker.great ? '/markers/great-boss.webp' : MARKER_ART[marker.layer]
   if (marker.plain || !src) return null

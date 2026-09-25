@@ -94,7 +94,7 @@ describe('game art for the new look', () => {
     for (const key of Object.keys(DAMAGE_NAMES)) expect(size(`damage/${key}.webp`), key).toBeLessThan(30_000)
   })
   it('has every map marker, each within the 30 KB budget', () => {
-    for (const name of ['unknown', 'spawn-option', 'player', 'field-boss', 'great-boss', 'evergaol', 'chest', 'merchant']) {
+    for (const name of ['unknown', 'spawn-option', 'player', 'field-boss', 'great-boss', 'evergaol', 'chest', 'merchant', 'caravan']) {
       expect(size(`markers/${name}.webp`), name).toBeLessThan(30_000)
     }
   })

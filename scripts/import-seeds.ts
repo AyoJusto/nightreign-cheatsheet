@@ -343,6 +343,22 @@ export async function withShadow(img: sharp.Sharp): Promise<sharp.Sharp> {
 }
 
 /**
+ * The evergaol's dark stone disc with a faint violet glow round its rim, as the game lights a sealed evergaol, so
+ * it no longer reads as an empty grey button. Baked in: the map pays for no filter as it moves.
+ */
+async function evergaolWithGlow(): Promise<sharp.Sharp> {
+  const art = await (await withShadow(sharp('data/raw/assets/markers/evergaol.png', { density: 144 }).trim())).png().toBuffer()
+  const { width, height } = await sharp(art).metadata()
+  const pad = 8
+  const w = width! + pad * 2
+  const h = height! + pad * 2
+  const r = Math.min(width!, height!) / 2 - 2
+  const ring = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><filter id="b"><feGaussianBlur stdDeviation="3"/></filter>`
+    + `<circle cx="${w / 2}" cy="${h / 2 - 1}" r="${r}" fill="none" stroke="#b38cff" stroke-opacity="0.85" stroke-width="5" filter="url(#b)"/></svg>`
+  return sharp(Buffer.from(ring)).composite([{ input: art, top: pad, left: pad }])
+}
+
+/**
  * The island's box on a keyed map, in map units (0-1000): the extent of its opaque pixels. The desktop map frames
  * this, the land as drawn, rather than the square image or only the sites on it.
  */
@@ -526,16 +542,18 @@ async function copyAssets() {
   rmSync('public/markers', { recursive: true, force: true })
   mkdirSync('public/markers', { recursive: true })
   const marker = (file: string) => sharp(`data/raw/assets/markers/${file}`, { density: 144 }).trim()
-  for (const name of ['field-boss', 'evergaol', 'chest', 'merchant']) {
+  for (const name of ['field-boss', 'chest', 'merchant']) {
     await withShadow(marker(`${name}.png`)).then((img) => img.webp({ quality: 90 }).toFile(`public/markers/${name}.webp`))
   }
+  await withShadow(marker('caravan.svg').resize(96, 96, { fit: 'inside' })).then((img) => img.webp({ quality: 90 }).toFile('public/markers/caravan.webp'))
+  await evergaolWithGlow().then((img) => img.webp({ quality: 90 }).toFile('public/markers/evergaol.webp'))
   await withShadow(sharp(await marker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).png().toBuffer()))
     .then((img) => img.webp({ quality: 90 }).toFile('public/markers/great-boss.webp'))
-  for (const name of ['unknown', 'player']) {
-    await marker(`${name}.svg`).resize(128, 128, { fit: 'inside' }).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
-  }
-  // A possible spawn point is the unknown orb turned teal, baked here so the map pays for no CSS filter.
-  await marker('unknown.svg').resize(128, 128, { fit: 'inside' }).modulate({ hue: 130, saturation: 1.3 }).webp({ quality: 90 }).toFile('public/markers/spawn-option.webp')
+  // The drawn glows fade out to the box's edge, and MapView sizes them by the box: not trimmed.
+  const glow = (name: string) => sharp(`data/raw/assets/markers/${name}.svg`, { density: 144 }).resize(128, 128)
+  for (const name of ['unknown', 'player']) await glow(name).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
+  // A possible spawn point is the unknown glow turned the game's spirit teal, baked here so the map pays for no CSS filter.
+  await glow('unknown').modulate({ hue: 85 }).webp({ quality: 90 }).toFile('public/markers/spawn-option.webp')
   console.log('assets copied')
 }
 

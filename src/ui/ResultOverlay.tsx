@@ -69,12 +69,12 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       ...(basement ? [{ layer: 'castle' as const, ...at.basement, label: basement }] : []),
     ]
   }, [seed])
-  // Caravans stand on open ground where nothing is built, and the game gives them no icon: a name alone.
+  // Caravans stand on open ground where nothing is built: a small cart, drawn in the game icons' style, and a name.
   const caravans = useMemo<MapMarker[]>(() => {
     const coords = catalog.slotsOf(seed.earth)
     return Object.entries(seed.inside)
       .filter(([slot]) => !seed.slots[slot] && coords[slot])
-      .map(([slot, label]) => ({ layer: 'caravan', ...coords[slot], label, plain: true }))
+      .map(([slot, label]) => ({ layer: 'caravan', ...coords[slot], label }))
   }, [seed])
 
   const pins = useMemo<Pin[]>(() => {
