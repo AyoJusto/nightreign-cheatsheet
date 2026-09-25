@@ -209,7 +209,8 @@ export function FinderOverlay(props: {
             {/* The live region carries the whole phrase, so the words around the digits are hidden from screen readers.
                 Count keeps one slot in both states: remounted, the digits would not roll and a pre-filled live region
                 may never be announced. */}
-            {!spawn && <span aria-hidden>{verb} where you spawned · </span>}
+            {/* Short enough to sit whole between the buttons on an iPhone SE; the live phrase says it in full. */}
+            {!spawn && <span aria-hidden>Spawn point? · </span>}
             <Count value={count} phrase={spawn ? `${count} possible` : `${verb} where you spawned, ${count} possible`} />
             {spawn && <span aria-hidden> possible</span>}
           </span>

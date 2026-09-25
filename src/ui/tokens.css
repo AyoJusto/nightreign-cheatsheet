@@ -236,13 +236,14 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* A title centres on the pill's own width (which spans the screen), not in whatever space the buttons leave:
    two equal flexible edge columns hold the leading and trailing controls, however many there are on each side,
    so the middle column (the title) always lands on the pill's true centre, like an iOS nav bar.
-   minmax(0, 1fr), not plain 1fr: plain 1fr's implicit auto minimum is each side's own content width, so one
-   button vs. two stayed unequal; a 0 minimum lets both sides take a truly equal share of the leftover space. */
-.pill-titled { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); }
+   Each side keeps at least the width of the wider one (two 44px buttons and their gap), so the trailing pair never
+   runs under the title; both sides then share what is left equally, so the title stays on the pill's centre. The
+   title's own column may shrink to nothing: its text then ends in an ellipsis rather than reach a button. */
+.pill-titled { display: grid; grid-template-columns: minmax(92px, 1fr) minmax(0, auto) minmax(92px, 1fr); }
 .pill-leading, .pill-trailing { display: flex; align-items: center; gap: 4px; }
 .pill-leading { grid-column: 1; justify-self: start; }
 .pill-trailing { grid-column: 3; justify-self: end; }
-.pill-text { grid-column: 2; justify-self: center; min-width: 0; padding: 0 6px; text-align: center; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill-text { grid-column: 2; min-width: 0; padding: 0 4px; text-align: center; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* The digits stay in the system face, tabular, so they roll without jitter. */
 .pill-text .num { font-family: var(--font); }
 /* The pill's column; items sit centred in it, and a row too long for it scrolls. */
