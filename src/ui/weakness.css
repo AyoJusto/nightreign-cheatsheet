@@ -36,23 +36,35 @@
   justify-self: end; font-family: var(--font-display); font-size: 11px; line-height: 1; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone);
 }
-.nl-icons { display: flex; gap: 4px; }
+.nl-icons { --gap: 4px; display: flex; align-items: center; gap: var(--gap); }
 .nl-icons img {
-  width: var(--icon); height: var(--icon); display: block; border-radius: 2px;
+  flex: 0 0 auto; width: var(--icon); height: var(--icon); display: block; border-radius: 2px;
   box-shadow: 0 0 0 1px rgba(7, 11, 20, 0.8), 0 0 0 2px rgba(201, 165, 92, 0.35);
 }
+/* The weak status row names its statuses: one beside its icon, several in a line under their icons, as wide as five
+   icons. A status icon is dim grey-blue art (Sleep's closed eye), lifted so it reads at card size. */
+.nl-named { flex-wrap: wrap; max-width: calc(5 * var(--icon) + 4 * var(--gap)); row-gap: 3px; }
+.nl-named img { filter: brightness(1.35) contrast(1.35) saturate(1.2); }
+.nl-names { margin-left: 2px; font-size: 12px; line-height: 14px; font-weight: 600; color: var(--bone); }
+.nl-named[data-many] .nl-names { flex-basis: 100%; margin-left: 0; font-size: 11px; line-height: 13px; }
 @media (min-width: 900px) {
   .nl-card { padding: 8px 14px 8px 12px; }
   .nl-row { column-gap: 12px; padding: 6px 0; }
   .nl-row-label { font-size: 14px; }
-  .nl-icons { gap: 6px; }
+  .nl-icons { --gap: 6px; }
+  .nl-names { font-size: 14px; line-height: 16px; }
+  .nl-named[data-many] .nl-names { font-size: 13px; line-height: 15px; }
 }
 
-/* On Home, beside the Shifting Earth heading: the same card, its rows in one line, at the phone's size. */
-.nl-card-inline { --icon: 22px; display: flex; gap: 12px; padding: 4px 10px; }
-.nl-card-inline .nl-row { display: flex; gap: 6px; padding: 2px 0; }
-.nl-card-inline .nl-row + .nl-row { background: none; }
-.nl-card-inline .nl-row-label { font-size: 11px; }
+/* On Home, above the Shifting Earth heading: the picked Nightlord's medallion with its card beside it, as the
+   map's corner shows them. Desktop lays the card's rows in one line, so the earths still fit a laptop's screen. */
+.nl-pick { --medal: 60px; --icon: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; }
+@media (min-width: 900px) {
+  .nl-pick { --medal: 72px; --icon: 32px; gap: 12px; margin-bottom: 14px; }
+  .nl-pick .nl-card { display: flex; gap: 20px; padding: 6px 16px; }
+  .nl-pick .nl-row { display: flex; gap: 10px; padding: 2px 0; }
+  .nl-pick .nl-row + .nl-row { background: none; }
+}
 
 /* ---------- A night boss's weaknesses under its name in the run card (ResultOverlay.tsx) ---------- */
 

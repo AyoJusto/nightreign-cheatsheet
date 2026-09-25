@@ -51,11 +51,9 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
             transition={spring}
           >
             {!wide && <Frame />}
-            {/* The picked Nightlord's weaknesses beside the heading, as its card shows them on the map. */}
-            <div className="earth-head">
-              <h2 id="earth-heading" className="earth-heading">Shifting Earth</h2>
-              <WeaknessCard nightlord={picked} />
-            </div>
+            {/* The picked Nightlord's medallion and weakness card, as the map's corner shows them, above the earths. */}
+            <WeaknessCard nightlord={picked} />
+            <h2 id="earth-heading" className="earth-heading">Shifting Earth</h2>
             <div className="earth-grid">
               {catalog.earthsFor(picked).map((earth) => (
                 <button key={earth} className="earth" onClick={() => go(`/find/${picked}/${earth}`)}>

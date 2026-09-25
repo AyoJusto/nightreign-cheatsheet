@@ -132,15 +132,18 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
 }
 
 /**
- * A Nightlord's weaknesses as the game's status card lists them, on its own (Home, once a Nightlord is picked): the
- * same rows as the corner's card, laid in one line. Its facts are its accessible name.
+ * A Nightlord's medallion and weakness card on their own (Home, once a Nightlord is picked), as the map's corner
+ * shows them. Its facts are its accessible name.
  */
 export function WeaknessCard({ nightlord }: { nightlord: NightlordId }) {
   const weakness = catalog.nightlordWeakness(nightlord)
   return (
-    <div className="nl-card nl-card-inline" role="img" aria-label={`${nightlordName(nightlord)}: ${weaknessPhrase(weakness)}`}>
-      <Frame />
-      <CardRows weakness={weakness} />
+    <div className="nl-pick" role="img" aria-label={`${nightlordName(nightlord)}: ${weaknessPhrase(weakness)}`}>
+      <span className="nl-medal"><MedallionArt nightlord={nightlord} /></span>
+      <div className="nl-card">
+        <Frame />
+        <CardRows weakness={weakness} />
+      </div>
     </div>
   )
 }
@@ -150,18 +153,22 @@ function CardRows({ weakness }: { weakness: Weakness }) {
     <>
       {weakness.weak.length > 0 && <CardRow label="Weak" keys={weakness.weak} />}
       {weakness.resist.length > 0 && <CardRow label="Resist" keys={weakness.resist} />}
-      {/* The statuses that build up fastest on it (the cheatsheet's "Also"), where its listed weakness is a damage type. */}
-      {weakness.status && weakness.status.length > 0 && <CardRow label="Status" keys={weakness.status} hint="builds up fastest" />}
+      {/* The statuses that build up fastest on it (the cheatsheet's "Also"), where its listed weakness is a damage
+          type: named in words too, since "status" alone could read as what it inflicts, and a status icon is hard
+          to tell at card size. */}
+      {weakness.status && weakness.status.length > 0 && <CardRow label="Weak status" keys={weakness.status} hint="builds up fastest" named />}
     </>
   )
 }
 
-function CardRow({ label, keys, hint }: { label: string; keys: DamageKey[]; hint?: string }) {
+function CardRow({ label, keys, hint, named }: { label: string; keys: DamageKey[]; hint?: string; named?: boolean }) {
   return (
     <div className="nl-row">
       <span className="nl-row-label">{label}</span>
-      <span className="nl-icons">
+      {/* Named: one status's name beside its icon; several (Darkdrift Knight has five tied) in a line under them. */}
+      <span className={named ? 'nl-icons nl-named' : 'nl-icons'} data-many={(named && keys.length > 1) || undefined}>
         {keys.map((k) => <img key={k} src={`/damage/${k}.webp`} alt="" title={hint ? `${DAMAGE_NAMES[k]}: ${hint}` : DAMAGE_NAMES[k]} draggable={false} />)}
+        {named && <span className="nl-names">{keys.map((k) => DAMAGE_NAMES[k]).join(', ')}</span>}
       </span>
     </div>
   )

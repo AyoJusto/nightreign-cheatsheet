@@ -644,6 +644,22 @@ test.describe('the Nightlord medallion', () => {
     await expect(page.locator('.nl-card')).toBeVisible()
   })
 
+  // "Status" alone could read as what the Nightlord inflicts: the row says weak status, and names each one in words.
+  test('its card names the statuses it is weak to, on the map and on Home', async ({ page, isMobile }) => {
+    const statuses: DamageKey[] = data.weaknesses.nightlords[seed.nightlord].status
+    expect(statuses.length).toBeGreaterThan(0)
+    await page.goto(`/seed/${seed.id}`)
+    if (isMobile) await page.locator('.nl-medal').click()
+    const row = page.locator('.nl-card .nl-row').filter({ hasText: 'Weak status' })
+    for (const k of statuses) await expect(row).toContainText(DAMAGE_NAMES[k])
+    await page.goto('/')
+    await page.getByRole('button', { name: nightlordName(seed.nightlord) }).click()
+    const pick = page.getByRole('img', { name: phrase, exact: true })
+    await expect(pick).toBeVisible()
+    await expect(pick.locator('.nl-medal')).toBeVisible()
+    for (const k of statuses) await expect(pick.locator('.nl-row').filter({ hasText: 'Weak status' })).toContainText(DAMAGE_NAMES[k])
+  })
+
   test('no name on the map runs under it or its card', async ({ page, isMobile }) => {
     await page.goto(`/seed/${seed.id}`)
     if (isMobile) await page.locator('.nl-medal').click()
