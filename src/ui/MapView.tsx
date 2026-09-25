@@ -598,6 +598,7 @@ function tagOf(m: MapMarker): TagSpec {
 const MARKER_ART: Partial<Record<MapMarker['layer'], string>> = {
   boss: '/markers/field-boss.webp', castle: '/markers/field-boss.webp', evergaol: '/markers/evergaol.webp',
   chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', caravan: '/markers/caravan.webp',
+  'rot-blessing': '/elements/rot.webp', // the layer chip's own icon (ResultOverlay), already precached
 }
 
 /** A marker's game icon, sized with the map; a plain name (the castle's guard) has none. */

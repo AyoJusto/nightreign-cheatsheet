@@ -290,6 +290,14 @@ test('result map pins are named images, not buttons', async ({ page }) => {
   await expect(page.locator('.map-frame button')).toHaveCount(0)
 })
 
+// Every Rotted Woods seed has one Rot Blessing; it must draw a visible mark, not rely on its name alone (final I1).
+test('the Rot Blessing layer draws a visible mark on the result map', async ({ page }) => {
+  await page.goto('/seed/030') // tricephalos, rotted-woods
+  const icon = page.locator('.marker-rot-blessing .marker-icon')
+  await expect(icon).toBeVisible()
+  await expect(icon).toHaveAttribute('src', /\/elements\/rot\.webp$/)
+})
+
 // Too many marks to name them all at a phone's default zoom: a tap on any named mark calls out its name, and
 // another tap on it, or a pan of the map, puts it away.
 test('a tap on a crest calls out its name, and a second tap or a pan hides it', async ({ page }) => {
