@@ -626,16 +626,25 @@ test.describe('the Nightlord medallion', () => {
   })
 })
 
-// Each night's boss row names what it is weak to, from the weakness data, and nothing where the data has none.
-test("the run card names each night boss's weaknesses", async ({ page }) => {
-  const seed = targets[0]
-  await page.goto(`/seed/${seed.id}`)
-  for (const n of [1, 2] as const) {
-    const boss: string = seed.nights[n].boss
-    const weak: DamageKey[] = data.weaknesses.bosses[boss]?.weak ?? []
-    const row = page.locator('.run-row', { has: page.locator('dt', { hasText: `Night ${n}` }) })
-    // The text a screen reader reads: the visible tag is hidden from it, so this is its whole phrase.
-    if (weak.length) await expect(row.locator('.weak-line')).toContainText(`weak to ${weak.map((k) => DAMAGE_NAMES[k]).join(', ')}`)
-    else await expect(row.locator('.weak-line')).toHaveCount(0)
-  }
-})
+// Each night's boss row says what the weakness data knows, and is never blank (a blank reads as missing data):
+// what the boss is weak to, else what it resists, else that it has no damage weakness, or that there is no data.
+const expectedLine = (boss: string) => {
+  const w: { weak: DamageKey[]; resist: DamageKey[] } | undefined = data.weaknesses.bosses[boss]
+  const names = (keys: DamageKey[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
+  if (!w) return 'No data'
+  if (w.weak.length) return `weak to ${names(w.weak)}`
+  if (w.resist.length) return `resists ${names(w.resist)}`
+  return 'No damage weakness'
+}
+// Seed 000 has a boss with a weakness (night 1) and one with only resistances (night 2); a seed with Artorias
+// has one the data does not cover.
+const artorias = data.seeds.find((s: any) => s.nights[1].boss === 'Artorias' || s.nights[2].boss === 'Artorias')
+for (const seed of [targets[0], artorias]) {
+  test(`the run card says what each night boss of seed ${seed.id} is weak to`, async ({ page }) => {
+    await page.goto(`/seed/${seed.id}`)
+    for (const n of [1, 2] as const) {
+      const row = page.locator('.run-row', { has: page.locator('dt', { hasText: `Night ${n}` }) })
+      await expect(row.locator('.weak-line')).toContainText(expectedLine(seed.nights[n].boss))
+    }
+  })
+}

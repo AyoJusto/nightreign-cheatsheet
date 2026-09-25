@@ -11,7 +11,7 @@ import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
 import { decodeSightings, encodeSightings } from './useSightings'
 import { catalog } from '../data/catalog'
-import { DAMAGE_NAMES, earthName, nightlordName, structureName, type DamageKey } from '../domain/names'
+import { DAMAGE_NAMES, earthName, nightlordName, structureName, type DamageKey, type Weakness } from '../domain/names'
 import type { MarkerLayer, Seed } from '../domain/seed'
 
 // The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
@@ -161,11 +161,11 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       </button>
     </div>
   )
-  // Each night's boss with what to hit it with, where the weakness data knows the fight (never guessed).
-  const weakOf = (boss: string) => catalog.nightBossWeakness(boss)?.weak ?? []
+  // Each night's boss with what the weakness data says about it (never guessed; WeakLine says when it has none).
+  const weakOf = (boss: string) => catalog.nightBossWeakness(boss)
   const rows: [string, string | null, ReactNode?][] = [
-    ['Night 1', seed.nights[1].boss || null, <WeakLine keys={weakOf(seed.nights[1].boss)} />],
-    ['Night 2', seed.nights[2].boss || null, <WeakLine keys={weakOf(seed.nights[2].boss)} />],
+    ['Night 1', seed.nights[1].boss || null, <WeakLine weakness={weakOf(seed.nights[1].boss)} />],
+    ['Night 2', seed.nights[2].boss || null, <WeakLine weakness={weakOf(seed.nights[2].boss)} />],
     ['Castle', seed.castle?.crew || null],
     // Short labels under the Castle row: the label column fits the longest one, and a wide column wrapped the boss names.
     ['Basement', seed.castle?.basement || null],
@@ -229,13 +229,21 @@ function RunRow({ label, value, count, more }: { label?: string; value: string; 
   )
 }
 
-// What a night boss is weak to, as the game's damage icons with their names. Nothing when it has no weakness.
-function WeakLine({ keys }: { keys: DamageKey[] }) {
-  if (!keys.length) return null
+// What to know about a night boss, as the cheatsheet's weakness line does: never blank, since a blank reads as
+// missing data. What it is weak to; failing that, what it resists; failing that, that it has no damage weakness;
+// and for a fight the data does not cover, that there is no data.
+function WeakLine({ weakness }: { weakness: Weakness | undefined }) {
+  if (!weakness) return <span className="weak-line weak-none"><span className="sr-only">, </span>No data</span>
+  if (weakness.weak.length) return <DamageLine tag="Weak" spoken="weak to" keys={weakness.weak} />
+  if (weakness.resist.length) return <DamageLine tag="Resist" spoken="resists" keys={weakness.resist} />
+  return <span className="weak-line weak-none"><span className="sr-only">, </span>No damage weakness</span>
+}
+
+function DamageLine({ tag, spoken, keys }: { tag: string; spoken: string; keys: DamageKey[] }) {
   return (
     <span className="weak-line">
-      <span className="weak-tag" aria-hidden>Weak</span>
-      <span className="sr-only">, weak to </span>
+      <span className="weak-tag" aria-hidden>{tag}</span>
+      <span className="sr-only">, {spoken} </span>
       {keys.map((k, i) => (
         <span key={k} className="weak-item">{i > 0 && <span className="sr-only">, </span>}<img src={`/damage/${k}.webp`} alt="" draggable={false} />{DAMAGE_NAMES[k]}</span>
       ))}
