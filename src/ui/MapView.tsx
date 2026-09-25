@@ -7,7 +7,7 @@ import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
-import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
+import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
 import './map.css'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
@@ -64,17 +64,14 @@ export function MapView(props: MapContent & {
   bottomInset: MotionValue<number>
   /** What is drawn over the map's bottom-left corner (the Nightlord medallion), measured up from bottomInset. */
   corner?: MotionValue<Corner>
-  /** Frame the whole island as drawn (desktop, which has the room), not only the sites on it (phone). */
-  wholeIsland?: boolean
+  /** Counts the user's pans and pinches: the Nightlord's card folds away when the map is moved. */
+  moves?: MotionValue<number>
 }) {
   const frame = useRef<HTMLDivElement>(null)
   // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
   const size = useMotionValue({ w: 0, h: 0 })
-  // What the map frames itself on: the island as drawn where there is room for it, else the sites on it.
-  const box = useMemo(
-    () => (props.wholeIsland ? catalog.islandOf(props.earth) : playableBox(Object.values(catalog.slotsOf(props.earth)))),
-    [props.earth, props.wholeIsland],
-  )
+  // What the map frames itself on: the whole island as drawn, so no mark starts off screen, the west coast included.
+  const box = catalog.islandOf(props.earth)
   // The gap between the two nearest sites, which no glow outgrows (orbSize).
   const spacing = useMemo(() => minSpacing(Object.values(catalog.slotsOf(props.earth))), [props.earth])
   // Until the user moves the map, it keeps itself framed on the playable area as insets settle.
@@ -169,6 +166,7 @@ export function MapView(props: MapContent & {
     queued.current = null
     fade.jump(1)
   }
+  const moved = () => props.moves?.set(props.moves.get() + 1)
   // Springs each value to its target. With reduced motion a far move crossfades instead; `targets` is read
   // again when the map is faded out, so the jump lands where things are by then, not where they were.
   // Moves that arrive during a crossfade wait for its jump, and each is read again there, in order.
@@ -194,8 +192,9 @@ export function MapView(props: MapContent & {
 
   useGesture(
     {
-      onDrag: ({ offset: [ox, oy], pinching, cancel, tap }) => {
+      onDrag: ({ offset: [ox, oy], pinching, cancel, tap, first }) => {
         if (pinching) return cancel()
+        if (first && !tap) moved()
         // A tap never becomes an intentional drag, so onDragEnd does not run for it: the tap's pointer-up
         // (the only call with `tap` set) ends the grab here. Left set, it would block the settle that keeps
         // a selected pin above the rising sheet. A tap can also stop a glide mid-bounce; settle puts it back.
@@ -225,6 +224,7 @@ export function MapView(props: MapContent & {
       },
       onPinch: ({ origin: [ox, oy], first, offset: [s], memo }) => {
         if (first) {
+          moved()
           const r = frame.current!.getBoundingClientRect()
           // Start position, start scale, and the pinch origin relative to the layer's centre.
           memo = [x.get(), y.get(), scale.get(), ox - (r.left + r.width / 2) - x.get(), oy - (r.top + r.height / 2) - y.get()]

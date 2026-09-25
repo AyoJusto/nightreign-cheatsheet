@@ -553,9 +553,10 @@ test.describe('the Nightlord medallion', () => {
     // Desktop keeps the card open, so the medallion is a named image there; on phone it toggles the card.
     const medal = page.getByRole(isMobile ? 'button' : 'img', { name: phrase, exact: true })
     await expect(medal).toBeVisible()
-    await expect(page.locator('.nl-card')).toBeVisible()
     expect((await box(page, '.nl-medal')).width).toBeGreaterThanOrEqual(isMobile ? 44 : 100)
-    if (!isMobile) return
+    if (!isMobile) return expect(page.locator('.nl-card')).toBeVisible()
+    // On phone the card starts folded, so the medallion alone sits in the corner.
+    await expect(page.locator('.nl-card')).toHaveCount(0)
     const handle = page.getByRole('button', { name: /^Resize Seed details/ })
     await page.waitForTimeout(900)
     expect((await box(page, '.nl-medal')).bottom).toBeLessThanOrEqual((await box(page, '.sheet')).top)
@@ -586,17 +587,52 @@ test.describe('the Nightlord medallion', () => {
     expect(await where()).toBe(before)
   })
 
-  test('on phone, a tap on the medallion folds its card away and back', async ({ page, isMobile }) => {
+  test('on phone, a tap on the medallion opens its card, and another tap or a pan of the map folds it', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'desktop keeps the card open on the result')
     await page.goto(`/seed/${seed.id}`)
     const medal = page.getByRole('button', { name: phrase, exact: true })
-    await expect(medal).toHaveAttribute('aria-expanded', 'true')
-    await medal.click()
-    await expect(page.locator('.nl-card')).toHaveCount(0)
     await expect(medal).toHaveAttribute('aria-expanded', 'false')
     await medal.click()
     await expect(page.locator('.nl-card')).toBeVisible()
+    await expect(medal).toHaveAttribute('aria-expanded', 'true')
+    await medal.click()
+    await expect(page.locator('.nl-card')).toHaveCount(0)
+    await medal.click()
+    await expect(page.locator('.nl-card')).toBeVisible()
+    // A pan of the map folds it too.
+    const map = await box(page, '.map-frame')
+    await page.mouse.move(map.width / 2, map.height / 3)
+    await page.mouse.down()
+    await page.mouse.move(map.width / 2 + 50, map.height / 3 + 40, { steps: 6 })
+    await page.mouse.up()
+    await expect(page.locator('.nl-card')).toHaveCount(0)
+    await expect(medal).toHaveAttribute('aria-expanded', 'false')
   })
+
+  // The first view of a result shows the whole island: no mark is off the screen, under the pill or the sheet, or
+  // under the medallion, on a Limveld seed and on a Great Hollow one.
+  for (const id of [seed.id, data.seeds.find((s: any) => s.earth === 'great-hollow').id]) {
+    test(`at rest, every mark of seed ${id} is in sight and clear of the chrome`, async ({ page }) => {
+      await page.goto(`/seed/${id}`)
+      await page.waitForTimeout(1200)
+      const bad = await page.evaluate(() => {
+        const marks = [...document.querySelectorAll<HTMLElement>('.pin .pin-mark, .marker .mark > img, .ring-mark .ring')]
+        const pill = document.querySelector('.pill')!.getBoundingClientRect()
+        const frame = document.querySelector('.map-frame')!.getBoundingClientRect()
+        const bottom = document.querySelector('.sheet')?.getBoundingClientRect().top ?? frame.bottom
+        const corner = [...document.querySelectorAll('[data-corner]')].map((e) => e.getBoundingClientRect())
+        return marks.flatMap((m) => {
+          const r = m.getBoundingClientRect()
+          const cx = (r.left + r.right) / 2
+          const cy = (r.top + r.bottom) / 2
+          const off = cx < frame.left || cx > frame.right || cy < pill.bottom || cy > bottom
+          const under = corner.some((b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top)
+          return off || under ? [`${m.className} at ${Math.round(cx)},${Math.round(cy)}`] : []
+        })
+      })
+      expect(bad).toEqual([])
+    })
+  }
 
   test('shows in the finder, its card folded until asked for, and clear of the strip', async ({ page, isMobile }) => {
     await page.goto(`/find/${seed.nightlord}/${seed.earth}`)
@@ -608,8 +644,9 @@ test.describe('the Nightlord medallion', () => {
     await expect(page.locator('.nl-card')).toBeVisible()
   })
 
-  test('no name on the map runs under it or its card', async ({ page }) => {
+  test('no name on the map runs under it or its card', async ({ page, isMobile }) => {
     await page.goto(`/seed/${seed.id}`)
+    if (isMobile) await page.locator('.nl-medal').click()
     await expect(page.locator('.nl-card')).toBeVisible()
     await page.waitForTimeout(900)
     const crossing = await page.evaluate(() => {

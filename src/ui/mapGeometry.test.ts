@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, playableBox, artFootprint, ART_ASPECT } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_ASPECT } from './mapGeometry'
 import { catalog } from '../data/catalog'
 import { readdirSync } from 'node:fs'
 
@@ -367,22 +367,21 @@ describe('marks at game scale', () => {
     expect(ratio('icon')).toBeCloseTo(0.45, 1)
     expect(ratio('ring')).toBeCloseTo(1.38, 1)
   })
-  // The finder's map, fitted as MapView fits it: a phone's width (393) spans the playable area; a desktop's map area
-  // (1080 x 900 under a 60px pill) fits the whole island.
+  // The finder's map, fitted as MapView fits it: the whole island, across a phone's width (393), and in a desktop's
+  // map area (1080 x 900 under a 60px pill).
   const fitted = (earth: 'default' | 'great-hollow') => {
-    const box = playableBox(Object.values(catalog.slotsOf(earth)))
     const island = catalog.islandOf(earth)
     const w = (island.x1 - island.x0) / 1000
     const h = (island.y1 - island.y0) / 1000
-    return { phone: 393 / ((box.x1 - box.x0) / 1000), desktop: Math.min(1080 / w, (900 - 60) / h) }
+    return { phone: 393 / w, desktop: Math.min(1080 / w, (900 - 60) / h) }
   }
-  it('draws the unknown-site glow at 60 to 70% of its old size on phone (a 30px disc), and smaller on desktop', () => {
+  it('draws the unknown-site glow as large as the two nearest sites allow, below its old size on phone and desktop', () => {
     const { phone, desktop } = fitted('default')
     const spacing = minSpacing(Object.values(catalog.slotsOf('default')))
-    expect(orbSize(phone, spacing) / 30).toBeGreaterThanOrEqual(0.6)
-    expect(orbSize(phone, spacing) / 30).toBeLessThanOrEqual(0.7)
-    // Desktop's old 63px disc sat on a map framed on the sites alone; framed on the whole island the map is smaller,
-    // and the two nearest sites leave the glow about 31px.
+    // Framed on the whole island, a phone's map is about 476px wide, and the two nearest sites leave the glow 15px
+    // (half its old 30); desktop's old 63px disc drops to about 31px the same way.
+    expect(orbSize(phone, spacing)).toBeCloseTo((spacing * phone) / 1000 - 0.5, 5)
+    expect(orbSize(phone, spacing)).toBeGreaterThan(14)
     expect(orbSize(desktop, spacing)).toBeGreaterThan(28)
     expect(orbSize(desktop, spacing) / 63).toBeLessThanOrEqual(0.7)
   })

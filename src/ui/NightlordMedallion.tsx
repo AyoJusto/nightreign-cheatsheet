@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
 import { Frame } from './Frame'
 import { useWide } from './useWide'
@@ -12,9 +12,10 @@ import { DAMAGE_NAMES, nightlordName, weaknessPhrase, type DamageKey, type Night
  */
 export interface CornerRect { x0: number; x1: number; bottom: number; top: number }
 /**
- * `rects`: the medallion's and card's areas while they show (none while tucked), which map names keep off and
- * the map may pan clear of. `reach`: how far the corner reaches up when it shows, the same tucked or not, which
- * the map frames itself above: were it to follow the tuck, the map would jump as a sheet is dragged.
+ * `rects`: the medallion's area, and the card's while it is open (none while tucked), which map names keep off and
+ * the map may pan clear of. `reach`: how far the medallion reaches up, the same tucked or not and whether or not
+ * its card is open, which the map frames itself above: were it to follow the tuck, the map would jump as a sheet
+ * is dragged, and were it to include the card, the island would shrink to leave room for a card that starts folded.
  */
 export interface Corner { rects: CornerRect[]; reach: number }
 export const NO_CORNER: Corner = { rects: [], reach: 0 }
@@ -27,10 +28,12 @@ const cardMotion = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const
  * bronze ring and a blue glow, and beside it a card of what it is weak to and resists. The corner belongs to
  * the screen, not the map: on phone it rides on the strip or the collapsed sheet, and tucks away as soon as a
  * sheet rises past that, so it never covers the map left above an open sheet (a night's ring, or the sites
- * around the one being answered). The card starts open on a result; on phone, and in the finder, the medallion
- * toggles it. Its facts are spoken as the medallion's name, so the card itself is hidden from screen readers.
+ * around the one being answered). Desktop keeps the card open on a result. On phone, and in the finder, the card
+ * starts folded, so the medallion alone sits in the corner and the whole island shows: a tap on the medallion opens
+ * it, and another tap, or moving the map, folds it. Its facts are spoken as the medallion's name, so the card itself
+ * is hidden from screen readers.
  */
-export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
+export function NightlordMedallion({ nightlord, result, lift, rest, corner, moves }: {
   nightlord: NightlordId
   result: boolean
   /** Height covered at the bottom right now (strip or sheet); 0 on desktop. */
@@ -39,16 +42,19 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
   rest: MotionValue<number>
   /** Receives the medallion's and card's areas, so map names keep off them and the map can pan clear of them. */
   corner: MotionValue<Corner>
+  /** Counts the user's moves of the map, each of which folds the card. */
+  moves: MotionValue<number>
 }) {
   const wide = useWide()
   const collapsible = !(wide && result)
-  const [open, setOpen] = useState(result)
-  // Finder to result keeps this mounted (the map stays): the result opens the card, whatever the finder had.
+  const [open, setOpen] = useState(false)
+  // Finder to result keeps this mounted (the map stays): the result starts with the card folded, whatever the finder had.
   const [wasResult, setWasResult] = useState(result)
   if (wasResult !== result) {
     setWasResult(result)
-    if (result) setOpen(true)
+    setOpen(false)
   }
+  useEffect(() => moves.on('change', () => setOpen(false)), [moves])
   const shown = open || !collapsible
   const weakness = catalog.nightlordWeakness(nightlord)
   const label = [nightlordName(nightlord), weaknessPhrase(weakness)].filter(Boolean).join(': ')
@@ -81,7 +87,8 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
         bottom: up - part.offsetTop - part.offsetHeight,
         top: up - part.offsetTop,
       }))
-      reach = Math.max(0, ...rects.map((r) => r.top))
+      // The medallion's alone: the card opens over the map on request, so the map is not framed around it.
+      reach = rects[0]?.top ?? 0
       publish()
     }
     measure()
