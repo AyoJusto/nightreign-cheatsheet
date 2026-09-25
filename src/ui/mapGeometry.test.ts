@@ -272,10 +272,15 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const disc = { x0: x - r, y0: y - r, x1: x + r, y1: y + r }
     return { point: { x, y }, label, rank: 0, keep: true, ring: true, box: disc, body: [{ ...disc, round: true }], gap: 2, mark: 0 }
   }
-  it("writes a night's name centred just above its ring, on phone and desktop alike, even over art", () => {
+  it("writes a night's name centred just above its ring, on phone and desktop alike", () => {
+    const [ring] = placeLabels([ringAt(200, 300, 40)], frame, [], 9, 8, 6)
+    expect(ring).toMatchObject({ x: 160, y: 228, shown: true })
+  })
+  it('writes it inside its ring, across the lower half of the disc, when art lies all round it', () => {
     const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
     const [ring] = placeLabels([ringAt(200, 300, 40)], frame, [everywhere], 9, 8, 6)
-    expect(ring).toMatchObject({ x: 160, y: 228, shown: true })
+    // Centred on the lower half: its middle 20px (half the radius) below the ring's centre.
+    expect(ring).toMatchObject({ x: 160, y: 305, shown: true })
   })
   it('writes it just below its ring when the pill leaves no room above', () => {
     const [ring] = placeLabels([ringAt(200, 100, 40)], { w: 400, h: 800, top: 60 }, [], 9, 8, 6)
@@ -287,11 +292,23 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const [ring] = placeLabels([ringAt(200, 300, 40), crest(200, 245)], frame, [], 9, 8, 6)
     expect(ring).toMatchObject({ x: 160, y: 342, shown: true })
   })
-  it('writes it across the middle of its ring when crests stand above and below, and beside it when the middle is taken too', () => {
-    const [across] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355)], frame, [], 9, 8, 6)
-    expect(across).toMatchObject({ x: 160, y: 285, shown: true })
-    const [beside] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355), crest(200, 300)], frame, [], 9, 8, 6)
+  it('writes it beside its ring when crests stand above and below, and inside it, never on a diagonal, when the sides are taken too', () => {
+    const [beside] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355)], frame, [], 9, 8, 6)
     expect(beside).toMatchObject({ x: 242, y: 285, shown: true })
+    // Every diagonal is free, but a caption there sits a corner's width off its ring: it goes inside instead.
+    const [inside] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355), crest(280, 300), crest(120, 300)], frame, [], 9, 8, 6)
+    expect(inside).toMatchObject({ x: 160, y: 305, shown: true })
+  })
+  it("never writes a night's name where it reads as another mark's: beside a bare art, the caption goes inside its ring", () => {
+    // Art over the spots above, below and right of the ring. Left is free, 78..158 x 285..315, but a township's bare
+    // art lies under its left half (as on a phone's Night 2): the caption's middle would be nearer the township.
+    const taken = [{ x0: 150, y0: 200, x1: 250, y1: 256 }, { x0: 150, y0: 344, x1: 250, y1: 400 }, { x0: 244, y0: 270, x1: 330, y1: 330 }]
+    const township = { x0: 60, y0: 318, x1: 100, y1: 340 }
+    const [inside] = placeLabels([ringAt(200, 300, 40)], frame, [...taken, township], 9, 8, 6)
+    expect(inside).toMatchObject({ x: 160, y: 305, shown: true })
+    // Further down, the ring is the nearer mark, and the left spot is the caption's own.
+    const [left] = placeLabels([ringAt(200, 300, 40)], frame, [...taken, { ...township, y0: 345, y1: 367 }], 9, 8, 6)
+    expect(left).toMatchObject({ x: 78, y: 285, shown: true })
   })
   it("keeps every other name off a night's name, as off any name placed before it", () => {
     const [ring, name] = placeLabels([ringAt(200, 300, 40), { point: { x: 200, y: 215 }, label, rank: 3, keep: false }], frame, [], 9, 8, 6)

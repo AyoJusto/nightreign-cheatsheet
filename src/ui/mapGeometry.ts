@@ -47,7 +47,8 @@ export type Obstacle = Rect & { weight?: number; round?: boolean }
  * Where a label goes around a mark, as its top-left corner in frame px: below, above, right or left of the mark,
  * then the four diagonals, `gap` px off the mark's `box` (by default the point itself, so `gap` is from the point),
  * kept `edge` px inside the frame. A negative gap tucks the label over the top or bottom edge of its own art. A
- * `ring`'s name goes centred above its ring, then below it, across its middle, and then beside it. The frame's
+ * `ring`'s name goes centred above its ring, then below it or beside it, touching the ring, covering nothing and reading
+ * as its own, not one of `others`, else inside the ring across the lower half of its disc. For other names: the frame's
  * visible band runs from `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph
  * (`mark` px around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
  * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first that covers
@@ -111,17 +112,30 @@ export function placeLabel(
     { x: around.x0 - h - label.w, y: around.y1 - label.h },
     { x: around.x0 - h - label.w, y: around.y0 },
   ]
-  // A night's name: above its ring, below it, across its middle (as the game's reference map writes it), then beside it.
-  const ringSpots = () => {
-    const [below, above, right, left, ...diagonals] = ringOf(gap, gap).slice(0, 8)
-    return [above, below, { x: cx - label.w / 2, y: cy - label.h / 2 }, right, left, ...diagonals]
+  const clamp = (s: { x: number; y: number }) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) })
+  const rectAt = (s: { x: number; y: number }) => ({ x0: s.x, y0: s.y, x1: s.x + label.w, y1: s.y + label.h })
+  // Whole px²: a spot's float error must not beat an earlier spot covering just as much.
+  const coverage = (s: { x: number; y: number }) => Math.round(obstacles.reduce((sum, o) => sum + covers(rectAt(s), o) * (o.weight ?? 1), 0))
+  if (ring) {
+    // A night's name: above its ring, below it, then beside it, where it touches the ring (RING_TOUCH px of its
+    // circle), covers nothing and reads as the ring's, not a neighbour's (the test every name passes). Failing all
+    // four, it goes inside the ring, across the lower half of its disc, as the game's reference map writes it.
+    const r = (around.x1 - around.x0) / 2
+    const [below, above, right, left] = ringOf(gap, gap)
+    const fits = (raw: { x: number; y: number }) => {
+      const s = clamp(raw)
+      return belongs(raw, s) && distanceTo(rectAt(s), cx, cy) - r <= RING_TOUCH && coverage(s) === 0
+    }
+    const outside = [above, below, right, left].find(fits)
+    if (outside) return { ...clamp(outside), clear: true, own: true }
+    const inside = clamp({ x: cx - label.w / 2, y: cy + r / 2 - label.h / 2 })
+    return { ...inside, clear: coverage(inside) === 0, own: true }
   }
   // A negative gap tucks a name over the top or bottom edge of its own art, never its sides, where the art is dense.
   // Where the tuck is refused (it would cover the mark's own badge), the same spots clear of the mark come next.
-  const raws = ring ? ringSpots() : gap < 0 ? [...ringOf(gap, 1), ...ringOf(1, 1)] : ringOf(gap, gap)
-  const spots = raws.map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
-  // A ring has no glyph on its point: its name may lie across its middle.
-  const overPoint = (s: { x: number; y: number }) => !ring &&
+  const raws = gap < 0 ? [...ringOf(gap, 1), ...ringOf(1, 1)] : ringOf(gap, gap)
+  const spots = raws.map(clamp)
+  const overPoint = (s: { x: number; y: number }) =>
     s.x <= glyph.x1 && s.x + label.w >= glyph.x0 && s.y <= glyph.y1 && s.y + label.h >= glyph.y0
   const clearOfPoint = spots.filter((s) => !overPoint(s))
   // Only a frame too small for the label leaves no spot off the point; then the point loses.
@@ -132,9 +146,7 @@ export function placeLabel(
   let best = candidates[0]
   let least = Infinity
   for (const spot of candidates) {
-    const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
-    // Whole px²: a spot's float error must not beat an earlier spot covering just as much.
-    const area = Math.round(obstacles.reduce((sum, o) => sum + covers(rect, o) * (o.weight ?? 1), 0))
+    const area = coverage(spot)
     if (area === 0) return { ...spot, clear: true, own }
     if (area < least) { least = area; best = spot }
   }
@@ -151,6 +163,8 @@ const distanceTo = (r: Rect, x: number, y: number) =>
 const DRIFT = 4
 // How much further (px) than its own mark every other mark must be from a name that is judged by its edge.
 const CLEAR_OF_OTHERS = 10
+// A night's name lies within this many px of its ring's circle.
+const RING_TOUCH = 6
 
 const MARKER_WEIGHT = 15
 // A label placed before is never covered, so spots over one cost far more than any mark's.
@@ -181,7 +195,7 @@ export interface LabelRequest {
   gap?: number
   /** Half the size of the mark on the point, which no label covers, when it is not the default glyph. */
   mark?: number
-  /** A night's ring: its name goes centred above the ring, or below it. */
+  /** A night's ring: its name goes centred above the ring, below it or beside it, else inside it (placeLabel). */
   ring?: boolean
   /** The mark's footprint (a structure's sprite and badge): its name goes around it, and it is the mark's own. */
   box?: Rect
@@ -234,9 +248,10 @@ export function placeLabels(
       marks.push(...body)
       if (!requests[j].ring) nearest.push(...body)
     })
-    // A night's name is in the game's face, told apart from every other name: whose it is needs no nearness test.
     const own = (request.own ?? []).map((o) => ({ ...o, weight: MARKER_WEIGHT }))
-    const spot = placeLabel(point, label, frame, [...marks, ...placed, ...own], request.gap ?? gap, edge, m, request.ring, request.ring ? [] : nearest, request.box)
+    const obstacles = [...marks, ...placed, ...own]
+    const markGap = request.gap ?? gap
+    const spot = placeLabel(point, label, frame, obstacles, markGap, edge, m, request.ring, nearest, request.box)
     const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
     // A glyph partly under the pill or the sheet, or past a side of the screen, has no place for its label:
     // clamped into the band, it would float away from its glyph.
