@@ -93,7 +93,8 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* ---------- Home ---------- */
 
 /* The night sky behind Home and About, fixed (a pseudo-element, since iOS ignores background-attachment: fixed).
-   Only there: on the map screens the map covers it, and a full-screen turbulence filter slowed their pan and zoom. */
+   Only there: on the map screens the map covers it, and a full-screen turbulence filter slowed their pan and zoom.
+   Never put a filter-textured full-screen layer under the pannable map: it caused WebKit repaint jank that broke the tap e2e. */
 .home::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
@@ -333,18 +334,20 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 }
 
 /* Result pill: layer toggles. Each is a 44px target around a smaller plate, so the row reads light.
-   Fades only the edges that have more to scroll to, same approach as the strip (StructureStrip.tsx). */
+   Fades only the edges that have more to scroll to, same approach as the strip (StructureStrip.tsx).
+   The row stops 14px short of the pill's right edge, so the Frame's corner brackets never cross a chip;
+   a chip cut there fades out over 48px, which reads as "scroll for more" rather than a clipped word. */
 .chips {
   --fade-left: 0px; --fade-right: 0px;
-  display: flex; flex: 1; min-width: 0; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-right: 20px;
+  display: flex; flex: 1; min-width: 0; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-right: 14px; padding-right: 12px;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
   mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
 }
-.chips[data-more-left] { --fade-left: 8px; }
-.chips[data-more-right] { --fade-right: 32px; }
+.chips[data-more-left] { --fade-left: 28px; }
+.chips[data-more-right] { --fade-right: 48px; }
 .chips::-webkit-scrollbar { display: none; }
 /* The plate is ::before, inside the 44px target; the button itself stays clear, so a stuck touch :hover never adds a second one. */
-.pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 12px; border-radius: var(--radius-plate); font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--bone-2); background: none; }
+.pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 10px; border-radius: var(--radius-plate); font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: 0.03em; color: var(--bone-2); background: none; }
 .pill .chip::before { content: ''; position: absolute; inset: 6px 0; border-radius: var(--radius-plate); z-index: -1; background: linear-gradient(180deg, var(--panel-2), var(--panel)); box-shadow: inset 0 0 0 1px rgba(201, 165, 92, 0.28); }
 /* As specific as the pill button hover above, so a chip keeps its one inner plate and never gets a second one. */
 @media (hover: hover) { .pill .chip:not(:disabled):hover { background: none; box-shadow: none; color: var(--bone); } }
@@ -440,6 +443,7 @@ li.run-row .run-value { font-weight: 400; }
   /* Desktop: the pill hugs its content, centred over the map. */
   .pill { left: calc(50% - 180px); right: auto; transform: translateX(-50%); max-width: calc(100% - 360px - 2 * var(--gutter)); }
   .chips { max-width: calc(100vw - 360px - 96px); }
+  .pill .chip { padding: 0 12px; font-size: 14px; letter-spacing: 0.04em; }
   .toast { left: calc(50% - 180px); }
 }
 
