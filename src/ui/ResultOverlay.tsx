@@ -14,9 +14,6 @@ import { catalog } from '../data/catalog'
 import { DAMAGE_NAMES, earthName, nightlordName, splitStructure, structureName, type DamageKey, type Weakness } from '../domain/names'
 import type { MarkerLayer, Seed } from '../domain/seed'
 
-// The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
-const SHOW_NIGHT1_CIRCLE = true
-
 type Layer = 'structures' | 'spawn' | MarkerLayer
 const LAYER_NAMES: Record<Layer, string> = {
   structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
@@ -71,11 +68,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   useEffect(fitChips)
   const [detent, setDetent] = useState<Detent>('peek')
   const [toast, setToast] = useState<string | null>(null)
-  // Circle names are never shown as places: Great Hollow reports "Divine Tower" for every Night 2 circle.
-  const markers = useMemo(
-    () => seed.markers.filter((m) => SHOW_NIGHT1_CIRCLE || !(m.layer === 'circle' && m.night === 1)),
-    [seed],
-  )
+  const markers = seed.markers
   const available: Layer[] = ['structures', 'spawn', ...MARKER_LAYERS.filter((l) => markers.some((m) => m.layer === l))]
   // Everything shows at first, as on the game's map; names give way to each other by priority (MapView).
   const [on, setOn] = useState<Set<Layer>>(() => new Set(available))
