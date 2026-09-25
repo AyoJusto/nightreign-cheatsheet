@@ -64,6 +64,9 @@
 .ring-2 { color: var(--night-2); }
 /* Icons carry their shadow in the image (the import bakes it), so nothing is filtered as the map moves. */
 .marker-icon { display: block; object-fit: contain; }
+/* Evergaols are the game's dark stone ring: drawn smaller and lighter than the crests, so a phone map is not
+   dotted with heavy discs. */
+.marker-evergaol .marker-icon { width: 28px; height: 28px; opacity: 0.75; }
 
 /* A name as the game's map writes it: bone text straight on the map, with a stacked dark glow and no box. */
 .map-name {
