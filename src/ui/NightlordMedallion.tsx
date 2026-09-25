@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useTransform, type MotionValue } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
 import { Frame } from './Frame'
 import { useWide } from './useWide'
 import { catalog } from '../data/catalog'
@@ -53,6 +53,8 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
   const weakness = catalog.nightlordWeakness(nightlord)
   const label = [nightlordName(nightlord), weaknessPhrase(weakness)].filter(Boolean).join(': ')
 
+  // With reduced motion the card only fades; otherwise it also slides out from the medallion.
+  const slide = useReducedMotion() ? 0 : -12
   const root = useRef<HTMLDivElement>(null)
   const y = useTransform(lift, (v) => -v)
   // Fades out over the first 48px a sheet rises above its resting height (the strip, or the result sheet at
@@ -108,9 +110,9 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
             aria-hidden
             // A tap on the card closes it too, rather than falling through to a site it covers.
             onClick={collapsible ? () => setOpen(false) : undefined}
-            initial={{ opacity: 0, x: -12 }}
+            initial={{ opacity: 0, x: slide }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -12 }}
+            exit={{ opacity: 0, x: slide }}
             transition={cardMotion}
           >
             <Frame />
