@@ -241,6 +241,12 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   )
 }
 
+// A row label's number in the system face ("Night 1"): Cinzel draws a 1 like a Roman I.
+function RowLabel({ label }: { label: string }) {
+  const [, words, digits] = label.match(/^(.*?)(\d+)$/) ?? [label, label, '']
+  return <>{words}{digits && <span className="num">{digits}</span>}</>
+}
+
 // A rise's puzzle clue ("Above Door") means nothing alone on the map: it carries the site it belongs to.
 const HINT_SITES = new Set(['sorcerers-rise', 'ruined-rise'])
 const mapName = (key: string, name: string) => (HINT_SITES.has(splitStructure(key).kind) ? `Rise · ${name}` : name)
@@ -254,7 +260,7 @@ function RunRow({ label, value, count, more }: { label?: string; value: string; 
   const Value = label ? 'dd' : 'span'
   return (
     <Row className="run-row">
-      {label && <dt>{label}</dt>}
+      {label && <dt><RowLabel label={label} /></dt>}
       <Value className="run-value">{shown}{more}</Value>
     </Row>
   )

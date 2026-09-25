@@ -348,6 +348,8 @@ button.option:hover, button.option:active { background: rgba(201, 165, 92, 0.1);
 }
 .run-card > .run-row + .run-row { background: linear-gradient(var(--rule), var(--rule)) no-repeat 12px 0 / calc(100% - 24px) 1px; }
 .run-row dt { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--bronze); }
+/* "Night 1": the digit in the system face, tabular, as the seed number is; Cinzel's 1 reads as a Roman I. */
+.run-row dt .num { font-family: var(--font); font-weight: 700; letter-spacing: 0; }
 .run-value { min-width: 0; margin: 0; font-weight: 600; color: var(--bone); }
 /* A list of names: one column. */
 li.run-row { grid-template-columns: 1fr; }
