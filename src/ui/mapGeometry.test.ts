@@ -382,6 +382,24 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const gapY = Math.max(second.y - (first.y + label.h), first.y - (second.y + label.h))
     expect(Math.max(gapX, gapY)).toBeGreaterThanOrEqual(4)
   })
+  it('keeps half a line between names of different marks stacked one above the other, so they never read as one name', () => {
+    // A's name goes below its point (309 to 339). B's spot below is taken, and its spot above would sit 5px under
+    // A's: clear of the 4px pad, but on a 15px line, as close as the lines of one wrapped name.
+    const a = { point: { x: 200, y: 300 }, label, rank: 2, keep: false }
+    const b = { point: { x: 200, y: 383 }, label, rank: 2, keep: false }
+    const below = [{ x0: 150, y0: 391, x1: 250, y1: 430 }]
+    const [, tight] = placeLabels([a, b], frame, [], 9, 8, 6, below)
+    expect(tight).toMatchObject({ x: 160, y: 344 })
+    const [first, second] = placeLabels([a, b], frame, [], 9, 8, 6, below, 15)
+    expect(first.shown && second.shown).toBe(true)
+    const overlapX = Math.min(first.x, second.x) + label.w > Math.max(first.x, second.x)
+    const gapY = Math.max(second.y - (first.y + label.h), first.y - (second.y + label.h))
+    if (overlapX) expect(gapY).toBeGreaterThanOrEqual(7.5)
+    // Side by side, names still need only the 4px pad.
+    const [c, d] = placeLabels([a, { ...b, point: { x: 284, y: 300 } }], frame, [], 9, 8, 6, [], 15)
+    expect(d).toMatchObject({ x: 244, y: 309, shown: true })
+    expect(d.x - (c.x + label.w)).toBe(4)
+  })
   it('tries all eight spots round its mark before giving up: with below, above and both sides taken, a diagonal', () => {
     const block = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
     // Names placed before fill the four straight spots, leaving the diagonals free.

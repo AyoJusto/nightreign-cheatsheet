@@ -212,6 +212,8 @@ export interface LabelRequest {
  * spot that reads as its own mark's name (or it is `keep`); a shown label becomes an obstacle for the ones after it.
  * `blocked` are screen areas drawn over the map (the Nightlord's medallion and its card): no label crosses one, a
  * kept one included, and a glyph under one gets no label, since nobody can see the mark it would name.
+ * A name placed keeps LABEL_PAD px from the next beside it, and half a `line` (the names' line height) above and
+ * below it, so two names of different marks never stack into what reads as one two-line name.
  * Returns one result per request, in input order, with the label's top-left corner in frame px.
  */
 export function placeLabels(
@@ -222,6 +224,7 @@ export function placeLabels(
   edge: number,
   mark: number,
   blocked: readonly Rect[] = [],
+  line = 0,
 ): { x: number; y: number; shown: boolean }[] {
   const top = frame.top ?? 0
   // Covering a mark hides what it marks, and text over text is unreadable: when a kept label has no free spot,
@@ -259,8 +262,10 @@ export function placeLabels(
     const underBlock = blocked.some((b) => point.x > b.x0 && point.x < b.x1 && point.y > b.y0 && point.y < b.y1)
     const acrossBlock = blocked.some((b) => overlapArea(rect, b) > 0)
     const shown = inBand && !underBlock && !acrossBlock && (keep || (spot.own && spot.clear))
-    // Kept a little apart from the next name, so two names side by side never run together into one.
-    if (shown) placed.push({ x0: rect.x0 - LABEL_PAD, y0: rect.y0 - LABEL_PAD, x1: rect.x1 + LABEL_PAD, y1: rect.y1 + LABEL_PAD, weight: LABEL_WEIGHT })
+    // Kept apart from the next name, so two names never run together into one: a little side by side, and half a
+    // line above and below, where the gap between a wrapped name's own lines would make two names read as one.
+    const padY = Math.max(LABEL_PAD, line / 2)
+    if (shown) placed.push({ x0: rect.x0 - LABEL_PAD, y0: rect.y0 - padY, x1: rect.x1 + LABEL_PAD, y1: rect.y1 + padY, weight: LABEL_WEIGHT })
     results[i] = { x: spot.x, y: spot.y, shown }
   }
   return results

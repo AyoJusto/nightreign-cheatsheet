@@ -421,7 +421,9 @@ export function MapView(props: MapContent & {
     const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
     // The medallion and its card are drawn over the map: names keep off them.
     const blocked = (props.corner?.get().rects ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
-    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked)
+    // One line of a name: the shortest name box, as every map has names on one line.
+    const line = Math.min(...requests.filter((r) => !r.ring && r.label.h > 0).map((r) => r.label.h))
+    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked, Number.isFinite(line) ? line : 0)
       .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
   })
   // Tags measure their labels in their own layout effects, which run before this component's: published
