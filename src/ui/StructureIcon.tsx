@@ -15,8 +15,8 @@ export function ElementEmblem({ element, className = 'element-emblem', size }: {
     onError={() => setFailed(element)} draggable={false} aria-hidden />
 }
 
-/** The emblem badge's size on art `size` px wide: under half, near the game's own ratio (about 0.4). */
-export const emblemSize = (size: number) => Math.round(size * 0.45)
+/** The emblem badge's size on art `size` px wide: the game's own ratio, 0.4. */
+export const emblemSize = (size: number) => Math.round(size * 0.4)
 
 /**
  * The kind's plain art, with the element's emblem as a badge in the corner (where the game puts it), so every

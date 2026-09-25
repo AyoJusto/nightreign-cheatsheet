@@ -1,33 +1,35 @@
-import { useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionStyle, type MotionValue } from 'motion/react'
+import { useRef, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import { type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
-import { StructureIcon, emblemSize } from './StructureIcon'
+import { StructureIcon } from './StructureIcon'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
-import { isTrackpadScroll, nearestPin, placeLabels, playableBox, rubberband, zoomAbout } from './mapGeometry'
+import { isTrackpadScroll, labelRank, markSize, nearestPin, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
+import './map.css'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
-export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string }
+/** `name`: what is inside the site ("Guardian Golem"), written on the map under its art when there is room. */
+export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string; name?: string }
+/**
+ * A marker as the map draws it. Beyond the seed's own layers: the castle's bosses (a crest each) and its guard
+ * (a name alone), and caravans, which stand on open ground and have no game icon, so they are a name alone too.
+ */
+export interface MapMarker extends Omit<Marker, 'layer'> { layer: Marker['layer'] | 'castle' | 'caravan'; plain?: boolean }
 
 const MAX_ZOOM = 4
-// Pins follow the map's on-screen width a little: structure art is full size when the map is ART_FULL_SIDE px
-// wide, shrinks below that (down to ART_MIN, so close neighbours on a phone's zoomed-out map stop covering
-// each other) and grows modestly above it (up to ART_MAX, so a large desktop map is not dotted with specks).
-// Dots only grow, from DOT_FULL_SIDE up to DOT_MAX.
-const ART_FULL_SIDE = 800
-const ART_MIN = 0.7
-const ART_MAX = 1.3
-const ART_SIZE = 32
-// Every kind is drawn at one size, elemental or not. Its emblem badge scales with the art but never drops under
-// EMBLEM_MIN px on screen: at 12px (36 device px on a 3x phone) holy's ring and lightning's bolts still read,
-// where at 11px they start to merge, and a larger badge would outweigh the phone's smallest art.
-const EMBLEM_MIN = 12
-const DOT_FULL_SIDE = 900
-const DOT_MAX = 1.35
-const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
-// How far (CSS px on screen) a tap may land from a slot and still count as that slot.
+// Marks are laid out at these sizes (px) and scaled to markSize's on-screen size for the map's current width,
+// so they grow and shrink with the map like the game's own. Laid out near their desktop size, they scale down
+// on a phone rather than up, and stay crisp.
+const ART_SIZE = 80
+// The orb's visible disc; its image is larger, with the glow around the disc (public/markers, about 53%).
+const ORB_SIZE = 50
+const ORB_BOX = Math.round(ORB_SIZE / 0.53)
+const ICON_SIZE = 36
+const RING_SIZE = 110
+// How far (CSS px on screen) a tap may land from a slot and still count as that slot: at least 32, or the
+// art's own half-width once it is drawn larger.
 const TAP_REACH = 32
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 // With reduced motion, a map move shorter than this (px) just jumps, like the finger it follows; a longer one crossfades.
@@ -36,7 +38,7 @@ const NUDGE = 24
 /** What the active mode (finder or result) shows on the map. */
 export interface MapContent {
   pins: Pin[]
-  markers?: Marker[]
+  markers?: MapMarker[]
   dim?: boolean
   selected?: SlotId | null
   /** Omitted when pins do nothing (the result map): they are then images with a name, not buttons. */
@@ -68,10 +70,10 @@ export function MapView(props: MapContent & {
   const scale = useMotionValue(1)
   const pinScale = useTransform(scale, (s) => 1 / s)
   const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
-  const artScale = useTransform(mapWidth, (m) => clampTo(m / ART_FULL_SIDE, ART_MIN, ART_MAX))
-  // The badge's own counter-scale (a CSS transform, see .pin .element-badge) holds it at EMBLEM_MIN, and no larger.
-  const badgeHold = useTransform(artScale, (f) => Math.max(1, EMBLEM_MIN / (emblemSize(ART_SIZE) * f)))
-  const dotScale = useTransform(mapWidth, (m) => clampTo(m / DOT_FULL_SIDE, 1, DOT_MAX))
+  const artScale = useTransform(mapWidth, (m) => markSize('art', m) / ART_SIZE)
+  const orbScale = useTransform(mapWidth, (m) => markSize('orb', m) / ORB_SIZE)
+  const iconScale = useTransform(mapWidth, (m) => markSize('icon', m) / ICON_SIZE)
+  const ringScale = useTransform(mapWidth, (m) => markSize('ring', m) / RING_SIZE)
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
   const reduce = useReducedMotion()
   const fade = useMotionValue(1)
@@ -289,7 +291,8 @@ export function MapView(props: MapContent & {
       x: ((clientX - r.left - r.width / 2 - x.get()) / s + 0.5) * 1000,
       y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
     }
-    const pin = nearestPin(props.pins, point, (TAP_REACH / s) * 1000, props.preferred)
+    const reach = Math.max(TAP_REACH, markSize('art', s) / 2)
+    const pin = nearestPin(props.pins, point, (reach / s) * 1000, props.preferred)
     if (pin) props.onPin?.(pin.slot, pin.state)
     else props.onBackground?.()
   }
@@ -300,46 +303,89 @@ export function MapView(props: MapContent & {
     return () => observer.disconnect()
   }, [])
 
-  // Every marker's label, placed in one pass so labels avoid each other and every glyph, not only the pins.
-  // Screen px equal a label's own px: markers counter-scale the map's zoom.
+  // Every name on the map, placed in one pass so names avoid each other and every mark, in labelRank order.
+  // Screen px equal a label's own px: tags counter-scale the map's zoom.
+  const tags = useMemo<TagSpec[]>(() => [
+    ...(props.markers ?? []).map(tagOf),
+    ...props.pins.flatMap((p): TagSpec[] => (p.name && p.structure ? [{ x: p.x, y: p.y, kind: 'site', mark: 'art' }] : [])),
+  ], [props.markers, props.pins])
   const labelBoxes = useMotionValue<{ w: number; h: number }[]>([])
   const labelSizes = useRef<{ w: number; h: number }[]>([])
   const measured = (i: number, box: { w: number; h: number }) => { labelSizes.current[i] = box }
+  // Night names are in Cinzel, which may arrive after the first measure (font-display: swap): measure again
+  // whenever a font finishes loading. fonts.ready alone can resolve before Cinzel is even requested.
+  const [fonts, setFonts] = useState(0)
+  useEffect(() => {
+    const set = document.fonts
+    if (!set) return
+    const bump = () => setFonts((n) => n + 1)
+    set.addEventListener('loadingdone', bump)
+    set.ready.then(bump)
+    return () => set.removeEventListener('loadingdone', bump)
+  }, [])
   const labels = useTransform(() => {
     const { w, h } = size.get()
     const s = side()
     const toScreen = (px: number, py: number) => ({ x: w / 2 + x.get() + (px / 1000 - 0.5) * s, y: h / 2 + y.get() + (py / 1000 - 0.5) * s })
-    const pinRects = props.pins.map((p) => {
+    const art = markSize('art', s)
+    const icon = markSize('icon', s)
+    const orb = markSize('orb', s)
+    // A structure's art box, less its transparent margin: most game sprites are wider than tall.
+    const artMark = art * ART_BODY
+    // Pins with a name are placed as marks with a label (the tags); the rest only block.
+    const pinRects = props.pins.filter((p) => !(p.name && p.structure)).map((p) => {
       const c = toScreen(p.x, p.y)
-      // Art plus its badge's overhang, or a dot with its halo.
-      const r = p.structure ? (ART_SIZE / 2 + 4) * artScale.get() : 10 * dotScale.get()
+      const r = p.structure ? artMark : orb / 2
       return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
     })
     const boxes = labelBoxes.get()
-    const requests = (props.markers ?? []).map((m, i) => ({
-      point: toScreen(m.x, m.y), label: boxes[i] ?? { w: 0, h: 0 }, rank: LABEL_RANK[m.layer] ?? 2, keep: m.layer === 'circle',
-    }))
+    const ring = markSize('ring', s)
+    const points = tags.map((t) => toScreen(t.x, t.y))
+    const requests: LabelRequest[] = tags.map((t, i) => {
+      const point = points[i]
+      const label = t.silent ? { w: 0, h: 0 } : boxes[i] ?? { w: 0, h: 0 }
+      const rank = labelRank(t.kind)
+      // A night's name goes inside its ring when it fits there (desktop), and beside the ring otherwise, on
+      // whichever side is clear (a phone's ring is smaller than its name).
+      if (t.mark === 'ring') {
+        if (label.w <= ring * RING_TEXT) return { point, label, rank, keep: true, center: true, mark: 0 }
+        return { point, label, rank, keep: true, mark: 0, gap: ring * 0.42 }
+      }
+      // A name alone sits just beside its point, on whichever side is clear of the marks around it (the castle's
+      // guard goes above its two crests).
+      if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2 }
+      if (t.mark === 'art') return { point, label, rank, keep: false, mark: artMark, gap: art * ART_LABEL_GAP }
+      return { point, label, rank, keep: false, mark: icon * 0.45, gap: icon / 2 + 2 }
+    })
     // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
     // so no label is sliced by the sheet or drawn under the pill's controls.
     const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
-    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, MARK_RADIUS)
-      .map((spot, i) => ({ ...spot, x: spot.x - requests[i].point.x, y: spot.y - requests[i].point.y }))
+    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0)
+      .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
   })
-  // Markers measure their labels in their own layout effects, which run before this component's: published
+  // Tags measure their labels in their own layout effects, which run before this component's: published
   // from here, after the transform above has subscribed (in its own layout effect, declared earlier), so the
   // new sizes are never missed.
-  useLayoutEffect(() => labelBoxes.set([...labelSizes.current]), [props.markers, labelBoxes])
+  useLayoutEffect(() => labelBoxes.set(tags.map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 })), [tags, fonts, labelBoxes])
+  const namedPins = props.pins.filter((p) => p.name && p.structure)
+  const markerCount = props.markers?.length ?? 0
 
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
-      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade, '--badge-hold': badgeHold } as MotionStyle}>
+      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
+        {/* Rings first: the sites on the ground they cover still show on top. Their names come after the pins. */}
+        {props.markers?.map((m, i) => m.layer === 'circle' && (
+          <motion.span key={`r${i}`} className="marker ring-mark" style={{ left: `${m.x / 10}%`, top: `${m.y / 10}%`, scale: pinScale }}>
+            <motion.span className="mark" style={{ scale: ringScale }}><Ring night={m.night ?? 1} /></motion.span>
+          </motion.span>
+        ))}
         {props.pins.map((p) => (
           <motion.span
             // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
-            // A dot keeps its element through state changes (spawn option to spawn, open to candidate), so a
+            // An orb keeps its element through state changes (spawn option to spawn, open to candidate), so a
             // keyboard user's focus on it survives the change instead of falling to the document body.
             key={`${p.slot}:${p.structure ?? 'dot'}`}
             className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}`}
@@ -348,15 +394,17 @@ export function MapView(props: MapContent & {
             data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
             style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
             initial={{ opacity: 0 }}
-            // A certain ghost dims its art alone (tokens.css), so its dashed ring stays clearly visible.
+            // A certain ghost dims its art alone (map.css), so its dashed ring stays clearly visible.
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
           >
-            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : dotScale }}>
-              <motion.span animate={{ scale: props.selected === p.slot ? 1.3 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
-                {p.state === 'spawn-option' ? <span className="spawn-option-dot" /> : p.state === 'spawn' && !p.structure ? <span className="spawn-dot" /> : p.structure ? <StructureIcon structure={p.structure} size={ART_SIZE} /> : <span className="open-dot" />}
-                {/* A Church at the spawn point: the art stays whole and the puck rides on its corner, so both show. */}
-                {p.state === 'spawn' && p.structure && <span className="spawn-dot spawn-badge" />}
+            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : orbScale }}>
+              <motion.span className={p.structure ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
+                {p.structure
+                  ? <StructureIcon structure={p.structure} size={ART_SIZE} />
+                  : <img className="orb" src={ORB_ART[p.state] ?? ORB_ART.open} width={ORB_BOX} height={ORB_BOX} alt="" draggable={false} />}
+                {/* A Church at the spawn point: the art stays whole and the player marker rides on its corner, so both show. */}
+                {p.state === 'spawn' && p.structure && <img className="spawn-badge" src={ORB_ART.spawn} alt="" draggable={false} />}
               </motion.span>
             </motion.span>
             {/* The 44px target lies over the art as a sibling, so art and pin stay mounted when the result drops it. */}
@@ -378,45 +426,135 @@ export function MapView(props: MapContent & {
             )}
           </motion.span>
         ))}
-        {/* After the pins, so a label is never under a structure; placeLabels also keeps it off every pin and marker. */}
-        {props.markers?.map((m, i) => <MapMarker key={i} index={i} marker={m} labels={labels} onMeasure={measured} pinScale={pinScale} />)}
+        {/* After the pins, so a name is never under a structure; placeLabels also keeps it off every mark. */}
+        {props.markers?.map((m, i) => (
+          <Tag key={`m${i}`} index={i} at={m} className={`marker-${m.layer}${m.plain ? ' marker-plain' : ''}`} labels={labels} onMeasure={measured} measureKey={fonts} pinScale={pinScale}
+            text={m.layer === 'circle' ? <RingName marker={m} /> : tags[i].silent ? null : m.label} textKey={m.label}>
+            {m.layer !== 'circle' && <MarkerIcon marker={m} scale={iconScale} />}
+          </Tag>
+        ))}
+        {/* A site's name: the pin above draws its art, the name goes under it where there is room. It is part of
+            the pin's own accessible name (ResultOverlay), so the text itself is hidden from screen readers. */}
+        {namedPins.map((p, j) => (
+          <Tag key={`p${p.slot}`} index={markerCount + j} at={p} className="marker-site" labels={labels} onMeasure={measured} measureKey={fonts}
+            pinScale={pinScale} text={p.name!} textKey={p.name!} hidden />
+        ))}
       </motion.div>
     </div>
   )
 }
 
-// Gap kept between a marker label and the frame's edges; distance from the point to the label;
-// the glyph on the point (the 10px circle target and its 1px rim), which a label never covers.
+// Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
-const MARK_RADIUS = 6
-// Which labels get first pick of the free spots: the night circles, then field bosses, then everything else.
-const LABEL_RANK: Partial<Record<Marker['layer'], number>> = { circle: 0, boss: 1 }
+// The part of a structure's art box that holds the sprite (a half-size, as a share of the box), and where its
+// name starts below the point: just under the sprite, which the element badge may overhang a little.
+const ART_BODY = 0.4
+const ART_LABEL_GAP = 0.44
+// How wide a night's name may be, as a share of its ring's size, and still be written inside it (across the glow).
+const RING_TEXT = 1.2
+// The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
+const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
+  open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
+  'spawn-option': '/markers/spawn-option.webp', spawn: '/markers/player.webp',
+}
 
-/** A glyph on the exact point, with its label beside it where MapView's placement pass put it. */
-function MapMarker({ index, marker, labels, onMeasure, pinScale }: {
+/** How a tag is drawn and ranked: its mark on the point and what its name belongs to. */
+interface TagSpec { x: number; y: number; kind: NameKind; mark: 'art' | 'icon' | 'ring' | 'none'; silent?: boolean }
+function tagOf(m: MapMarker): TagSpec {
+  const at = { x: m.x, y: m.y }
+  if (m.layer === 'circle') return { ...at, kind: 'night', mark: 'ring' }
+  const mark = m.plain || !MARKER_ART[m.layer] ? 'none' : 'icon'
+  if (m.layer === 'castle') return { ...at, kind: 'castle', mark }
+  if (m.layer === 'boss' || m.layer === 'evergaol') return { ...at, kind: m.layer, mark }
+  // A chest's icon says all its name would: the name is left to screen readers.
+  if (m.layer === 'chest') return { ...at, kind: 'chest', mark, silent: true }
+  return { ...at, kind: 'other', mark }
+}
+const MARKER_ART: Partial<Record<MapMarker['layer'], string>> = {
+  boss: '/markers/field-boss.webp', castle: '/markers/field-boss.webp', evergaol: '/markers/evergaol.webp',
+  chest: '/markers/chest.webp', merchant: '/markers/merchant.webp',
+}
+
+/** A marker's game icon, sized with the map; a plain name (the castle's guard, caravans) has none. */
+function MarkerIcon({ marker, scale }: { marker: MapMarker; scale: MotionValue<number> }) {
+  const src = marker.great ? '/markers/great-boss.webp' : MARKER_ART[marker.layer]
+  if (marker.plain || !src) return null
+  return (
+    <motion.span className="mark" style={{ scale }}>
+      {/* A chest has no visible name: the icon carries it. */}
+      <img className="marker-icon" src={src} width={ICON_SIZE} height={ICON_SIZE} alt={marker.layer === 'chest' ? marker.label : ''} draggable={false} />
+    </motion.span>
+  )
+}
+
+/** "1 · Tree Sentinel": the night in its ring's colour, then its boss as the game's map writes it. */
+function RingName({ marker }: { marker: MapMarker }) {
+  const boss = marker.label.replace(/^Night \d: /, '')
+  return (
+    <>
+      <span aria-hidden><span className={`ring-${marker.night}`}>{marker.night}</span> · {shortBossName(boss)}</span>
+      <span className="sr-only">{marker.label}</span>
+    </>
+  )
+}
+
+/**
+ * A night's closing ring: a soft glow either side of a bright rim, in the night's colour (map.css). Gradients,
+ * not a blur filter, so a ring costs nothing extra to repaint as the map zooms.
+ */
+function Ring({ night }: { night: 1 | 2 }) {
+  const glow = `ring-glow-${night}`
+  const c = RING_SIZE / 2
+  return (
+    <svg className={`ring ring-${night}`} width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden>
+      <defs>
+        <radialGradient id={glow}>
+          <stop offset="0.55" stopColor="currentColor" stopOpacity="0" />
+          <stop offset="0.8" stopColor="currentColor" stopOpacity="0.6" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx={c} cy={c} r={c} fill={`url(#${glow})`} />
+      <circle cx={c} cy={c} r={c * 0.8} fill="currentColor" fillOpacity="0.07" stroke="currentColor" strokeWidth="4.5" />
+      <circle cx={c} cy={c} r={c * 0.8} fill="none" stroke="#fff" strokeOpacity="0.6" strokeWidth="1.2" />
+    </svg>
+  )
+}
+
+/** A mark on the exact point, with its name beside it (or across it) where MapView's placement pass put it. */
+function Tag({ index, at, className, labels, onMeasure, measureKey, pinScale, text, textKey, hidden, children }: {
   index: number
-  marker: Marker
+  at: { x: number; y: number }
+  className: string
   labels: MotionValue<{ x: number; y: number; shown: boolean }[]>
   onMeasure: (index: number, box: { w: number; h: number }) => void
+  measureKey: number
   pinScale: MotionValue<number>
+  text: ReactNode
+  textKey: string
+  /** The name is already spoken by something else (a site's pin). */
+  hidden?: boolean
+  children?: ReactNode
 }) {
   const label = useRef<HTMLSpanElement>(null)
-  // A circle is a short chip: a two-line "Night 1: boss" label had nowhere to go on a busy phone map without
-  // covering a structure. The run card names each night's boss.
-  const text = marker.layer === 'circle' && marker.night ? `Night ${marker.night}` : marker.label
   const spot = useTransform(labels, (all) => all[index] ?? { x: 0, y: 0, shown: false })
   const labelX = useTransform(spot, (o) => o.x)
   const labelY = useTransform(spot, (o) => o.y)
-  // A label with no free spot steps aside, leaving the glyph: its name is listed in the sheet, and a structure
-  // matters more. A night's circle keeps its short chip while its glyph is in sight (placeLabels).
+  // A name with no free spot steps aside, leaving its mark; it comes back as zooming in makes room.
+  // A night's name always shows while its ring is in sight (placeLabels).
   const labelOpacity = useTransform(spot, (o) => (o.shown ? 1 : 0))
   // Reported to MapView, which publishes every size at once after its placement pass has subscribed.
-  useLayoutEffect(() => onMeasure(index, { w: label.current!.offsetWidth, h: label.current!.offsetHeight }), [text, index])
+  useLayoutEffect(() => {
+    const el = label.current
+    onMeasure(index, el ? { w: el.offsetWidth, h: el.offsetHeight } : { w: 0, h: 0 })
+  }, [textKey, index, measureKey])
   return (
-    <motion.span className={`marker marker-${marker.layer}`} style={{ left: `${marker.x / 10}%`, top: `${marker.y / 10}%`, scale: pinScale }}>
-      <span className="marker-dot" />
-      <motion.span ref={label} className="marker-label" style={{ x: labelX, y: labelY, opacity: labelOpacity }}>{text}</motion.span>
+    <motion.span className={`marker ${className}`} style={{ left: `${at.x / 10}%`, top: `${at.y / 10}%`, scale: pinScale }}>
+      {children}
+      {text !== null && (
+        <motion.span ref={label} className="map-name" aria-hidden={hidden || undefined} style={{ x: labelX, y: labelY, opacity: labelOpacity }}>{text}</motion.span>
+      )}
     </motion.span>
   )
 }

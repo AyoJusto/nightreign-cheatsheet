@@ -1,0 +1,84 @@
+/* The map's marks at game scale (MapView): structure art, orbs, crests, night rings, and the names the game's
+   own map writes beside them. Every mark is laid out at a fixed size and scaled by MapView to follow the map. */
+
+/* Pins: a 44px target around the mark. Taps snap to the nearest slot (MapView). */
+.pin { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; }
+.pin-hit { position: absolute; inset: 0; border-radius: 50%; }
+.pin-hit:focus-visible { outline-offset: -4px; }
+/* Every mark centres on its point by its own size (translate), not by grid alignment: a mark larger than its
+   box may be start-aligned instead of centred. The body is a zero-size box on the point, so MapView's scale
+   grows the mark about the point itself. */
+.pin-body { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.pin-mark { position: absolute; left: 0; top: 0; display: grid; place-items: center; translate: -50% -50%; }
+/* An orb: the game's undiscovered-site "?" (gold), a possible spawn (teal), or the player marker. The art
+   carries its own glow, so the map pays for no filter as it moves. */
+.orb { display: block; user-select: none; -webkit-user-drag: none; }
+/* The chosen spawn, a touch larger than an orb: where the run starts. */
+.pin-spawn .orb { width: 112px; height: 112px; }
+/* Focus mode: the sites that could hold the structure glow gold, on a map dimmed behind them. */
+.pin-candidate .pin-orb::before {
+  content: ''; position: absolute; inset: 8px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 130, 0.75) 0%, rgba(255, 190, 80, 0.35) 45%, rgba(255, 170, 60, 0) 70%);
+}
+.pin-candidate .structure-icon::after {
+  content: ''; position: absolute; inset: -14px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 130, 0.55) 0%, rgba(255, 190, 80, 0.25) 45%, rgba(255, 170, 60, 0) 70%);
+}
+/* A Church at the spawn point: the player marker rides on the art's lower-left corner. */
+.spawn-badge { position: absolute; left: -16px; bottom: -16px; width: 56px; height: 56px; }
+/* The site whose sheet is open: a bone reticle with a gold glow around the orb's disc, or around the art's box,
+   so it stands out from the gold orbs themselves. */
+.pin-selected .pin-orb::after,
+.pin-selected .structure-icon::before {
+  content: ''; position: absolute; border: 4px solid var(--bone); border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px rgba(0, 0, 0, 0.6), 0 0 16px 2px rgba(201, 165, 92, 0.8);
+}
+.pin-selected .pin-orb::after { inset: 16px; }
+.pin-selected .structure-icon::before { inset: -6px; }
+/* The pins the current step asks for draw above the rest; taps snap by distance (MapView). */
+.pin-spawn-option, .pin-candidate, .pin-selected { z-index: 1; }
+
+/* A certain slot is known but not yet confirmed by a tap: a ghost, told from a sighted pin's plain, full-colour,
+   ringless art at a glance. Half-opacity desaturated art inside a dashed ring, the same family as .icon-empty.
+   Only the art is faded, not the pin, so the ring stays at full strength. The ring is ::before, so it paints
+   first and the element badge sits on top of it; the badge is dimmed with a filter, not opacity, so it stays
+   solid and the ring can't show through it. The selected rule above comes later in specificity order: a
+   selected certain pin shows gold. */
+.pin .structure-art { transition: opacity 0.35s ease-out; }
+.pin-certain .structure-art { opacity: 0.5; filter: grayscale(0.9) drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
+.pin-certain:not(.pin-selected) .structure-icon::before { content: ''; position: absolute; inset: -6px; border: 3px dashed var(--bone-2); border-radius: 50%; }
+.pin-certain .element-badge { filter: brightness(0.75); }
+/* On the map the badge is 0.4 of the art (StructureIcon), tucked into the art's corner. */
+.pin .element-badge { right: 0; bottom: 0; }
+
+/* A zero-size anchor on the point: the mark centres on it, MapView places the name beside it, clear of marks. */
+.marker { position: absolute; z-index: 2; width: 0; height: 0; pointer-events: none; }
+.marker .mark { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.marker .mark > * { position: absolute; left: 0; top: 0; translate: -50% -50%; }
+/* Rings lie under the pins (MapView renders them first), so the sites inside stay on top. */
+.ring-mark { z-index: 0; }
+/* A night's name draws above every other mark: it is always shown (placeLabels keeps it). */
+.marker.marker-circle { z-index: 3; }
+.ring { display: block; }
+.ring-1 { color: var(--night-1); }
+.ring-2 { color: var(--night-2); }
+.marker-icon { display: block; object-fit: contain; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
+
+/* A name as the game's map writes it: bone text straight on the map, with a stacked dark glow and no box. */
+.map-name {
+  position: absolute; top: 0; left: 0; width: max-content; max-width: 88px;
+  font: 600 12px/14px var(--font); letter-spacing: 0; text-align: center; color: var(--bone);
+  text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+@media (min-width: 900px) { .map-name { font-size: 13px; line-height: 15px; max-width: 124px; } }
+/* A night's boss across its ring, in the game's face; the night's number in the ring's colour. */
+.marker-circle .map-name {
+  font-family: var(--font-display); font-weight: 700; max-width: 112px; letter-spacing: 0.02em;
+  text-shadow: 0 0 2px #000, 0 0 3px #000, 0 0 6px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-size: 1.2em; }
+@media (min-width: 900px) { .marker-circle .map-name { max-width: 128px; } }
+/* A name alone (the castle's guard, caravans) sits on its point on one line, clear of the marks below it. */
+.marker-plain .map-name { max-width: none; white-space: nowrap; }
+/* The castle's guard, in the game's face, over the castle. */
+.marker-castle.marker-plain .map-name { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.02em; }

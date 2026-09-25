@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { MotionValue } from 'motion/react'
-import type { MapContent, Pin } from './MapView'
+import type { MapContent, MapMarker, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { collapseRepeats } from './collapseRepeats'
 import { Plate } from './Plate'
@@ -47,7 +47,6 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   }, [fadeChips])
   useEffect(fadeChips)
   const [detent, setDetent] = useState<Detent>('peek')
-  const [on, setOn] = useState<Set<Layer>>(() => new Set(['structures', 'spawn', 'circle']))
   const [toast, setToast] = useState<string | null>(null)
   // Circle names are never shown as places: Great Hollow reports "Divine Tower" for every Night 2 circle.
   const markers = useMemo(
@@ -55,6 +54,27 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     [seed],
   )
   const available: Layer[] = ['structures', 'spawn', ...MARKER_LAYERS.filter((l) => markers.some((m) => m.layer === l))]
+  // Everything shows at first, as on the game's map; names give way to each other by priority (MapView).
+  const [on, setOn] = useState<Set<Layer>>(() => new Set(available))
+  // The castle's guard written over the castle, with its rooftop (great crest) and basement (field crest)
+  // bosses where the game draws them; the Bosses layer shows them with the field bosses.
+  const castle = useMemo<MapMarker[]>(() => {
+    const at = catalog.castleOf(seed.earth)
+    if (!at || !seed.castle) return []
+    const { crew, rooftop, basement } = seed.castle
+    return [
+      { layer: 'castle', ...at.crew, label: crew, plain: true },
+      ...(rooftop ? [{ layer: 'castle' as const, ...at.rooftop, label: rooftop, great: true }] : []),
+      ...(basement ? [{ layer: 'castle' as const, ...at.basement, label: basement }] : []),
+    ]
+  }, [seed])
+  // Caravans stand on open ground where nothing is built, and the game gives them no icon: a name alone.
+  const caravans = useMemo<MapMarker[]>(() => {
+    const coords = catalog.slotsOf(seed.earth)
+    return Object.entries(seed.inside)
+      .filter(([slot]) => !seed.slots[slot] && coords[slot])
+      .map(([slot, label]) => ({ layer: 'caravan', ...coords[slot], label, plain: true }))
+  }, [seed])
 
   const pins = useMemo<Pin[]>(() => {
     const coords = catalog.slotsOf(seed.earth)
@@ -66,12 +86,19 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     }
     if (on.has('structures')) {
       for (const [slot, key] of Object.entries(seed.slots)) {
-        if (key && !(slot === seed.spawn && on.has('spawn'))) list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: structureName(key) })
+        if (!key || (slot === seed.spawn && on.has('spawn'))) continue
+        // What is inside is written on the map under the art, and spoken as part of the pin's name.
+        const name = seed.inside[slot]
+        list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: name ? `${structureName(key)}, ${name}` : structureName(key), name })
       }
     }
     return list
   }, [seed, on])
-  const shownMarkers = useMemo(() => markers.filter((m) => on.has(m.layer)), [markers, on])
+  const shownMarkers = useMemo<MapMarker[]>(() => [
+    ...markers.filter((m) => on.has(m.layer)),
+    ...(on.has('boss') ? castle : []),
+    ...(on.has('structures') ? caravans : []),
+  ], [markers, castle, caravans, on])
   useLayoutEffect(() => setMap({ pins, markers: shownMarkers }), [pins, shownMarkers, setMap])
 
   // One timer for the one toast: a new toast restarts it, so the old timer cannot cut the new one short.

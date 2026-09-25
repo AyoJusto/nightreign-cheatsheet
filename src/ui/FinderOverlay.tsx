@@ -252,11 +252,11 @@ export function FinderOverlay(props: {
               <section>
                 <h3 className="side-heading">Sightings</h3>
                 <ul className="sightings">
-                  {/* Each row leads with what the map shows there: the spawn puck, the structure, or an empty ring. */}
+                  {/* Each row leads with what the map shows there: the player marker, the structure, or an empty ring. */}
                   {scouting.sightings.map((s) => (
                     <li key={targetOf(s)}>
                       <span className="sighting-glyph" aria-hidden>
-                        {s.type === 'spawn' ? <span className="spawn-dot" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
+                        {s.type === 'spawn' ? <img src="/markers/player.webp" width={32} height={32} alt="" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
                       </span>
                       {sightingLabel(s)}
                     </li>

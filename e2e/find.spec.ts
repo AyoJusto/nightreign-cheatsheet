@@ -417,8 +417,9 @@ test('a tapped layer chip shows one capsule', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'sticky hover is a touch problem')
   await page.goto(`/seed/${targets[0].id}`)
   const chip = page.getByRole('button', { name: 'Bosses', exact: true })
+  // Every layer starts on, as on the game's map: the tap turns Bosses off, and hover sticks all the same.
   await chip.tap()
-  await expect(chip).toHaveAttribute('aria-pressed', 'true')
+  await expect(chip).toHaveAttribute('aria-pressed', 'false')
   await expect(chip).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
 })
 

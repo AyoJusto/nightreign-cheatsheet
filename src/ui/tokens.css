@@ -176,50 +176,15 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .map-image { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
 .map-scrim { position: absolute; inset: 0; background: var(--night); pointer-events: none; }
 
-/* Pins: a 44px target around a small, crisp marker. Taps snap to the nearest slot (MapView). */
-.pin { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; }
-.pin-hit { position: absolute; inset: 0; border-radius: 50%; }
-.pin-hit:focus-visible { outline-offset: -4px; }
-.pin-body, .pin-body > span { display: grid; place-items: center; }
-/* A site not yet known: a small white dot, lifted off the map by a dark rim and a soft shadow. */
-.open-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--bone); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55), 0 1px 4px rgba(0, 0, 0, 0.6); }
-/* Gold marks what the current step asks for: spawn options before the spawn, candidates in focus mode. */
-.spawn-option-dot { display: block; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: var(--bronze); border: 2px solid var(--bone); box-shadow: 0 0 0 5px var(--bronze-halo), 0 1px 5px rgba(0, 0, 0, 0.7); }
-.pin-candidate .open-dot { width: 12px; height: 12px; background: var(--bronze); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55), 0 0 0 5px var(--bronze-halo), 0 1px 4px rgba(0, 0, 0, 0.6); }
-/* The chosen spawn: a white "you are here" puck with a black rim and a pale halo. */
-.spawn-dot { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--bone); box-shadow: 0 0 0 3px var(--bg), 0 0 0 7px var(--bone-3), 0 2px 8px rgba(0, 0, 0, 0.6); }
-.pin-spawn .pin-body > span { position: relative; }
-.spawn-badge { position: absolute; left: -5px; bottom: -5px; transform: scale(0.75); transform-origin: 0 100%; }
-/* The site whose sheet is open: a gold reticle around the dot, clear of both spawn shapes. */
-.pin-selected .open-dot { position: relative; }
-.pin-selected .open-dot::after { content: ''; position: absolute; inset: -7px; border: 2.5px solid var(--bronze); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
-/* The pins the current step asks for draw above the rest; taps snap by distance (MapView). */
-.pin-spawn-option, .pin-candidate, .pin-selected { z-index: 1; }
-
 .structure-icon { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
 .structure-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
-/* A certain slot is known but not yet confirmed by a tap: a ghost, told from a sighted pin's plain, full-colour,
-   ringless art at a glance. Half-opacity desaturated art inside a 2px dashed ring, the same family as .icon-empty.
-   Only the art is faded, not the pin, so the ring stays at full strength; a dark shadow keeps it legible on
-   bright map art. The ring is ::before, so it paints first and the element chip sits on top of it, never crossed
-   by it; the chip is dimmed with a filter, not opacity, so it stays solid and the ring can't show through it. */
-.pin .structure-art { transition: opacity 0.35s ease-out; }
-.pin-certain .structure-art { opacity: 0.5; filter: grayscale(0.9) drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.85)); }
-.pin-certain .structure-icon::before { content: ''; position: absolute; inset: -4px; border: 2px dashed var(--bone-2); border-radius: 50%; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
-.pin-certain .element-badge { filter: brightness(0.75); }
-/* A selected site that already has a structure gets the same gold ring as a selected unknown site, sized
-   to the art's box. ::before paints first, so the element badge (a later sibling) still draws on top of
-   it, same as the certain ring above; this rule comes after that one so a selected certain pin shows gold. */
-.pin-selected .structure-icon::before { content: ''; position: absolute; inset: -4px; border: 2.5px solid var(--bronze); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
 .icon-glyph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 10px; background: var(--panel-2); font-size: 12px; font-weight: 700; }
 /* "Nothing here": an empty dashed ring where the art would be, at the same size and visual weight as a
    structure icon there, so the row never reads as blank. */
 .icon-empty { display: block; box-sizing: border-box; border: 1.5px dashed var(--bone-2); border-radius: 50%; }
 /* The game's element emblem, a small square picture with the game's slightly rounded corners. A thin dark
-   rim lifts it off the art and the map; set in the art's corner, where the game puts it, at about 0.45 of
-   the art's box (the game's own ratio is about 0.4). That ratio only holds at full art size: on the map
-   the badge is held to a 12px floor as the art shrinks (--badge-hold below), so at a phone's smallest
-   scale the emblem reads about as loud as the art, not quieter. */
+   rim lifts it off the art and the map; set in the art's corner, where the game puts it, at 0.4 of the
+   art's box, the game's own ratio. */
 .element-emblem, .element-badge {
   display: block; box-sizing: border-box; object-fit: cover; border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -230,27 +195,6 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
   display: grid; place-items: center; padding: 0 2px; background: var(--panel); color: var(--bone);
   font-size: 11px; line-height: 1; font-weight: 700; letter-spacing: -0.02em;
 }
-/* On the map the badge scales with the art, except that it never drops under 12px on screen when the art
-   shrinks on a phone (--badge-hold from MapView), and no larger than that floor. */
-.pin .element-badge { right: -2px; bottom: -2px; transform: scale(var(--badge-hold, 1)); transform-origin: 100% 100%; }
-
-/* A zero-size anchor on the point: the glyph centres on it, MapView places the label beside it, clear of pins. */
-.marker { position: absolute; z-index: 2; width: 0; height: 0; pointer-events: none; }
-/* A night's closing circle: a small target. */
-.marker-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--bone); background: rgba(0, 0, 0, 0.5); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.6); }
-/* Everything else: a small white diamond by default. */
-.marker:not(.marker-circle) .marker-dot { width: 8px; height: 8px; margin: -4px 0 0 -4px; border: 0; border-radius: 1.5px; background: var(--bone); transform: rotate(45deg); }
-/* Bosses (the diamond above), Evergaols and Chests get their own shape, so a marker whose label has no
-   free spot (placeLabels) is still told apart by its glyph alone, same size and weight as the diamond. */
-.marker.marker-evergaol .marker-dot { box-sizing: border-box; border: 1.5px solid var(--bone); border-radius: 50%; background: transparent; transform: none; }
-.marker.marker-chest .marker-dot { border-radius: 1px; transform: none; }
-.marker-label {
-  position: absolute; top: 0; left: 0; width: max-content; max-width: 180px; box-sizing: border-box;
-  font-size: 12px; line-height: 15px; font-weight: 600; padding: 4px 8px; border-radius: 8px;
-  background: rgba(14, 22, 40, 0.9); color: var(--bone); box-shadow: inset 0 0 0 0.5px rgba(201, 165, 92, 0.35), 0 2px 8px rgba(0, 0, 0, 0.5);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
-}
-
 /* ---------- Sheet ---------- */
 
 /* Sheet.tsx reads all four safe-area insets from here: padding-bottom, and scroll-margin-top/left/right
