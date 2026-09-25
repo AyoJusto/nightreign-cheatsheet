@@ -11,7 +11,7 @@ import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
 import { decodeSightings, encodeSightings } from './useSightings'
 import { catalog } from '../data/catalog'
-import { DAMAGE_NAMES, earthName, nightlordName, structureName, type DamageKey, type Weakness } from '../domain/names'
+import { DAMAGE_NAMES, earthName, nightlordName, splitStructure, structureName, type DamageKey, type Weakness } from '../domain/names'
 import type { MarkerLayer, Seed } from '../domain/seed'
 
 // The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
@@ -90,7 +90,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
         if (!key || (slot === seed.spawn && on.has('spawn'))) continue
         // What is inside is written on the map under the art, and spoken as part of the pin's name.
         const name = seed.inside[slot]
-        list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: name ? `${structureName(key)}, ${name}` : structureName(key), name })
+        list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: name ? `${structureName(key)}, ${name}` : structureName(key), name: name && mapName(key, name) })
       }
     }
     return list
@@ -213,6 +213,10 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     </>
   )
 }
+
+// A rise's puzzle clue ("Above Door") means nothing alone on the map: it carries the site it belongs to.
+const HINT_SITES = new Set(['sorcerers-rise', 'ruined-rise'])
+const mapName = (key: string, name: string) => (HINT_SITES.has(splitStructure(key).kind) ? `Rise · ${name}` : name)
 
 // With a label it is a run card row (dt/dd); without, an item in a list of names.
 // `count` is display only (e.g. two identical field bosses -> "Name ×2").
