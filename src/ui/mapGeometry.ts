@@ -68,6 +68,9 @@ export type Obstacle = Rect & { weight?: number }
  * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first
  * that covers none of `obstacles` wins; if every one covers something, the one covering the least area
  * (each obstacle's area scaled by its weight), with `clear: false`.
+ * A spot must also read as this point's name: the frame's edge may not push it more than DRIFT px from where it
+ * belongs, and its centre may not lie nearer any of `others` (the other marks' points) than this point. When no
+ * spot qualifies the best of the rest is returned with `own: false`; only a name that must show uses it.
  */
 export function placeLabel(
   point: { x: number; y: number },
@@ -78,7 +81,8 @@ export function placeLabel(
   edge: number,
   mark = 0,
   center = false,
-): { x: number; y: number; clear: boolean } {
+  others: readonly { x: number; y: number }[] = [],
+): { x: number; y: number; clear: boolean; own: boolean } {
   const top = frame.top ?? 0
   const keepIn = (v: number, size: number, start: number, end: number) => Math.max(start + edge, Math.min(end - edge - size, v))
   const overlap = (s: { x: number; y: number }, o: Obstacle) => {
@@ -86,12 +90,21 @@ export function placeLabel(
     const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
     return w > 0 && h > 0 ? w * h * (o.weight ?? 1) : 0
   }
+  // Whether a spot, before and after the frame clamp, still reads as this point's name.
+  const belongs = (raw: { x: number; y: number }, s: { x: number; y: number }) => {
+    if (Math.abs(s.x - raw.x) > DRIFT || Math.abs(s.y - raw.y) > DRIFT) return false
+    const cx = s.x + label.w / 2
+    const cy = s.y + label.h / 2
+    const own = Math.hypot(cx - point.x, cy - point.y)
+    return others.every((o) => Math.hypot(cx - o.x, cy - o.y) >= own)
+  }
   // A name written across its own mark (a night's ring) has one spot, on the point, kept inside the frame.
   if (center) {
-    const spot = { x: keepIn(point.x - label.w / 2, label.w, 0, frame.w), y: keepIn(point.y - label.h / 2, label.h, top, frame.h) }
-    return { ...spot, clear: obstacles.every((o) => overlap(spot, o) === 0) }
+    const raw = { x: point.x - label.w / 2, y: point.y - label.h / 2 }
+    const spot = { x: keepIn(raw.x, label.w, 0, frame.w), y: keepIn(raw.y, label.h, top, frame.h) }
+    return { ...spot, clear: obstacles.every((o) => overlap(spot, o) === 0), own: belongs(raw, spot) }
   }
-  const spots = [
+  const raws = [
     { x: point.x - label.w / 2, y: point.y + gap },
     { x: point.x - label.w / 2, y: point.y - gap - label.h },
     { x: point.x + gap, y: point.y - label.h / 2 },
@@ -100,22 +113,29 @@ export function placeLabel(
     { x: point.x - gap * 0.7 - label.w, y: point.y + gap * 0.7 },
     { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
     { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
-  ].map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
+  ]
+  const spots = raws.map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
   const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
   const overPoint = (s: { x: number; y: number }) =>
     s.x <= glyph.x1 && s.x + label.w >= glyph.x0 && s.y <= glyph.y1 && s.y + label.h >= glyph.y0
   const clearOfPoint = spots.filter((s) => !overPoint(s))
   // Only a frame too small for the label leaves no spot off the point; then the point loses.
-  const candidates = clearOfPoint.length ? clearOfPoint : spots
+  const fallback = clearOfPoint.length ? clearOfPoint : spots
+  const faithful = fallback.filter((s) => belongs(raws[spots.indexOf(s)], s))
+  const own = faithful.length > 0
+  const candidates = own ? faithful : fallback
   let best = candidates[0]
   let least = Infinity
   for (const spot of candidates) {
     const area = obstacles.reduce((sum, o) => sum + overlap(spot, o), 0)
-    if (area === 0) return { ...spot, clear: true }
+    if (area === 0) return { ...spot, clear: true, own }
     if (area < least) { least = area; best = spot }
   }
-  return { ...best, clear: false }
+  return { ...best, clear: false, own }
 }
+
+// How far (px) the frame's edge may push a name from its spot before it stops reading as that mark's name.
+const DRIFT = 4
 
 const MARKER_WEIGHT = 15
 // A label placed before is never covered, so spots over one cost far more than any mark's.
@@ -174,6 +194,8 @@ export function placeLabels(
     return { x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
+  // Every mark's point, which a name must not sit nearer than its own: the other requests and every pin.
+  const pinPoints = pins.map((r) => ({ x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 }))
   const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: LABEL_WEIGHT }))
   const results: { x: number; y: number; shown: boolean }[] = new Array(requests.length)
   for (const i of order) {
@@ -181,7 +203,8 @@ export function placeLabels(
     const { point, label, keep } = request
     const m = markOf(request)
     const marks = [...pins, ...glyphs.filter((_, j) => j !== i)]
-    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.center)
+    const others = [...pinPoints, ...requests.filter((_, j) => j !== i).map((r) => r.point)]
+    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.center, others)
     const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
     const soft = () => {
       if (placed.some((o) => overlapArea(rect, o) > 0)) return false
@@ -193,12 +216,12 @@ export function placeLabels(
       }
       return covered <= SOFT_NAME * areaOf(rect)
     }
-    // A glyph partly under the pill or the sheet has no place for its label: clamped into the band, it would
-    // float away from its glyph.
-    const inBand = point.y - m >= top && point.y + m <= frame.h
+    // A glyph partly under the pill or the sheet, or past a side of the screen, has no place for its label:
+    // clamped into the band, it would float away from its glyph.
+    const inBand = point.y - m >= top && point.y + m <= frame.h && point.x - m >= 0 && point.x + m <= frame.w
     const underBlock = blocked.some((b) => point.x > b.x0 && point.x < b.x1 && point.y > b.y0 && point.y < b.y1)
     const acrossBlock = blocked.some((b) => overlapArea(rect, b) > 0)
-    const shown = inBand && !underBlock && !acrossBlock && (spot.clear || keep || soft())
+    const shown = inBand && !underBlock && !acrossBlock && (keep || (spot.own && (spot.clear || soft())))
     if (shown) placed.push({ ...rect, weight: LABEL_WEIGHT })
     results[i] = { x: spot.x, y: spot.y, shown }
   }

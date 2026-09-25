@@ -54,14 +54,14 @@ describe('placeLabel', () => {
   const label = { w: 100, h: 30 }
 
   it('hangs the label below the point when nothing is there', () => {
-    expect(placeLabel({ x: 200, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 150, y: 309, clear: true })
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 150, y: 309, clear: true, own: true })
   })
 
   it('moves the label to a side that covers no pin', () => {
     const pinBelow = { x0: 195, y0: 310, x1: 205, y1: 330 }
     const pinAbove = { x0: 195, y0: 270, x1: 205, y1: 290 }
-    expect(placeLabel({ x: 200, y: 300 }, label, frame, [pinBelow], 9, 8)).toEqual({ x: 150, y: 261, clear: true })
-    expect(placeLabel({ x: 200, y: 300 }, label, frame, [pinBelow, pinAbove], 9, 8)).toEqual({ x: 209, y: 285, clear: true })
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [pinBelow], 9, 8)).toEqual({ x: 150, y: 261, clear: true, own: true })
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [pinBelow, pinAbove], 9, 8)).toEqual({ x: 209, y: 285, clear: true, own: true })
   })
 
   it('says when no spot is clear, and takes the one covering least', () => {
@@ -70,8 +70,9 @@ describe('placeLabel', () => {
     expect(placeLabel({ x: 200, y: 300 }, label, frame, [everywhere, nearly], 9, 8)).toMatchObject({ clear: false })
   })
 
-  it('keeps the label inside the frame', () => {
-    expect(placeLabel({ x: 10, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 8, y: 309, clear: true })
+  it('keeps the label inside the frame, on a side the frame need not push it from', () => {
+    // Below would be pushed 32px right by the edge, off its point; right of the point fits as is.
+    expect(placeLabel({ x: 10, y: 300 }, label, frame, [], 9, 8)).toEqual({ x: 19, y: 285, clear: true, own: true })
   })
 
   // The point's own glyph (a 6px radius here) must stay visible: it is what the marker exists to show.
@@ -95,7 +96,7 @@ describe('placeLabel', () => {
     const point = { x: 60, y: 300 }
     const spot = placeLabel(point, label, { w: 116, h: 600 }, [], 9, 8, 6)
     expect(coversPoint(spot, point)).toBe(false)
-    expect(spot).toEqual({ x: 8, y: 309, clear: true })
+    expect(spot).toEqual({ x: 8, y: 309, clear: true, own: true })
   })
 
   it('keeps the label inside a frame that stops above the bottom sheet', () => {
@@ -344,6 +345,41 @@ describe('marks at game scale', () => {
     expect(markSize('art', 5000)).toBe(markSize('art', 9000))
     expect(markSize('icon', 1209)).toBeGreaterThanOrEqual(32)
     expect(markSize('icon', 1209)).toBeLessThanOrEqual(38)
+  })
+})
+
+describe('placeLabels: a name stays with its own mark', () => {
+  const frame = { w: 400, h: 800 }
+  const label = { w: 80, h: 30 }
+  it('hides the name of a mark off the screen sideways instead of pinning it to the edge', () => {
+    const [left, right] = placeLabels([
+      { point: { x: -30, y: 300 }, label, rank: 2, keep: false },
+      { point: { x: 430, y: 500 }, label, rank: 2, keep: false },
+    ], frame, [], 9, 8, 6)
+    expect(left.shown).toBe(false)
+    expect(right.shown).toBe(false)
+  })
+  it('hides a name the frame edge would push away from its mark', () => {
+    // On screen, but so near the right edge that every spot would be clamped far from the point.
+    const [name] = placeLabels([{ point: { x: 398, y: 300 }, label: { w: 150, h: 30 }, rank: 2, keep: false, mark: 30, gap: 34 }], frame, [], 9, 8, 6)
+    expect(name.shown).toBe(false)
+  })
+  it("never puts a name nearer another mark's point than its own", () => {
+    // Below the site at (200, 300) is free of every box, but its centre would sit right on a nameless point
+    // mark at (200, 345), such as a chest whose icon covers nothing there.
+    const site = { point: { x: 200, y: 300 }, label, rank: 2, keep: false, gap: 34, mark: 20 }
+    const chest = { point: { x: 200, y: 345 }, label: { w: 0, h: 0 }, rank: 5, keep: false, mark: 0 }
+    const [name] = placeLabels([site, chest], frame, [], 9, 8, 6)
+    expect(name.shown).toBe(true)
+    const centre = { x: name.x + label.w / 2, y: name.y + label.h / 2 }
+    const own = Math.hypot(centre.x - 200, centre.y - 300)
+    expect(Math.hypot(centre.x - 200, centre.y - 345)).toBeGreaterThanOrEqual(own)
+  })
+  it('hides a name whose every free spot is nearer another mark', () => {
+    // A crest boxed in by four other crests close around it: any spot for its name is nearer a neighbour.
+    const at = (x: number, y: number) => ({ point: { x, y }, label, rank: 3, keep: false, mark: 5, gap: 7 })
+    const [middle] = placeLabels([at(200, 300), at(200, 270), at(200, 330), at(170, 300), at(230, 300)], frame, [], 9, 8, 6)
+    expect(middle.shown).toBe(false)
   })
 })
 
