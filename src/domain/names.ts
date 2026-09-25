@@ -65,6 +65,13 @@ export const DAMAGE_NAMES: Record<DamageKey, string> = {
   bleed: 'Blood Loss', frost: 'Frostbite', rot: 'Scarlet Rot', poison: 'Poison', sleep: 'Sleep', madness: 'Madness',
 }
 
+/** What a weakness card shows, as words for a screen reader: "weak to Holy, Pierce; resists Fire". */
+export function weaknessPhrase(w: Weakness): string {
+  const words = (keys: DamageKey[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
+  return [w.weak.length ? `weak to ${words(w.weak)}` : '', w.resist.length ? `resists ${words(w.resist)}` : '']
+    .filter(Boolean).join('; ')
+}
+
 /** Two letters, unique per element, shown if an emblem image fails to load: first letters alone collide (Fire/Frostbite, Bleed/Blight). */
 export const ELEMENT_CODES: Record<ElementId, string> = {
   fire: 'Fi', holy: 'Ho', magic: 'Mg', lightning: 'Li', frostbite: 'Fr', poison: 'Po',

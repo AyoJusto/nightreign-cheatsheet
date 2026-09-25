@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 // Use the domain's own names so the test speaks the ubiquitous language, not a copy of it.
-import { structureName, nightlordName, earthName } from '../src/domain/names'
+import { structureName, nightlordName, earthName, weaknessPhrase, DAMAGE_NAMES, type DamageKey } from '../src/domain/names'
 
 const data = JSON.parse(readFileSync('src/data/seeds.json', 'utf8'))
 
@@ -540,3 +540,73 @@ test('works offline once the service worker has installed', async ({ page, conte
   await loaded('img.map-image')
   await loaded('.structure-grid img.structure-art')
 })
+
+// The Nightlord in the bottom-left corner, as in the game: its medallion is named with what its card shows, and on
+// phone it rides above the sheet (never under it) and tucks away once the sheet is fully open.
+test.describe('the Nightlord medallion', () => {
+  const seed = targets[0]
+  const phrase = `${nightlordName(seed.nightlord)}: ${weaknessPhrase(data.weaknesses.nightlords[seed.nightlord])}`
+  const box = (page: import('@playwright/test').Page, s: string) => page.locator(s).evaluate((el) => el.getBoundingClientRect().toJSON())
+
+  test('shows its weaknesses on the result, above the sheet', async ({ page, isMobile }) => {
+    await page.goto(`/seed/${seed.id}`)
+    // Desktop keeps the card open, so the medallion is a named image there; on phone it toggles the card.
+    const medal = page.getByRole(isMobile ? 'button' : 'img', { name: phrase, exact: true })
+    await expect(medal).toBeVisible()
+    await expect(page.locator('.nl-card')).toBeVisible()
+    expect((await box(page, '.nl-medal')).width).toBeGreaterThanOrEqual(isMobile ? 44 : 100)
+    if (!isMobile) return
+    const handle = page.getByRole('button', { name: /^Resize Seed details/ })
+    await page.waitForTimeout(900)
+    expect((await box(page, '.nl-medal')).bottom).toBeLessThanOrEqual((await box(page, '.sheet')).top)
+    await handle.focus()
+    await handle.press('ArrowUp')
+    await expect(handle).toHaveAccessibleName('Resize Seed details, half open')
+    await page.waitForTimeout(1200)
+    expect((await box(page, '.nl-medal')).bottom).toBeLessThanOrEqual((await box(page, '.sheet')).top)
+    await expect(medal).toBeVisible()
+    await handle.press('ArrowUp')
+    await expect(handle).toHaveAccessibleName('Resize Seed details, fully open')
+    await expect(medal).toBeHidden()
+  })
+
+  test('on phone, a tap on the medallion folds its card away and back', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'desktop keeps the card open on the result')
+    await page.goto(`/seed/${seed.id}`)
+    const medal = page.getByRole('button', { name: phrase, exact: true })
+    await expect(medal).toHaveAttribute('aria-expanded', 'true')
+    await medal.click()
+    await expect(page.locator('.nl-card')).toHaveCount(0)
+    await expect(medal).toHaveAttribute('aria-expanded', 'false')
+    await medal.click()
+    await expect(page.locator('.nl-card')).toBeVisible()
+  })
+
+  test('shows in the finder, its card folded until asked for, and clear of the strip', async ({ page, isMobile }) => {
+    await page.goto(`/find/${seed.nightlord}/${seed.earth}`)
+    const medal = page.getByRole('button', { name: phrase, exact: true })
+    await expect(medal).toBeVisible()
+    await expect(page.locator('.nl-card')).toHaveCount(0)
+    if (isMobile) expect((await box(page, '.nl-medal')).bottom).toBeLessThanOrEqual((await box(page, '.strip')).top)
+    await medal.click()
+    await expect(page.locator('.nl-card')).toBeVisible()
+  })
+
+  test('no name on the map runs under it or its card', async ({ page }) => {
+    await page.goto(`/seed/${seed.id}`)
+    await expect(page.locator('.nl-card')).toBeVisible()
+    await page.waitForTimeout(900)
+    const crossing = await page.evaluate(() => {
+      const corner = [...document.querySelectorAll('[data-corner]')].map((e) => e.getBoundingClientRect())
+      return [...document.querySelectorAll<HTMLElement>('.map-name')]
+        .filter((n) => getComputedStyle(n).opacity === '1')
+        .filter((n) => {
+          const a = n.getBoundingClientRect()
+          return corner.some((b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
+        })
+        .map((n) => n.textContent)
+    })
+    expect(crossing).toEqual([])
+  })
+})
+

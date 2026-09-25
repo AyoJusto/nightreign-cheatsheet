@@ -4,6 +4,7 @@ import { useGesture } from '@use-gesture/react'
 import { type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
+import type { CornerRect } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { isTrackpadScroll, labelRank, markSize, nearestPin, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
@@ -58,6 +59,8 @@ export function MapView(props: MapContent & {
   restInset: MotionValue<number>
   /** Height covered at the bottom right now, including an open sheet: pins are kept above it. */
   bottomInset: MotionValue<number>
+  /** What is drawn over the map's bottom-left corner (the Nightlord medallion), measured up from bottomInset. */
+  corner?: MotionValue<CornerRect[]>
 }) {
   const frame = useRef<HTMLDivElement>(null)
   // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
@@ -79,13 +82,15 @@ export function MapView(props: MapContent & {
   const fade = useMotionValue(1)
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
+  // How far the corner (the medallion and its card) reaches up from whatever covers the bottom of the screen.
+  const cornerUp = () => Math.max(0, ...(props.corner?.get() ?? []).map((r) => r.top))
   // Per axis, an image larger than the frame keeps covering it and a smaller one (zoomed out to fit
   // the playable area) stays inside it, so the playable area is always reachable. The bottom edge may
-  // also rise to whatever covers the bottom of the screen.
+  // also rise to whatever covers the bottom of the screen, and above the corner, so no pin stays under the medallion.
   // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
   const bounds = (axis: 'x' | 'y', s = scale.get()) => {
     const slack = Math.abs(side(s) - (axis === 'x' ? size.get().w : size.get().h)) / 2
-    return { min: axis === 'x' ? -slack : -slack - props.bottomInset.get(), max: slack }
+    return { min: axis === 'x' ? -slack : -slack - props.bottomInset.get() - cornerUp(), max: slack }
   }
   const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
     const { min, max } = bounds(axis, s)
@@ -96,13 +101,15 @@ export function MapView(props: MapContent & {
     const { min, max } = bounds(axis)
     return rubberband(v, min, max, axis === 'x' ? size.get().w : size.get().h)
   }
-  // If the selected pin would sit under the sheet, pan it up into the visible area.
+  // If the selected pin would sit under the sheet (or the medallion above it), pan it up into the visible area.
   const reveal = (s = scale.get()): number | undefined => {
     const pin = props.pins.find((p) => p.slot === props.selected)
     if (!pin) return undefined
-    const { h } = size.get()
+    const { w, h } = size.get()
     const pinY = h / 2 + y.get() + (pin.y / 1000 - 0.5) * side(s)
-    const visibleBottom = h - props.bottomInset.get() - 56
+    const pinX = w / 2 + x.get() + (pin.x / 1000 - 0.5) * side(s)
+    const over = (props.corner?.get() ?? []).filter((r) => pinX > r.x0 - 22 && pinX < r.x1 + 22).map((r) => r.top + 22)
+    const visibleBottom = h - props.bottomInset.get() - Math.max(56, ...over)
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
   }
   // The scale that fits the playable area into the space between the top and resting bottom overlays.
@@ -124,9 +131,13 @@ export function MapView(props: MapContent & {
     const s = boundScale(fitScale())
     const centerX = ((box.x0 + box.x1) / 2000 - 0.5) * side(s)
     const centerY = ((box.y0 + box.y1) / 2000 - 0.5) * side(s)
+    // Centred above the corner's medallion where the playable area has the room (a phone's spare height), so no
+    // site starts under it; where it has not, as high as it goes, which is where it was without the corner.
+    const boxH = ((box.y1 - box.y0) / 1000) * side(s)
+    const mid = Math.max(top + boxH / 2, (top + bottom - cornerUp()) / 2)
     scale.jump(s)
     x.jump(clamp(-centerX, 'x', s))
-    y.jump(clamp((top + bottom) / 2 - h / 2 - centerY, 'y', s))
+    y.jump(clamp(mid - h / 2 - centerY, 'y', s))
   }
   // Which gestures own the motion values right now; the sheet-driven settle must not fight them.
   const active = useRef({ drag: false, pinch: false })
@@ -277,11 +288,11 @@ export function MapView(props: MapContent & {
     // The frame or the resting overlays changed size: reframe until the user has moved the map.
     const onFrame = () => (touched.current ? onInset() : fit())
     const offs = [
-      ...[size, props.topInset, props.restInset].map((v) => v.on('change', onFrame)),
+      ...[size, props.topInset, props.restInset, ...(props.corner ? [props.corner] : [])].map((v) => v.on('change', onFrame)),
       props.bottomInset.on('change', onInset),
     ]
     return () => offs.forEach((off) => off())
-  }, [props.topInset, props.restInset, props.bottomInset, props.selected, props.pins])
+  }, [props.topInset, props.restInset, props.bottomInset, props.corner, props.selected, props.pins])
 
   // A tap goes to the nearest slot within reach, preferring the step's own pins, not to whichever hit area is on top.
   const tapAt = (clientX: number, clientY: number) => {
@@ -365,7 +376,9 @@ export function MapView(props: MapContent & {
     // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
     // so no label is sliced by the sheet or drawn under the pill's controls.
     const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
-    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0)
+    // The medallion and its card are drawn over the map: names keep off them.
+    const blocked = (props.corner?.get() ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
+    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked)
       .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
   })
   // Tags measure their labels in their own layout effects, which run before this component's: published

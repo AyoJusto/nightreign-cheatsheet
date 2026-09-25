@@ -5,6 +5,7 @@ import { catalog } from '../data/catalog'
 import { MapView, type MapContent } from './MapView'
 import { FinderOverlay } from './FinderOverlay'
 import { ResultOverlay } from './ResultOverlay'
+import { NightlordMedallion, type CornerRect } from './NightlordMedallion'
 import { useWide } from './useWide'
 
 type MapRoute = Extract<Route, { name: 'find' | 'seed' }>
@@ -15,6 +16,7 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, b
   const noInset = useMotionValue(0) // desktop: the side panel never covers the map
   const topInset = useMotionValue(0) // bottom edge of the overlay's top pill, measured by the overlay
   const restInset = useMotionValue(0) // what the overlay covers at the bottom when no sheet is open
+  const corner = useMotionValue<CornerRect[]>([]) // the Nightlord medallion and its card, drawn over the map
   // One map for both modes: the overlays hand it their pins, so finder to result keeps the map in place.
   const [content, setContent] = useState<MapContent>({ pins: [] })
   // parseRoute only yields a seed route for ids that exist.
@@ -29,7 +31,9 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, b
         ? <ResultOverlay seed={seed} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />
         // Keyed by pool so a pool change on a mounted screen starts a fresh Scouting.
         : <FinderOverlay key={`${nightlord}/${earth}`} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />}
-      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} />
+      {/* After the overlay and before the map in Tab order; it stays mounted from finder to result, like the map. */}
+      <NightlordMedallion nightlord={nightlord} result={seed !== null} lift={bottomInset} rest={restInset} top={topInset} corner={corner} />
+      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} corner={corner} />
     </>
   )
 }
