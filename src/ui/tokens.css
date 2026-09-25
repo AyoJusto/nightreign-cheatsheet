@@ -424,6 +424,8 @@ li.run-row .run-value { font-weight: 400; }
   .map-frame { right: 360px; }
   /* Desktop: the pill hugs its content, centred over the map. */
   .pill { left: calc(50% - 180px); right: auto; transform: translateX(-50%); max-width: calc(100% - 360px - 2 * var(--gutter)); }
+  /* The finder's back, undo and reset: in the map's top-left corner, not floating over its middle. */
+  .pill.pill-corner { left: calc(var(--gutter) + var(--safe-left)); transform: none; }
   .chips { max-width: calc(100vw - 360px - 96px); }
   .pill .chip { padding: 0 12px; font-size: 14px; letter-spacing: 0.04em; }
   .toast { left: calc(50% - 180px); }

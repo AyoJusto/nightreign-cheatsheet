@@ -198,8 +198,9 @@ export function FinderOverlay(props: {
   return (
     <>
       {/* The three-column centring grid (pill-titled) only makes sense when a title actually renders:
-          desktop carries the count in the side panel, so its pill is a plain flex row, a tight control group. */}
-      <Plate className={`pill${wide ? '' : ' pill-titled'}`} ref={pillRef}>
+          desktop carries the count in the side panel, so its pill is a plain flex row, a tight control group,
+          anchored to the map's top-left corner like a game menu's back button. */}
+      <Plate className={`pill${wide ? ' pill-corner' : ' pill-titled'}`} ref={pillRef}>
         <div className="pill-leading">
           <button className="pill-back" aria-label="Back" onClick={() => props.go('/', true)}><Icon name="back" /></button>
         </div>
