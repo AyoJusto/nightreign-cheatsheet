@@ -1,6 +1,6 @@
 // Map coordinates are image units: 0..1000 across the square map image on both axes.
 
-export interface Box { x0: number; y0: number; x1: number; y1: number }
+export type { Box } from '../domain/seed'
 
 /**
  * The pin closest to `point` within `radius` (all in image units). A `preferred` pin in reach wins

@@ -1,7 +1,6 @@
 import data from './seeds.json'
 import islands from './islands.json'
-import type { CastlePoints, Seed } from '../domain/seed'
-import type { Box } from '../ui/mapGeometry'
+import type { Box, CastlePoints, Seed } from '../domain/seed'
 import { EARTHS, mapFamily, type EarthId, type NightlordId, type SlotId, type Weakness } from '../domain/names'
 
 const all = data.seeds as unknown as Seed[]
