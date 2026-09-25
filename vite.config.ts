@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     // seeds.json is data, not app code: its own chunk keeps the main bundle under the 200 KB gzip budget.
     // Raw size is large (it's JSON) but gzips small, so the default 500 KB warning doesn't apply here.
-    chunkSizeWarningLimit: 1100,
+    chunkSizeWarningLimit: 1300,
     rolldownOptions: {
       output: {
         codeSplitting: {
