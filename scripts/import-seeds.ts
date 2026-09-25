@@ -156,6 +156,9 @@ function main() {
   const bossName = (name: string) => aliases.bossNameOverrides[name] ?? spelling[name] ?? name
   // Names the source sheet wrongly lists as field bosses; the source's own renderer skips them.
   const notFieldBosses = new Set<string>(remote.bossIconTypes.notFieldBosses)
+  // Which crest the game draws for a boss: its red great crest, or the blue field one. The source rules Great
+  // Hollow's bosses all field, and marks only the Limveld roster; a name it does not know gets the field crest.
+  const greatBosses = new Set(Object.entries<string>(remote.bossIconTypes.bosses).filter(([, type]) => type === 'great').map(([name]) => name))
 
   // Cross-check: both sources must agree on every seed's identity and slots.
   if (artimuz.length !== observer.seeds.length) problems.push(`artimuz has ${artimuz.length} seeds, observer ${observer.seeds.length}`)
@@ -227,7 +230,9 @@ function main() {
     const fieldBosses = remote.bossAssignments.seeds[id] ?? {}
     for (const p of remote.bossPositions.positions[s.map_type] ?? []) {
       const boss = p.slot && fieldBosses[p.slot]
-      if (boss && !p.slot.startsWith('Castle') && !notFieldBosses.has(boss)) markers.push({ layer: 'boss', x: p.x, y: p.y, label: bossName(boss) })
+      if (boss && !p.slot.startsWith('Castle') && !notFieldBosses.has(boss)) {
+        markers.push({ layer: 'boss', x: p.x, y: p.y, label: bossName(boss), ...(greatBosses.has(bossName(boss)) && { great: true }) })
+      }
     }
     if (earth === 'great-hollow') {
       for (const [pos, entry] of Object.entries<any>(remote.greatHollow.seeds[id] ?? {})) {
@@ -484,6 +489,8 @@ async function copyAssets() {
   for (const name of ['unknown', 'player']) {
     await marker(`${name}.svg`).resize(128, 128, { fit: 'inside' }).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
   }
+  // A possible spawn point is the unknown orb turned teal, baked here so the map pays for no CSS filter.
+  await marker('unknown.svg').resize(128, 128, { fit: 'inside' }).modulate({ hue: 130, saturation: 1.3 }).webp({ quality: 90 }).toFile('public/markers/spawn-option.webp')
   console.log('assets copied')
 }
 

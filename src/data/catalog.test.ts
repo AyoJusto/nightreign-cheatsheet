@@ -94,7 +94,7 @@ describe('game art for the new look', () => {
     for (const key of Object.keys(DAMAGE_NAMES)) expect(size(`damage/${key}.webp`), key).toBeLessThan(30_000)
   })
   it('has every map marker, each within the 30 KB budget', () => {
-    for (const name of ['unknown', 'player', 'field-boss', 'great-boss', 'evergaol', 'chest', 'merchant']) {
+    for (const name of ['unknown', 'spawn-option', 'player', 'field-boss', 'great-boss', 'evergaol', 'chest', 'merchant']) {
       expect(size(`markers/${name}.webp`), name).toBeLessThan(30_000)
     }
   })
@@ -104,5 +104,16 @@ describe('game art for the new look', () => {
   it('self-hosts Cinzel within 60 KB, with its licence', () => {
     expect(size('fonts/cinzel-latin.woff2')).toBeLessThan(60_000)
     expect(readFileSync('public/fonts/OFL.txt', 'utf8')).toMatch(/SIL Open Font License/)
+  })
+})
+
+describe('boss crests', () => {
+  it("marks the bosses the game draws with its red great crest, and only those", () => {
+    const seed = catalog.all.find((s) => s.id === '1003')!
+    const great = (name: string) => seed.markers.find((m) => m.layer === 'boss' && m.label === name)?.great === true
+    // Seed 1003 as the game draws it (docs/specs/screens/compare/ref-desktop-result.png).
+    for (const name of ['Black Blade Kindred', 'Draconic Tree Sentinel', 'Ancestor Spirit', 'Magma Wyrm']) expect(great(name), name).toBe(true)
+    for (const name of ['Royal Revenant', 'Ancient Hero of Zamor', 'Elder Lion', "Night's Cavalry"]) expect(great(name), name).toBe(false)
+    expect(catalog.all.every((s) => s.markers.every((m) => m.great === undefined || m.layer === 'boss'))).toBe(true)
   })
 })

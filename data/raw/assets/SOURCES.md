@@ -15,6 +15,7 @@ The wiki has no "?" unexplored-site orb, player marker, great boss crest or cara
 
 - `unknown.svg` (a gold orb with a "?") and `player.svg` (an arrowhead in a bronze ring) were drawn for Bonfire Buddy.
 - `public/markers/great-boss.webp` is `field-boss.png` hue-shifted to red by the import.
+- `public/markers/spawn-option.webp` is `unknown.svg` hue-shifted to teal by the import, for a possible spawn point.
 - Caravans get no icon.
 
 ## damage/ (damage and status icons)
