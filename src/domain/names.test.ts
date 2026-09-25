@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { ELEMENT_CODES, ELEMENT_NAMES, weaknessPhrase } from './names'
+import { ELEMENT_CODES, ELEMENT_NAMES, cardRows, weaknessPhrase } from './names'
 
 describe('element emblems', () => {
   it('ship for every element the app knows, since badges show the emblem, not a colour or code', () => {
@@ -28,5 +28,15 @@ describe('weaknessPhrase', () => {
     expect(weaknessPhrase({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })).toBe('weak to Holy; resists Fire; fastest status Sleep')
     expect(weaknessPhrase({ weak: ['holy'], resist: [], status: ['frost', 'rot'] })).toBe('weak to Holy; fastest status Frostbite, Scarlet Rot')
     expect(weaknessPhrase({ weak: ['poison'], resist: [], status: [] })).toBe('weak to Poison')
+  })
+})
+
+describe('cardRows', () => {
+  it("puts every status in the Weak status row, Balancers' listed Sleep as well as Tricephalos' fastest one", () => {
+    expect(cardRows({ weak: ['sleep', 'strike'], resist: ['holy'], status: [] })).toEqual({ weak: ['strike'], resist: ['holy'], status: ['sleep'] })
+    expect(cardRows({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })).toEqual({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })
+    // Gaping Jaw is listed for Poison alone: no Weak row, the status row names it.
+    expect(cardRows({ weak: ['poison'], resist: ['lightning'], status: [] })).toEqual({ weak: [], resist: ['lightning'], status: ['poison'] })
+    expect(cardRows({ weak: ['madness', 'holy'], resist: [], status: ['sleep', 'madness'] })).toEqual({ weak: ['holy'], resist: [], status: ['madness', 'sleep'] })
   })
 })

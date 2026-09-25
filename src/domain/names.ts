@@ -78,6 +78,17 @@ export function weaknessPhrase(w: Weakness): string {
   ].filter(Boolean).join('; ')
 }
 
+const STATUSES: ReadonlySet<DamageKey> = new Set(['bleed', 'frost', 'rot', 'poison', 'sleep', 'madness'])
+/**
+ * A Nightlord card's rows: damage types under Weak, and every status under Weak status, whether the data lists it
+ * as the Nightlord's weakness (Sleep for Balancers) or as the fastest to build up (Sleep for Tricephalos), so a
+ * status is always named in words, never left as an unnamed icon.
+ */
+export function cardRows(w: Weakness): { weak: DamageKey[]; resist: DamageKey[]; status: DamageKey[] } {
+  const listed = w.weak.filter((k) => STATUSES.has(k))
+  return { weak: w.weak.filter((k) => !STATUSES.has(k)), resist: w.resist, status: [...new Set([...listed, ...(w.status ?? [])])] }
+}
+
 /** Two letters, unique per element, shown if an emblem image fails to load: first letters alone collide (Fire/Frostbite, Bleed/Blight). */
 export const ELEMENT_CODES: Record<ElementId, string> = {
   fire: 'Fi', holy: 'Ho', magic: 'Mg', lightning: 'Li', frostbite: 'Fr', poison: 'Po',

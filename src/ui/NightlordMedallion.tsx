@@ -4,7 +4,7 @@ import { Frame } from './Frame'
 import { useWide } from './useWide'
 import { catalog } from '../data/catalog'
 import './weakness.css'
-import { DAMAGE_NAMES, nightlordName, weaknessPhrase, type DamageKey, type NightlordId, type Weakness } from '../domain/names'
+import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type DamageKey, type NightlordId, type Weakness } from '../domain/names'
 
 /**
  * A screen area drawn over the map, in px: x from the left edge, and `bottom`/`top` measured up from the line
@@ -149,25 +149,26 @@ export function WeaknessCard({ nightlord }: { nightlord: NightlordId }) {
 }
 
 function CardRows({ weakness }: { weakness: Weakness }) {
+  const { weak, resist, status } = cardRows(weakness)
   return (
     <>
-      {weakness.weak.length > 0 && <CardRow label="Weak" keys={weakness.weak} />}
-      {weakness.resist.length > 0 && <CardRow label="Resist" keys={weakness.resist} />}
-      {/* The statuses that build up fastest on it (the cheatsheet's "Also"), where its listed weakness is a damage
-          type: named in words too, since "status" alone could read as what it inflicts, and a status icon is hard
-          to tell at card size. */}
-      {weakness.status && weakness.status.length > 0 && <CardRow label="Weak status" keys={weakness.status} hint="builds up fastest" named />}
+      {weak.length > 0 && <CardRow label="Weak" keys={weak} />}
+      {resist.length > 0 && <CardRow label="Resist" keys={resist} />}
+      {/* Every status it is weak to, whether its listed weakness (Balancers' Sleep) or the fastest to build up
+          (the cheatsheet's "Also", Tricephalos' Sleep): named in words too, since "status" alone could read as what
+          it inflicts, and a status icon is hard to tell at card size. */}
+      {status.length > 0 && <CardRow label="Weak status" keys={status} named />}
     </>
   )
 }
 
-function CardRow({ label, keys, hint, named }: { label: string; keys: DamageKey[]; hint?: string; named?: boolean }) {
+function CardRow({ label, keys, named }: { label: string; keys: DamageKey[]; named?: boolean }) {
   return (
     <div className="nl-row">
       <span className="nl-row-label">{label}</span>
       {/* Named: one status's name beside its icon; several (Darkdrift Knight has five tied) in a line under them. */}
       <span className={named ? 'nl-icons nl-named' : 'nl-icons'} data-many={(named && keys.length > 1) || undefined}>
-        {keys.map((k) => <img key={k} src={`/damage/${k}.webp`} alt="" title={hint ? `${DAMAGE_NAMES[k]}: ${hint}` : DAMAGE_NAMES[k]} draggable={false} />)}
+        {keys.map((k) => <img key={k} src={`/damage/${k}.webp`} alt="" title={DAMAGE_NAMES[k]} draggable={false} />)}
         {named && <span className="nl-names">{keys.map((k) => DAMAGE_NAMES[k]).join(', ')}</span>}
       </span>
     </div>
