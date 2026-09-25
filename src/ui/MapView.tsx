@@ -427,7 +427,7 @@ export function MapView(props: MapContent & {
       // other mark's art; no other name may enter the ring's disc: inside it, a site's name would read as the night's.
       if (t.mark === 'ring') {
         const disc = square(point, ring * RING_DISC)
-        return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2 }
+        return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2, wrap: boxes[i]?.wrap }
       }
       // A name alone sits just beside its point, on whichever side is clear of the marks around it (the castle's
       // guard goes above its two crests).
@@ -663,12 +663,14 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   // A name with no free spot steps aside, leaving its mark; it comes back as zooming in makes room.
   // A night's name always shows while its ring is in sight (placeLabels).
   const labelOpacity = useTransform(spot, (o) => (o.shown ? 1 : 0))
-  // A crest's name placed on its two-line wrap takes that narrower width (measureName keeps both).
+  // A name placed on its two-line wrap takes that narrower width and may break, a night's name included (measureName
+  // keeps both widths).
   useEffect(() => spot.on('change', (o) => {
     const el = label.current
     if (!el) return
     const width = o.wrapped ? el.dataset.wrap : el.dataset.w
     if (width !== undefined && el.style.width !== width) el.style.width = width
+    el.style.whiteSpace = o.wrapped ? 'normal' : ''
   }), [spot])
   // Reported to MapView, which publishes every size at once after its placement pass has subscribed.
   useLayoutEffect(() => {
@@ -695,35 +697,50 @@ interface NameBox { w: number; h: number; wrap?: { w: number; h: number } }
  */
 function measureName(el: HTMLElement): NameBox {
   el.style.width = ''
-  const range = document.createRange()
-  range.selectNodeContents(el)
+  el.style.whiteSpace = ''
   // On screen the name may be scaled with the map mid-gesture: back to its own px.
   const scale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
-  const w = Math.ceil(range.getBoundingClientRect().width / scale)
+  const w = textWidth(el, scale)
   if (w > 0 && w < el.offsetWidth) el.style.width = `${w}px`
   const box = { w: el.offsetWidth, h: el.offsetHeight }
-  const two = twoLines(el)
+  const base = el.style.width
+  const two = twoLines(el, scale)
+  el.style.width = base
+  el.style.whiteSpace = ''
   const wrap = two && two.w < box.w ? two : undefined
-  el.dataset.w = el.style.width
-  el.dataset.wrap = wrap ? `${wrap.w}px` : el.style.width
+  el.dataset.w = base
+  el.dataset.wrap = wrap ? `${wrap.w}px` : base
   return wrap ? { ...box, wrap } : box
 }
 
-let canvas: CanvasRenderingContext2D | null = null
-/** The name split into two lines at the word break that leaves the longer line shortest, as its box. */
-function twoLines(el: HTMLElement): { w: number; h: number } | undefined {
-  const words = (el.textContent ?? '').split(' ')
-  if (words.length < 2) return undefined
-  const style = getComputedStyle(el)
-  canvas ??= document.createElement('canvas').getContext('2d')
-  if (!canvas) return undefined
-  canvas.font = style.font
-  const ctx = canvas
-  const width = (text: string) => ctx.measureText(text).width
-  let longer = Infinity
-  for (let k = 1; k < words.length; k++) {
-    longer = Math.min(longer, Math.max(width(words.slice(0, k).join(' ')), width(words.slice(k).join(' '))))
+/** The width of the words themselves, in the name's own px. */
+function textWidth(el: HTMLElement, scale: number): number {
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  return Math.ceil(range.getBoundingClientRect().width / scale)
+}
+
+/**
+ * The name laid out by the browser on two lines as narrow as its words allow, as its box: the narrowest width that
+ * still takes no more than two of its lines. Undefined for a single word.
+ */
+function twoLines(el: HTMLElement, scale: number): { w: number; h: number } | undefined {
+  el.style.whiteSpace = 'nowrap'
+  el.style.width = ''
+  const one = { w: el.offsetWidth, h: el.offsetHeight }
+  el.style.whiteSpace = 'normal'
+  const fits = (width: number) => {
+    el.style.width = `${width}px`
+    return el.offsetHeight <= 2 * one.h + 1
   }
-  // 1px spare, so the browser's own measure never breaks it onto a third line.
-  return { w: Math.ceil(longer) + 1, h: 2 * parseFloat(style.lineHeight) }
+  let lo = Math.ceil(one.w / 2)
+  let hi = one.w
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (fits(mid)) hi = mid
+    else lo = mid + 1
+  }
+  fits(hi)
+  if (el.offsetHeight <= one.h + 1) return undefined
+  return { w: Math.min(hi, textWidth(el, scale)), h: el.offsetHeight }
 }

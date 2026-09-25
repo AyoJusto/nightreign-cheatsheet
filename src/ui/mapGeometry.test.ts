@@ -292,6 +292,17 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const [ring] = placeLabels([ringAt(200, 300, 40), crest(200, 245)], frame, [], 9, 8, 6)
     expect(ring).toMatchObject({ x: 160, y: 342, shown: true })
   })
+  it('wraps a name that falls back inside its ring onto two lines centred on the disc, within its width', () => {
+    const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
+    // One line, the caption is 80px across a disc 60px wide; on two lines it is 50 by 30.
+    const ring = { ...ringAt(200, 300, 30), wrap: { w: 50, h: 30 } }
+    const [inside] = placeLabels([ring], frame, [everywhere], 9, 8, 6)
+    expect(inside).toEqual({ x: 175, y: 285, shown: true, wrapped: true })
+    expect(inside.x).toBeGreaterThanOrEqual(170)
+    expect(inside.x + 50).toBeLessThanOrEqual(230)
+    // With room outside, it stays on one line.
+    expect(placeLabels([ring], frame, [], 9, 8, 6)[0]).toEqual({ x: 160, y: 238, shown: true })
+  })
   it('writes it beside its ring when crests stand above and below, and inside it, never on a diagonal, when the sides are taken too', () => {
     const [beside] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355)], frame, [], 9, 8, 6)
     expect(beside).toMatchObject({ x: 242, y: 285, shown: true })

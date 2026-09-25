@@ -48,7 +48,7 @@ export type Obstacle = Rect & { weight?: number; round?: boolean }
  * then the four diagonals, `gap` px off the mark's `box` (by default the point itself, so `gap` is from the point),
  * kept `edge` px inside the frame. A negative gap tucks the label over the top or bottom edge of its own art. A
  * `ring`'s name goes centred above its ring, then below it or beside it, touching the ring, covering nothing and reading
- * as its own, not one of `others`, else inside the ring across the lower half of its disc. For other names: the frame's
+ * as its own, not one of `others`, else inside the ring across the lower half of its disc (`inside`). For other names: the frame's
  * visible band runs from `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph
  * (`mark` px around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
  * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first that covers
@@ -71,7 +71,7 @@ export function placeLabel(
   ring = false,
   others: readonly Rect[] = [],
   box?: Rect,
-): { x: number; y: number; clear: boolean; own: boolean } {
+): { x: number; y: number; clear: boolean; own: boolean; inside?: boolean } {
   const top = frame.top ?? 0
   const keepIn = (v: number, size: number, start: number, end: number) => Math.max(start + edge, Math.min(end - edge - size, v))
   const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
@@ -129,7 +129,7 @@ export function placeLabel(
     const outside = [above, below, right, left].find(fits)
     if (outside) return { ...clamp(outside), clear: true, own: true }
     const inside = clamp({ x: cx - label.w / 2, y: cy + r / 2 - label.h / 2 })
-    return { ...inside, clear: coverage(inside) === 0, own: true }
+    return { ...inside, clear: coverage(inside) === 0, own: true, inside: true }
   }
   // A negative gap tucks a name over the top or bottom edge of its own art, never its sides, where the art is dense.
   // Where the tuck is refused (it would cover the mark's own badge), the same spots clear of the mark come next.
@@ -198,8 +198,9 @@ export interface LabelRequest {
   /** A night's ring: its name goes centred above the ring, below it or beside it, else inside it (placeLabel). */
   ring?: boolean
   /**
-   * The name wrapped onto two lines as narrow as its words allow (a crest's name on a phone): tried directly under
-   * the mark when no spot fits the one-line box, under every rule a name follows.
+   * The name wrapped onto two lines as narrow as its words allow. A crest's name on a phone tries it directly under
+   * the mark when no spot fits the one-line box, under every rule a name follows. A night's name that falls back
+   * inside its ring takes it there, centred on the disc, so it stays within the ring rather than strike across it.
    */
   wrap?: { w: number; h: number }
   /** The mark's footprint (a structure's sprite and badge): its name goes around it, and it is the mark's own. */
@@ -263,6 +264,12 @@ export function placeLabels(
     let size = label
     let wrapped = false
     let spot = placeLabel(point, label, frame, obstacles, markGap, edge, m, request.ring, nearest, request.box)
+    if (spot.inside && request.wrap && request.box) {
+      const { x0, y0, x1, y1 } = request.box
+      spot = { ...spot, x: (x0 + x1) / 2 - request.wrap.w / 2, y: (y0 + y1) / 2 - request.wrap.h / 2 }
+      size = request.wrap
+      wrapped = true
+    }
     // The two-line wrap, directly under the mark and nowhere else: the spot placeLabel tries first, clamped by nothing.
     if (!(spot.own && spot.clear) && request.wrap) {
       const around = request.box ?? { x0: point.x - m, y0: point.y - m, x1: point.x + m, y1: point.y + m }
