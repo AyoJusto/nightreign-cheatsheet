@@ -151,16 +151,22 @@ function MedallionArt({ nightlord }: { nightlord: NightlordId }) {
           <stop offset="0.5" stopColor="#c9a55c" />
           <stop offset="1" stopColor="#7a5a2e" />
         </linearGradient>
-        <clipPath id="nl-clip"><circle cx="60" cy="60" r="42" /></clipPath>
+        {/* Frost: the portrait's edge pales into the stone, as the game's medallion does. */}
+        <radialGradient id="nl-frost" cx="50%" cy="50%" r="50%">
+          <stop offset="0.62" stopColor="#b4c8ea" stopOpacity="0" />
+          <stop offset="1" stopColor="#b4c8ea" stopOpacity="0.42" />
+        </radialGradient>
+        <clipPath id="nl-clip"><circle cx="60" cy="60" r="48" /></clipPath>
       </defs>
       <circle cx="60" cy="60" r="59" fill="url(#nl-stone)" stroke="#1b2640" strokeWidth="1" />
       {/* The engraved rim: a band of fine carved ticks between two scored lines. */}
-      <circle cx="60" cy="60" r="55.5" fill="none" stroke="#f4f7fc" strokeOpacity="0.45" strokeWidth="0.8" />
-      <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2c47" strokeOpacity="0.55" strokeWidth="5" strokeDasharray="0.9 2.4" />
-      <circle cx="60" cy="60" r="48.2" fill="none" stroke="#f4f7fc" strokeOpacity="0.35" strokeWidth="0.8" />
-      <circle cx="60" cy="60" r="45.5" fill="#0e1628" stroke="url(#nl-bronze)" strokeWidth="3" />
-      <image href={`/nightlords/${nightlord}.webp`} x="18" y="18" width="84" height="84" clipPath="url(#nl-clip)" preserveAspectRatio="xMidYMid slice" />
-      <circle cx="60" cy="60" r="42.5" fill="none" stroke="#070b14" strokeOpacity="0.85" strokeWidth="1.5" />
+      <circle cx="60" cy="60" r="57" fill="none" stroke="#f4f7fc" strokeOpacity="0.45" strokeWidth="0.7" />
+      <circle cx="60" cy="60" r="54.4" fill="none" stroke="#1f2c47" strokeOpacity="0.5" strokeWidth="3.6" strokeDasharray="0.8 2.2" />
+      <circle cx="60" cy="60" r="51.8" fill="none" stroke="#f4f7fc" strokeOpacity="0.35" strokeWidth="0.7" />
+      <circle cx="60" cy="60" r="49.4" fill="#0e1628" stroke="url(#nl-bronze)" strokeWidth="2.2" />
+      <image href={`/nightlords/${nightlord}.webp`} x="10" y="10" width="100" height="100" clipPath="url(#nl-clip)" preserveAspectRatio="xMidYMid slice" />
+      <circle cx="60" cy="60" r="48" fill="url(#nl-frost)" />
+      <circle cx="60" cy="60" r="48.2" fill="none" stroke="#070b14" strokeOpacity="0.8" strokeWidth="1" />
     </svg>
   )
 }
