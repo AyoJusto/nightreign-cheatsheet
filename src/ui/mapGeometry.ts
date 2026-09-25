@@ -48,7 +48,7 @@ export type Obstacle = Rect & { weight?: number; round?: boolean }
  * then the four diagonals, `gap` px off the mark's `box` (by default the point itself, so `gap` is from the point),
  * kept `edge` px inside the frame. A negative gap tucks the label over the top or bottom edge of its own art. A
  * `ring`'s name goes centred above its ring, then below it or beside it, touching the ring, covering nothing and reading
- * as its own, not one of `others`, else inside the ring across the lower half of its disc (`inside`). For other names: the frame's
+ * as its own, not one of `others`, else inside the ring, centred on its disc (`inside`; placeLabels fits it there). For other names: the frame's
  * visible band runs from `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph
  * (`mark` px around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
  * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first that covers
@@ -128,7 +128,7 @@ export function placeLabel(
   if (ring) {
     // A night's name: above its ring, below it, then beside it, where it touches the ring (RING_TOUCH px of its
     // circle), covers nothing and reads as the ring's, not a neighbour's (the test every name passes). Failing all
-    // four, it goes inside the ring, across the lower half of its disc, as the game's reference map writes it.
+    // four, it goes inside the ring, centred on its disc, as the game's reference map writes it.
     const r = (around.x1 - around.x0) / 2
     const [below, above, right, left] = ringOf(gap, gap)
     const fits = (raw: { x: number; y: number }) => {
@@ -137,7 +137,7 @@ export function placeLabel(
     }
     const outside = [above, below, right, left].find(fits)
     if (outside) return { ...clamp(outside), clear: true, own: true }
-    const inside = clamp({ x: cx - label.w / 2, y: cy + r / 2 - label.h / 2 })
+    const inside = clamp({ x: cx - label.w / 2, y: cy - label.h / 2 })
     return { ...inside, clear: coverage(inside) === 0, own: true, inside: true }
   }
   // A negative gap tucks a name over the top or bottom edge of its own art, never its sides, where the art is dense.
@@ -187,6 +187,16 @@ const overlapArea = (a: Rect, b: Rect) => {
   const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0)
   return w > 0 && h > 0 ? w * h : 0
 }
+/**
+ * How much a caption must shrink to lie wholly inside a disc of radius `r` when centred on it: its widest line at the
+ * outer edge of its box stays within the disc's chord there, which holds when the box's corners lie inside the
+ * circle. 1 when it fits as it is, else the scale that fits, or null when that is below `minScale`.
+ */
+export function fitInDisc(box: { w: number; h: number }, r: number, minScale: number): number | null {
+  const scale = Math.min(1, r / Math.hypot(box.w / 2, box.h / 2))
+  return scale >= minScale ? scale : null
+}
+
 /** How much of `o` the box `a` covers (px²); a round obstacle counts only when the box reaches inside its circle. */
 function covers(a: Rect, o: Obstacle): number {
   const area = overlapArea(a, o)
@@ -214,6 +224,10 @@ export interface LabelRequest {
    * inside its ring takes it there, centred on the disc, so it stays within the ring rather than strike across it.
    */
   wrap?: { w: number; h: number }
+  /** A night's name: the smallest it may shrink to inside its ring (the legible floor over its own size). */
+  minScale?: number
+  /** A night's name: its number alone, what shows inside its ring when even the smallest name does not fit. */
+  digit?: { w: number; h: number }
   /** The mark's footprint (a structure's sprite and badge): its name goes around it, and it is the mark's own. */
   box?: Rect
   /** What the mark draws, which no other name may touch; by default its glyph (`mark` px around the point). */
@@ -232,7 +246,8 @@ export interface LabelRequest {
  * A name placed keeps LABEL_PAD px from the next beside it, and half a `line` (the names' line height) above and
  * below it, so two names of different marks never stack into what reads as one two-line name.
  * Returns one result per request, in input order, with the label's top-left corner in frame px; `wrapped` when it
- * is the request's `wrap` box that shows.
+ * is the request's `wrap` box that shows, `scale` when a night's name is shrunk to fit inside its ring, and
+ * `numberOnly` when only its number shows there.
  */
 export function placeLabels(
   requests: readonly LabelRequest[],
@@ -243,7 +258,7 @@ export function placeLabels(
   mark: number,
   blocked: readonly Rect[] = [],
   line = 0,
-): { x: number; y: number; shown: boolean; wrapped?: boolean }[] {
+): { x: number; y: number; shown: boolean; wrapped?: boolean; scale?: number; numberOnly?: boolean }[] {
   const top = frame.top ?? 0
   // Covering a mark hides what it marks, and text over text is unreadable: when a kept label has no free spot,
   // covering either costs about as much as covering a whole pin, so a pin's edge loses first.
@@ -255,7 +270,7 @@ export function placeLabels(
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
   const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: LABEL_WEIGHT }))
-  const results: { x: number; y: number; shown: boolean; wrapped?: boolean }[] = new Array(requests.length)
+  const results: { x: number; y: number; shown: boolean; wrapped?: boolean; scale?: number; numberOnly?: boolean }[] = new Array(requests.length)
   for (const i of order) {
     const request = requests[i]
     const { point, label, keep } = request
@@ -274,15 +289,24 @@ export function placeLabels(
     const markGap = request.gap ?? gap
     let size = label
     let wrapped = false
+    let scale: number | undefined
+    let numberOnly = false
     let spot = placeLabel(point, label, frame, obstacles, markGap, edge, m, request.ring, nearest, request.box)
-    if (spot.inside && request.wrap && request.box) {
+    // Inside its ring, a night's name goes on its two lines (or its one), centred on the disc and shrunk to fit it,
+    // down to the smallest legible size (`minScale`); past that, only the night's number shows there.
+    if (spot.inside && request.box) {
       const { x0, y0, x1, y1 } = request.box
-      spot = { ...spot, x: (x0 + x1) / 2 - request.wrap.w / 2, y: (y0 + y1) / 2 - request.wrap.h / 2 }
-      size = request.wrap
-      wrapped = true
+      const caption = request.wrap ?? label
+      const fit = fitInDisc(caption, (x1 - x0) / 2, request.minScale ?? 1)
+      wrapped = request.wrap !== undefined && fit !== null
+      numberOnly = fit === null
+      scale = fit ?? undefined
+      const shown = fit === null ? request.digit ?? caption : { w: caption.w * fit, h: caption.h * fit }
+      spot = { ...spot, x: (x0 + x1) / 2 - shown.w / 2, y: (y0 + y1) / 2 - shown.h / 2 }
+      size = shown
     }
     // The two-line wrap, directly under the mark and nowhere else: the spot placeLabel tries first, clamped by nothing.
-    if (!(spot.own && spot.clear) && request.wrap) {
+    if (!request.ring && !(spot.own && spot.clear) && request.wrap) {
       const around = request.box ?? { x0: point.x - m, y0: point.y - m, x1: point.x + m, y1: point.y + m }
       const under = placeLabel(point, request.wrap, frame, obstacles, markGap, edge, m, false, nearest, request.box)
       const x = (around.x0 + around.x1) / 2 - request.wrap.w / 2
@@ -304,7 +328,7 @@ export function placeLabels(
     // line above and below, where the gap between a wrapped name's own lines would make two names read as one.
     const padY = Math.max(LABEL_PAD, line / 2)
     if (shown) placed.push({ x0: rect.x0 - LABEL_PAD, y0: rect.y0 - padY, x1: rect.x1 + LABEL_PAD, y1: rect.y1 + padY, weight: LABEL_WEIGHT })
-    results[i] = { x: spot.x, y: spot.y, shown, ...(wrapped && { wrapped }) }
+    results[i] = { x: spot.x, y: spot.y, shown, ...(wrapped && { wrapped }), ...(scale !== undefined && scale < 1 && { scale }), ...(numberOnly && { numberOnly }) }
   }
   return results
 }

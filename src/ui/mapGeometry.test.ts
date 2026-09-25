@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_ASPECT } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, fitInDisc, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_ASPECT } from './mapGeometry'
 import { catalog } from '../data/catalog'
+import seedData from '../data/seeds.json'
+// A night's name as a phone draws it (11px Cinzel): each character's advance, measured in WebKit (iPhone 15).
+import caption from './ringCaption.fixture.json'
 import { readdirSync } from 'node:fs'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
@@ -271,17 +274,25 @@ describe('placeLabels: names sized to the art they belong to', () => {
   // A night's ring as MapView asks for it: its disc (a circle, `round`) is its box and its body.
   const ringAt = (x: number, y: number, r: number) => {
     const disc = { x0: x - r, y0: y - r, x1: x + r, y1: y + r }
-    return { point: { x, y }, label, rank: 0, keep: true, ring: true, box: disc, body: [{ ...disc, round: true }], gap: 2, mark: 0 }
+    return { point: { x, y }, label, rank: 0, keep: true, ring: true, box: disc, body: [{ ...disc, round: true }], gap: 2, mark: 0, minScale: 0.5 }
+  }
+  // Inside its ring: centred on the disc, shrunk (when it must) until the box's corners lie in the circle.
+  const inRing = (spot: { x: number; y: number; shown: boolean; scale?: number }, x: number, y: number, r: number, box = label) => {
+    const w = box.w * (spot.scale ?? 1)
+    const h = box.h * (spot.scale ?? 1)
+    expect(spot.shown).toBe(true)
+    expect(spot.x + w / 2).toBeCloseTo(x, 6)
+    expect(spot.y + h / 2).toBeCloseTo(y, 6)
+    expect(Math.hypot(w / 2, h / 2)).toBeLessThanOrEqual(r + 1e-9)
   }
   it("writes a night's name centred just above its ring, on phone and desktop alike", () => {
     const [ring] = placeLabels([ringAt(200, 300, 40)], frame, [], 9, 8, 6)
     expect(ring).toMatchObject({ x: 160, y: 228, shown: true })
   })
-  it('writes it inside its ring, across the lower half of the disc, when art lies all round it', () => {
+  it('writes it inside its ring, centred on the disc and shrunk to fit it, when art lies all round it', () => {
     const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
     const [ring] = placeLabels([ringAt(200, 300, 40)], frame, [everywhere], 9, 8, 6)
-    // Centred on the lower half: its middle 20px (half the radius) below the ring's centre.
-    expect(ring).toMatchObject({ x: 160, y: 305, shown: true })
+    inRing(ring, 200, 300, 40)
   })
   it('writes it just below its ring when the pill leaves no room above', () => {
     const [ring] = placeLabels([ringAt(200, 100, 40)], { w: 400, h: 800, top: 60 }, [], 9, 8, 6)
@@ -309,7 +320,7 @@ describe('placeLabels: names sized to the art they belong to', () => {
     expect(beside).toMatchObject({ x: 242, y: 285, shown: true })
     // Every diagonal is free, but a caption there sits a corner's width off its ring: it goes inside instead.
     const [inside] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355), crest(280, 300), crest(120, 300)], frame, [], 9, 8, 6)
-    expect(inside).toMatchObject({ x: 160, y: 305, shown: true })
+    inRing(inside, 200, 300, 40)
   })
   it("never writes a night's name where it reads as another mark's: beside a bare art, the caption goes inside its ring", () => {
     // Art over the spots above, below and right of the ring. Left is free, 78..158 x 285..315, but a township's bare
@@ -317,7 +328,7 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const taken = [{ x0: 150, y0: 200, x1: 250, y1: 256 }, { x0: 150, y0: 344, x1: 250, y1: 400 }, { x0: 244, y0: 270, x1: 330, y1: 330 }]
     const township = { x0: 60, y0: 318, x1: 100, y1: 340 }
     const [inside] = placeLabels([ringAt(200, 300, 40)], frame, [...taken, township], 9, 8, 6)
-    expect(inside).toMatchObject({ x: 160, y: 305, shown: true })
+    inRing(inside, 200, 300, 40)
     // Further down, the ring is the nearer mark, and the left spot is the caption's own.
     const [left] = placeLabels([ringAt(200, 300, 40)], frame, [...taken, { ...township, y0: 345, y1: 367 }], 9, 8, 6)
     expect(left).toMatchObject({ x: 78, y: 285, shown: true })
@@ -630,5 +641,47 @@ describe('structure art footprints', () => {
     ])
     const [rise] = artFootprint({ x: 100, y: 100 }, 80, 2.0, false)
     expect(rise).toEqual({ x0: 80, y0: 60, x1: 120, y1: 140 })
+  })
+})
+
+describe("a night's name inside its ring on a phone", () => {
+  // The phone's ring is drawn at its 64px floor; its disc is 0.4 of that across each way (MapView's RING_DISC).
+  const r = markSize('ring', 476) * 0.4
+  const advances: Record<string, number> = caption.advances
+  const width = (text: string) => [...text].reduce((sum, ch) => sum + (advances[ch] ?? advances.W), 0)
+  const bosses = [...new Set(seedData.seeds.flatMap((seed) => seed.markers.filter((m) => m.layer === 'circle').map((m) => m.label.replace(/^Night \d: /, ''))))]
+
+  // As MapView measures it: "2 · Name" on one line, and on two lines broken between words where the longer is shortest.
+  const boxes = (boss: string) => {
+    const words = shortBossName(boss).split(' ')
+    const line = (from: number, to: number) => width(words.slice(from, to).join(' '))
+    const one = { w: caption.prefix + advances[' '] + line(0, words.length), h: caption.lineHeight }
+    let two = Infinity
+    for (let k = 0; k < words.length; k++) two = Math.min(two, Math.max(caption.prefix + (k ? advances[' '] + line(0, k) : 0), line(k, words.length)))
+    return { label: one, wrap: two < one.w ? { w: two, h: 2 * caption.lineHeight } : undefined }
+  }
+
+  it('fits every night boss in the data inside the disc: shrunk no smaller than 8px, else its number alone', () => {
+    const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
+    const disc = { x0: 200 - r, y0: 300 - r, x1: 200 + r, y1: 300 + r }
+    const digit = { w: caption.digit, h: caption.lineHeight }
+    expect(bosses.length).toBeGreaterThan(30)
+    for (const boss of bosses) {
+      const { label, wrap } = boxes(boss)
+      const request = { point: { x: 200, y: 300 }, label, wrap, rank: 0, keep: true, ring: true, box: disc, body: [{ ...disc, round: true }], gap: 2, mark: 0, minScale: 8 / caption.font, digit }
+      const [spot] = placeLabels([request], { w: 400, h: 800 }, [everywhere], 9, 8, 6)
+      const shown = spot.numberOnly ? digit : { w: (spot.wrapped ? wrap! : label).w * (spot.scale ?? 1), h: (spot.wrapped ? wrap! : label).h * (spot.scale ?? 1) }
+      expect(spot.shown, boss).toBe(true)
+      expect(spot.scale ?? 1, boss).toBeGreaterThanOrEqual(8 / caption.font)
+      // Centred on the disc, with its box's corners inside the circle: every line within the disc's chord.
+      expect(spot.x + shown.w / 2, boss).toBeCloseTo(200, 6)
+      expect(spot.y + shown.h / 2, boss).toBeCloseTo(300, 6)
+      expect(Math.hypot(shown.w / 2, shown.h / 2), boss).toBeLessThanOrEqual(r + 1e-9)
+    }
+  })
+  it('shrinks a caption only as far as it must, and gives up below the floor', () => {
+    expect(fitInDisc({ w: 30, h: 20 }, 25.6, 8 / 11)).toBe(1)
+    expect(fitInDisc({ w: 60, h: 30 }, 25.6, 8 / 11)).toBeCloseTo(25.6 / Math.hypot(30, 15), 9)
+    expect(fitInDisc({ w: 90, h: 30 }, 25.6, 8 / 11)).toBeNull()
   })
 })

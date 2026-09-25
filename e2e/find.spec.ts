@@ -324,6 +324,15 @@ test("the castle names its guard and at least one of its bosses at default zoom"
   await expect.poll(() => crestNames.evaluateAll((els) => els.filter((e) => getComputedStyle(e).opacity === '1').length)).toBeGreaterThanOrEqual(1)
 })
 
+// A night's name may shrink to its number alone inside its ring on a phone: a tap on the ring still names it in full.
+test("a tap on a night's ring calls out its full name", async ({ page }) => {
+  await page.goto('/seed/1003')
+  const ring = (await page.locator('.ring-mark .ring-2').boundingBox())!
+  await page.waitForTimeout(600)
+  await page.mouse.click(ring.x + ring.width / 2, ring.y + ring.height / 2)
+  await expect(page.locator('.marker-callout .map-name')).toHaveText('Night 2: Tree Sentinel')
+})
+
 test("a callout on a mark whose name shows hides that name while it is open, and its plate is opaque", async ({ page }) => {
   await page.goto('/seed/1003')
   const mark = page.locator('.marker-boss').filter({ hasText: "Night's Cavalry" })

@@ -361,7 +361,7 @@ export function MapView(props: MapContent & {
   // The mark whose name a tap called out, by its index in `tags`; a change of tags (a layer turned off) drops it.
   const [callout, setCallout] = useState<{ tags: TagSpec[]; at: number } | null>(null)
   const calloutAt = callout?.tags === tags ? callout.at : null
-  // Its text: a site's name, or a marker's own (a night's ring already writes its name, and a chest's icon says it all).
+  // Its text: a site's name, or a marker's own (a night's in full; a chest's icon says all its name would).
   const nameOf = (i: number) => (i < markerCount ? props.markers![i].label : namedPins[i - markerCount].name!)
   // The named mark nearest a tap, within reach of what it draws (a site's art, else a 44px target), or null.
   const nearestTag = (point: { x: number; y: number }, s: number): number | null => {
@@ -369,7 +369,7 @@ export function MapView(props: MapContent & {
     let best: number | null = null
     let least = Infinity
     tags.forEach((t, i) => {
-      if (t.mark === 'ring' || t.silent) return
+      if (t.silent) return
       const reach = ((t.mark === 'art' ? art : 22) / s) * 1000
       const distance = Math.hypot(t.x - point.x, t.y - point.y)
       if (distance <= reach && distance < least) { best = i; least = distance }
@@ -430,7 +430,8 @@ export function MapView(props: MapContent & {
       // other mark's art; no other name may enter the ring's disc: inside it, a site's name would read as the night's.
       if (t.mark === 'ring') {
         const disc = square(point, ring * RING_DISC)
-        return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2, wrap: boxes[i]?.wrap }
+        return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2, wrap: boxes[i]?.wrap,
+          minScale: MIN_FONT / (boxes[i]?.font ?? MIN_FONT), digit: boxes[i]?.digit }
       }
       // A name alone sits just beside its point, on whichever side is clear of the marks around it. On a phone the
       // castle guard's point lies right on top of the castle's crests, drawn at their floor size, so every spot round
@@ -563,6 +564,8 @@ export function MapView(props: MapContent & {
 // Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
+// The smallest a night's name may shrink to (px) to fit inside its ring; past it, only the night's number shows there.
+const MIN_FONT = 8
 // Distance from a mark to its called-out name.
 const CALLOUT_GAP = 4
 // A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
@@ -614,7 +617,12 @@ function RingName({ marker }: { marker: MapMarker }) {
   const boss = marker.label.replace(/^Night \d: /, '')
   return (
     <>
-      <span aria-hidden><span className={`ring-${marker.night}`}>{marker.night}</span> · {shortBossName(boss)}</span>
+      {/* Each word kept whole: a caption wraps only between words, never after a hyphen ("Demi-Human"). The rest
+          after the number hides when only the number fits inside the ring. */}
+      <span aria-hidden>
+        <span className={`ring-${marker.night}`}>{marker.night}</span>
+        <span className="ring-rest"> · {shortBossName(boss).split(' ').map((word, i) => <span key={i}>{i > 0 && ' '}<span className="ring-word">{word}</span></span>)}</span>
+      </span>
       <span className="sr-only">{marker.label}</span>
     </>
   )
@@ -651,7 +659,7 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   index: number
   at: { x: number; y: number }
   className: string
-  labels: MotionValue<{ x: number; y: number; shown: boolean; wrapped?: boolean }[]>
+  labels: MotionValue<{ x: number; y: number; shown: boolean; wrapped?: boolean; scale?: number; numberOnly?: boolean }[]>
   onMeasure: (index: number, box: NameBox) => void
   pinScale: MotionValue<number>
   text: ReactNode
@@ -667,12 +675,17 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   // A name with no free spot steps aside, leaving its mark; it comes back as zooming in makes room.
   // A night's name always shows while its ring is in sight (placeLabels).
   const labelOpacity = useTransform(spot, (o) => (o.shown ? 1 : 0))
+  // A night's name shrunk to fit inside its ring, from its top-left corner, where placement puts it.
+  const labelScale = useTransform(spot, (o) => o.scale ?? 1)
   // A name placed on its two-line wrap takes that narrower width and may break, a night's name included (measureName
   // keeps both widths).
   useEffect(() => spot.on('change', (o) => {
     const el = label.current
     if (!el) return
-    const width = o.wrapped ? el.dataset.wrap : el.dataset.w
+    // Only its number: the rest hides and the box is the number's own.
+    if (o.numberOnly) el.dataset.numberOnly = ''
+    else delete el.dataset.numberOnly
+    const width = o.numberOnly ? '' : o.wrapped ? el.dataset.wrap : el.dataset.w
     if (width !== undefined && el.style.width !== width) el.style.width = width
     el.style.whiteSpace = o.wrapped ? 'normal' : ''
   }), [spot])
@@ -685,14 +698,14 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
     <motion.span className={`marker ${className}`} style={{ left: `${at.x / 10}%`, top: `${at.y / 10}%`, scale: pinScale }}>
       {children}
       {text !== null && (
-        <motion.span ref={label} className="map-name" data-tag={index} aria-hidden={hidden || undefined} style={{ x: labelX, y: labelY, opacity: labelOpacity }}>{text}</motion.span>
+        <motion.span ref={label} className="map-name" data-tag={index} aria-hidden={hidden || undefined} style={{ x: labelX, y: labelY, opacity: labelOpacity, scale: labelScale, originX: 0, originY: 0 }}>{text}</motion.span>
       )}
     </motion.span>
   )
 }
 
 /** A name's box as placed, and `wrap`, its box on two lines as narrow as its words allow, when that is narrower. */
-interface NameBox { w: number; h: number; wrap?: { w: number; h: number } }
+interface NameBox { w: number; h: number; wrap?: { w: number; h: number }; font?: number; digit?: { w: number; h: number } }
 
 /**
  * A name's size as placed. A name that wraps is as wide as its longest line, not its max-width: the box is shrunk
@@ -702,6 +715,7 @@ interface NameBox { w: number; h: number; wrap?: { w: number; h: number } }
 function measureName(el: HTMLElement): NameBox {
   el.style.width = ''
   el.style.whiteSpace = ''
+  delete el.dataset.numberOnly
   // On screen the name may be scaled with the map mid-gesture: back to its own px.
   const scale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
   const w = textWidth(el, scale)
@@ -714,7 +728,10 @@ function measureName(el: HTMLElement): NameBox {
   const wrap = two && two.w < box.w ? two : undefined
   el.dataset.w = base
   el.dataset.wrap = wrap ? `${wrap.w}px` : base
-  return wrap ? { ...box, wrap } : box
+  // A night's name also keeps its font size and its number's box, in case it must shrink inside its ring.
+  const number = el.querySelector<HTMLElement>('.ring-1, .ring-2')
+  const ring = number ? { font: parseFloat(getComputedStyle(el).fontSize), digit: { w: number.offsetWidth, h: box.h } } : {}
+  return { ...box, ...(wrap && { wrap }), ...ring }
 }
 
 /** The width of the words themselves, in the name's own px. */
