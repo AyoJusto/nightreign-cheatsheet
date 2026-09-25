@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, playableBox } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, playableBox, artFootprint, ART_ASPECT } from './mapGeometry'
 import { catalog } from '../data/catalog'
+import { readdirSync } from 'node:fs'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
 const gh = catalog.slotsOf('great-hollow')
@@ -266,28 +267,59 @@ describe('placeLabels: names sized to the art they belong to', () => {
     expect(b.shown).toBe(true)
     expect(intersects(rectOf(b), { x0: 170, y0: 300, x1: 230, y1: 360 })).toBe(false)
   })
-  it('centres a night name on its ring and shows it even over art', () => {
+  // A night's ring as MapView asks for it: its disc (a circle, `round`) is its box and its body.
+  const ringAt = (x: number, y: number, r: number) => {
+    const disc = { x0: x - r, y0: y - r, x1: x + r, y1: y + r }
+    return { point: { x, y }, label, rank: 0, keep: true, ring: true, box: disc, body: [{ ...disc, round: true }], gap: 2, mark: 0 }
+  }
+  it("writes a night's name centred just above its ring, on phone and desktop alike, even over art", () => {
     const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
-    const [ring] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 0, keep: true, center: true }], frame, [everywhere], 9, 8, 6)
-    expect(ring).toMatchObject({ x: 160, y: 285, shown: true })
+    const [ring] = placeLabels([ringAt(200, 300, 40)], frame, [everywhere], 9, 8, 6)
+    expect(ring).toMatchObject({ x: 160, y: 228, shown: true })
   })
-  it('a centred name that is not kept hides when something is under it', () => {
-    const pin = { x0: 190, y0: 290, x1: 210, y1: 310 }
-    const [guard] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 1, keep: false, center: true }], frame, [pin], 9, 8, 6)
-    expect(guard.shown).toBe(false)
+  it('writes it just below its ring when the pill leaves no room above', () => {
+    const [ring] = placeLabels([ringAt(200, 100, 40)], { w: 400, h: 800, top: 60 }, [], 9, 8, 6)
+    expect(ring).toMatchObject({ x: 160, y: 142, shown: true })
   })
-  it("may lie over the edge of another site's art, as the game's names do, but not across it", () => {
+  it("keeps every other name off a ring's disc, so no site's name reads as the night's", () => {
+    // A site in the ring: its name would go just under its art, inside the disc. Only outside the disc will do.
+    const site = { point: { x: 200, y: 300 }, label, rank: 2, keep: false, gap: 12, mark: 10 }
+    const [, name] = placeLabels([ringAt(200, 300, 40), site], frame, [], 9, 8, 6)
+    // Its mark sits mid-disc: every spot beside it lies inside the disc, so it hides.
+    expect(name.shown).toBe(false)
+    // A name beside the ring still shows, clear of the disc (the nearest point of its box is 40 or more away).
+    const [, beside] = placeLabels([ringAt(200, 300, 40), { point: { x: 250, y: 300 }, label, rank: 3, keep: false }], frame, [], 9, 8, 6)
+    expect(beside.shown).toBe(true)
+    const nearestX = Math.max(beside.x, Math.min(200, beside.x + label.w))
+    const nearestY = Math.max(beside.y, Math.min(300, beside.y + label.h))
+    expect(Math.hypot(nearestX - 200, nearestY - 300)).toBeGreaterThanOrEqual(40)
+  })
+  it("never lies over another mark's art, not even its edge: the name moves, or hides", () => {
     const point = { x: 200, y: 300 }
-    // Art above blocks the upper spots, and two sites' art below either side clips a corner of "below" (the
-    // least covered spot); its centre is still nearer its own point than either site's art.
-    const edge = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
-    const clipped = [edge(0, 0, 400, 290), edge(108, 315, 168, 375), edge(232, 315, 292, 375)]
-    const [name] = placeLabels([{ point, label, rank: 3, keep: false }], frame, clipped, 9, 8, 6)
-    expect(name.shown).toBe(true)
-    // Art across most of every spot hides it instead.
-    const covered = [edge(0, 0, 400, 290), edge(0, 312, 400, 800), edge(0, 0, 190, 800), edge(210, 0, 400, 800)]
-    const [hidden] = placeLabels([{ point, label, rank: 3, keep: false }], frame, covered, 9, 8, 6)
+    // A pill down to y 290 leaves only the spots below the point. Two sites' art either side reaches 4px into
+    // "below" and across one lower diagonal each: every spot touches art, so the name hides.
+    const band = { w: 400, h: 800, top: 290 }
+    const left = { x0: 104, y0: 309, x1: 164, y1: 369 }
+    const right = { x0: 236, y0: 309, x1: 296, y1: 369 }
+    const [hidden] = placeLabels([{ point, label, rank: 3, keep: false }], band, [left, right], 9, 8, 6)
     expect(hidden.shown).toBe(false)
+    // Without the art on the left, the lower-left diagonal is free, and the name goes there.
+    const [moved] = placeLabels([{ point, label, rank: 3, keep: false }], band, [right], 9, 8, 6)
+    expect(moved.shown).toBe(true)
+    expect(moved.x).toBeCloseTo(113.7, 6)
+    expect(moved.y).toBeCloseTo(306.3, 6)
+  })
+  it("lies over the edge of its own art, hugging the art's real footprint rather than a square", () => {
+    // A low, wide sprite (a township): 80 wide but only 36 tall, so its name tucks just under the sprite, 2px into it.
+    const own = { x0: 160, y0: 282, x1: 240, y1: 318 }
+    const [name] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 2, keep: false, box: own, body: [own], gap: -2 }], frame, [], 9, 8, 6)
+    expect(name).toMatchObject({ x: 160, y: 316, shown: true })
+  })
+  it('tries all eight spots round its mark before giving up: with below, above and both sides taken, a diagonal', () => {
+    const block = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
+    // Names placed before fill the four straight spots, leaving the diagonals free.
+    const taken = [block(195, 315, 205, 335), block(195, 265, 205, 285), block(215, 295, 235, 305), block(165, 295, 185, 305)]
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, taken, 9, 8, 6)).toEqual({ x: 206.3, y: 306.3, clear: true, own: true })
   })
   it('never lets a name lie over another name, even a little, on a crowded map', () => {
     // A fixed pseudo-random crowd of 80 marks among 40 art boxes, as on a busy phone map.
@@ -315,10 +347,10 @@ describe('placeLabels: names sized to the art they belong to', () => {
 })
 
 describe('what gets named first when room is short', () => {
-  it('orders night rings, the castle, site names, field bosses, evergaols, then chests and the rest', () => {
-    const kinds = ['other', 'chest', 'evergaol', 'boss', 'site', 'castle', 'night'] as const
+  it('orders night rings, the castle, site names, field bosses, evergaols, repeated site names, then chests and the rest', () => {
+    const kinds = ['other', 'chest', 'repeat', 'evergaol', 'boss', 'site', 'castle', 'night'] as const
     const sorted = [...kinds].sort((a, b) => labelRank(a) - labelRank(b))
-    expect(sorted).toEqual(['night', 'castle', 'site', 'boss', 'evergaol', 'chest', 'other'])
+    expect(sorted).toEqual(['night', 'castle', 'site', 'boss', 'evergaol', 'repeat', 'chest', 'other'])
   })
 })
 
@@ -420,5 +452,26 @@ describe('night boss names on the ring', () => {
     // Names already written short keep both halves.
     expect(shortBossName('DBW & Curseblade')).toBe('DBW & Curseblade')
     expect(shortBossName('Tree Sentinel')).toBe('Tree Sentinel')
+  })
+})
+
+describe('structure art footprints', () => {
+  it("knows how much of its square box each kind's sprite fills, as the shipped art is drawn", async () => {
+    const sharp = (await import('sharp')).default
+    const kinds = readdirSync('public/structures').map((f) => f.replace('.webp', ''))
+    expect(Object.keys(ART_ASPECT).sort()).toEqual(kinds.sort())
+    for (const kind of kinds) {
+      const { width, height } = await sharp(`public/structures/${kind}.webp`).metadata()
+      expect(ART_ASPECT[kind], kind).toBeCloseTo(height! / width!, 1)
+    }
+  })
+  it('sizes a low sprite by its width and a tall one by its height, with the badge in the box corner', () => {
+    // A township (0.44) and a sorcerer's rise (2.06), each drawn in an 80px box about (100, 100).
+    expect(artFootprint({ x: 100, y: 100 }, 80, 0.44, true)).toEqual([
+      { x0: 60, y0: 82.4, x1: 140, y1: 117.6 },
+      { x0: 108, y0: 108, x1: 140, y1: 140 },
+    ])
+    const [rise] = artFootprint({ x: 100, y: 100 }, 80, 2.0, false)
+    expect(rise).toEqual({ x0: 80, y0: 60, x1: 120, y1: 140 })
   })
 })

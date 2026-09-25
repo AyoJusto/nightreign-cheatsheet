@@ -1,13 +1,13 @@
 import { useRef, useEffect, useLayoutEffect, useMemo, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
-import { type EarthId, type SlotId, type StructureKey } from '../domain/names'
+import { splitStructure, type EarthId, type SlotId, type StructureKey } from '../domain/names'
 import type { Marker } from '../domain/seed'
 import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
-import { isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
+import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, playableBox, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
 import './map.css'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
@@ -337,10 +337,17 @@ export function MapView(props: MapContent & {
 
   // Every name on the map, placed in one pass so names avoid each other and every mark, in labelRank order.
   // Screen px equal a label's own px: tags counter-scale the map's zoom.
-  const tags = useMemo<TagSpec[]>(() => [
-    ...(props.markers ?? []).map(tagOf),
-    ...props.pins.flatMap((p): TagSpec[] => (p.name && p.structure ? [{ x: p.x, y: p.y, kind: 'site', mark: 'art' }] : [])),
-  ], [props.markers, props.pins])
+  const tags = useMemo<TagSpec[]>(() => {
+    // A site's name already written at another site ranks below the evergaols (labelRank).
+    const seen = new Set<string>()
+    const sites = props.pins.flatMap((p): TagSpec[] => {
+      if (!p.name || !p.structure) return []
+      const kind = seen.has(p.name) ? 'repeat' : 'site'
+      seen.add(p.name)
+      return [{ x: p.x, y: p.y, kind, mark: 'art', structure: p.structure }]
+    })
+    return [...(props.markers ?? []).map(tagOf), ...sites]
+  }, [props.markers, props.pins])
   const labelBoxes = useMotionValue<{ w: number; h: number }[]>([])
   const labelSizes = useRef<{ w: number; h: number }[]>([])
   const measured = (i: number, box: { w: number; h: number }) => { labelSizes.current[i] = box }
@@ -352,7 +359,7 @@ export function MapView(props: MapContent & {
     if (!set) return
     const remeasure = () => {
       frame.current?.querySelectorAll<HTMLElement>('[data-tag]').forEach((el) => {
-        labelSizes.current[Number(el.dataset.tag)] = { w: el.offsetWidth, h: el.offsetHeight }
+        labelSizes.current[Number(el.dataset.tag)] = measureName(el)
       })
       labelBoxes.set(labelBoxes.get().map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 }))
     }
@@ -367,32 +374,43 @@ export function MapView(props: MapContent & {
     const art = markSize('art', s)
     const icon = markSize('icon', s)
     const orb = orbSize(s, spacing)
-    // A structure's art box, less its transparent margin: most game sprites are wider than tall.
-    const artMark = art * ART_BODY
-    // Pins with a name are placed as marks with a label (the tags); the rest only block.
-    const pinRects = props.pins.filter((p) => !(p.name && p.structure)).map((p) => {
+    const ring = markSize('ring', s)
+    const square = (c: { x: number; y: number }, r: number) => ({ x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r })
+    // What a structure's art covers: its sprite and its element badge, not its whole square box.
+    const artOf = (c: { x: number; y: number }, structure: StructureKey) => {
+      const { kind, element } = splitStructure(structure)
+      return artFootprint(c, art, ART_ASPECT[kind] ?? 1, element !== null)
+    }
+    // Pins with a name are placed as marks with a label (the tags); the rest only block: their art, an orb's glow,
+    // or the player's marker (crest-sized).
+    const pinRects = props.pins.filter((p) => !(p.name && p.structure)).flatMap((p) => {
       const c = toScreen(p.x, p.y)
-      const r = p.structure ? artMark : p.state === 'spawn' ? icon / 2 : orb / 2
-      return { x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r }
+      if (p.structure) return artOf(c, p.structure)
+      return [square(c, p.state === 'spawn' ? icon / 2 : orb / 2)]
     })
     const boxes = labelBoxes.get()
-    const ring = markSize('ring', s)
     const points = tags.map((t) => toScreen(t.x, t.y))
     const requests: LabelRequest[] = tags.map((t, i) => {
       const point = points[i]
       const label = t.silent ? { w: 0, h: 0 } : boxes[i] ?? { w: 0, h: 0 }
       const rank = labelRank(t.kind)
-      // A night's name goes inside its ring when it fits there (desktop), and beside the ring otherwise, on
-      // whichever side is clear (a phone's ring is smaller than its name).
+      // A night's name sits centred just above its ring (below it where the pill leaves no room), and no other name
+      // may enter the ring's disc: inside it, a site's name would read as the night's.
       if (t.mark === 'ring') {
-        if (label.w <= ring * RING_TEXT) return { point, label, rank, keep: true, center: true, mark: 0 }
-        return { point, label, rank, keep: true, mark: 0, gap: ring * 0.42 }
+        const disc = square(point, ring * RING_DISC)
+        return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2 }
       }
       // A name alone sits just beside its point, on whichever side is clear of the marks around it (the castle's
       // guard goes above its two crests).
       if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2 }
-      if (t.mark === 'art') return { point, label, rank, keep: false, mark: artMark, gap: art * ART_LABEL_GAP }
-      return { point, label, rank, keep: false, mark: icon * 0.45, gap: icon / 2 + 2 }
+      // A site's name hugs its sprite, over the art's own edge.
+      if (t.mark === 'art') {
+        const body = artOf(point, t.structure!)
+        const box = body.reduce((u, r) => ({ x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) }))
+        return { point, label, rank, keep: false, mark: 0, box, body, gap: -art * ART_TUCK }
+      }
+      const r = icon * (t.kind === 'evergaol' ? EVERGAOL_BODY : ICON_BODY)
+      return { point, label, rank, keep: false, mark: r, box: square(point, r), gap: 1 }
     })
     // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
     // so no label is sliced by the sheet or drawn under the pill's controls.
@@ -488,13 +506,15 @@ export function MapView(props: MapContent & {
 // Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
-// The part of a structure's art box that holds the sprite (a half-size, as a share of the box), and where its
-// name starts below the point: under the art's whole box, so its glow never clips the element badge in the
-// box's lower-right corner.
-const ART_BODY = 0.4
-const ART_LABEL_GAP = 0.5
-// How wide a night's name may be, as a share of its ring's size, and still be written inside it (across the glow).
-const RING_TEXT = 1.2
+// A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
+// name enters it.
+const RING_DISC = 0.4
+// How far a site's name tucks over the edge of its own sprite, as a share of the art: close enough to read as
+// its name, clear of the neighbours' art.
+const ART_TUCK = 0.17
+// Half a crest's drawn size, as a share of its icon box; an evergaol is drawn smaller (map.css).
+const ICON_BODY = 0.45
+const EVERGAOL_BODY = 0.39
 // The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
 const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
   open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
@@ -502,7 +522,7 @@ const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string
 }
 
 /** How a tag is drawn and ranked: its mark on the point and what its name belongs to. */
-interface TagSpec { x: number; y: number; kind: NameKind; mark: 'art' | 'icon' | 'ring' | 'none'; silent?: boolean }
+interface TagSpec { x: number; y: number; kind: NameKind; mark: 'art' | 'icon' | 'ring' | 'none'; silent?: boolean; structure?: StructureKey }
 function tagOf(m: MapMarker): TagSpec {
   const at = { x: m.x, y: m.y }
   if (m.layer === 'circle') return { ...at, kind: 'night', mark: 'ring' }
@@ -591,7 +611,7 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   // Reported to MapView, which publishes every size at once after its placement pass has subscribed.
   useLayoutEffect(() => {
     const el = label.current
-    onMeasure(index, el ? { w: el.offsetWidth, h: el.offsetHeight } : { w: 0, h: 0 })
+    onMeasure(index, el ? measureName(el) : { w: 0, h: 0 })
   }, [textKey, index])
   return (
     <motion.span className={`marker ${className}`} style={{ left: `${at.x / 10}%`, top: `${at.y / 10}%`, scale: pinScale }}>
@@ -601,4 +621,19 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
       )}
     </motion.span>
   )
+}
+
+/**
+ * A name's size as placed. A name that wraps is as wide as its longest line, not its max-width: the box is shrunk
+ * to that line (the same breaks still fit), so its neighbours may come as close as the words themselves.
+ */
+function measureName(el: HTMLElement): { w: number; h: number } {
+  el.style.width = ''
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  // On screen the name may be scaled with the map mid-gesture: back to its own px.
+  const scale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
+  const w = Math.ceil(range.getBoundingClientRect().width / scale)
+  if (w > 0 && w < el.offsetWidth) el.style.width = `${w}px`
+  return { w: el.offsetWidth, h: el.offsetHeight }
 }

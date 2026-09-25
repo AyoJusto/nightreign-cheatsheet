@@ -66,14 +66,15 @@
    dotted with heavy discs. */
 .marker-evergaol .marker-icon { width: 28px; height: 28px; opacity: 0.75; }
 
-/* A name as the game's map writes it: bone text straight on the map, with a stacked dark glow and no box. */
+/* A name as the game's map writes it: bone text straight on the map, with a stacked dark glow and no box. On a
+   phone, 11px (the floor), a long name in two balanced lines: MapView shrinks the box to its longest line. */
 .map-name {
-  position: absolute; top: 0; left: 0; width: max-content; max-width: 88px;
-  font: 600 12px/14px var(--font); letter-spacing: 0; text-align: center; color: var(--bone);
+  position: absolute; top: 0; left: 0; width: max-content; max-width: 82px; text-wrap: balance;
+  font: 600 11px/13px var(--font); letter-spacing: 0; text-align: center; color: var(--bone);
   text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 @media (min-width: 900px) { .map-name { font-size: 13px; line-height: 15px; max-width: 124px; } }
-/* A night's boss across its ring, in the game's face; the night's number in the ring's colour. */
+/* A night's boss above its ring, in the game's face; the night's number in the ring's colour. */
 .marker-circle .map-name {
   font-family: var(--font-display); font-weight: 700; max-width: 112px; letter-spacing: 0.02em;
   text-shadow: 0 0 2px #000, 0 0 3px #000, 0 0 6px #000, 0 1px 4px rgba(0, 0, 0, 0.9);

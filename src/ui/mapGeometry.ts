@@ -57,21 +57,26 @@ export function rubberband(v: number, min: number, max: number, dimension: numbe
 }
 
 export interface Rect { x0: number; y0: number; x1: number; y1: number }
-/** An obstacle; `weight` scales how much covering it counts when no spot is free (default 1). */
-export type Obstacle = Rect & { weight?: number }
+/**
+ * An obstacle; `weight` scales how much covering it counts when no spot is free (default 1). A `round` one is the
+ * circle inscribed in its box (a night's ring): a label's box touches it only where it reaches inside the circle.
+ */
+export type Obstacle = Rect & { weight?: number; round?: boolean }
 
 /**
- * Where a label goes around a point, as its top-left corner in frame px: below, above, right or left of
- * the point, then the four diagonals, kept `edge` px inside the frame. The frame's visible band runs from
- * `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph (`mark` px
- * around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
- * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first
- * that covers none of `obstacles` wins; if every one covers something, the one covering the least area
- * (each obstacle's area scaled by its weight), with `clear: false`.
- * A spot must also read as this point's name: the frame's edge may not push it more than DRIFT px from where it
- * belongs, and its centre may not lie nearer any of `others` (the other marks' boxes) than its own mark (`mark` px
- * around the point): measured to the boxes, so a large site's name just under its art still counts as its own. When no
- * spot qualifies the best of the rest is returned with `own: false`; only a name that must show uses it.
+ * Where a label goes around a mark, as its top-left corner in frame px: below, above, right or left of the mark,
+ * then the four diagonals, `gap` px off the mark's `box` (by default the point itself, so `gap` is from the point),
+ * kept `edge` px inside the frame. A negative gap tucks the label over the edge of its own art. A `ring`'s name has
+ * two spots only, centred above its ring and then below it, so every night's name sits the same way. The frame's
+ * visible band runs from `top` (what covers the top of the screen, such as a pill) down to `h`. The point's own glyph
+ * (`mark` px around it) is never covered: near an edge, keeping a spot inside the frame can push it back over the
+ * point, so spots are judged after that clamp, and one over the point is dropped. Of the rest, the first that covers
+ * none of `obstacles` wins; if every one covers something, the one covering the least area (each obstacle's area
+ * scaled by its weight), with `clear: false`.
+ * A spot must also read as this mark's name: the frame's edge may not push it more than DRIFT px from where it
+ * belongs, and its centre may not lie nearer any of `others` (the other marks' boxes) than its own mark (its `box`,
+ * or `mark` px around the point): measured to the boxes, so a large site's name just under its art still counts as its
+ * own. When no spot qualifies the best of the rest is returned with `own: false`; only a name that must show uses it.
  */
 export function placeLabel(
   point: { x: number; y: number },
@@ -81,42 +86,48 @@ export function placeLabel(
   gap: number,
   edge: number,
   mark = 0,
-  center = false,
+  ring = false,
   others: readonly Rect[] = [],
+  box?: Rect,
 ): { x: number; y: number; clear: boolean; own: boolean } {
   const top = frame.top ?? 0
   const keepIn = (v: number, size: number, start: number, end: number) => Math.max(start + edge, Math.min(end - edge - size, v))
-  const overlap = (s: { x: number; y: number }, o: Obstacle) => {
-    const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
-    const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
-    return w > 0 && h > 0 ? w * h * (o.weight ?? 1) : 0
-  }
-  // Whether a spot, before and after the frame clamp, still reads as this point's name.
+  const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
+  const mine = box ?? glyph
+  // Whether a spot, before and after the frame clamp, still reads as this mark's name.
   const belongs = (raw: { x: number; y: number }, s: { x: number; y: number }) => {
     if (Math.abs(s.x - raw.x) > DRIFT || Math.abs(s.y - raw.y) > DRIFT) return false
     const cx = s.x + label.w / 2
     const cy = s.y + label.h / 2
-    const own = distanceTo({ x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }, cx, cy)
+    const own = distanceTo(mine, cx, cy)
     return others.every((o) => distanceTo(o, cx, cy) >= own)
   }
-  // A name written across its own mark (a night's ring) has one spot, on the point, kept inside the frame.
-  if (center) {
-    const raw = { x: point.x - label.w / 2, y: point.y - label.h / 2 }
-    const spot = { x: keepIn(raw.x, label.w, 0, frame.w), y: keepIn(raw.y, label.h, top, frame.h) }
-    return { ...spot, clear: obstacles.every((o) => overlap(spot, o) === 0), own: belongs(raw, spot) }
-  }
-  const raws = [
-    { x: point.x - label.w / 2, y: point.y + gap },
-    { x: point.x - label.w / 2, y: point.y - gap - label.h },
-    { x: point.x + gap, y: point.y - label.h / 2 },
-    { x: point.x - gap - label.w, y: point.y - label.h / 2 },
-    { x: point.x + gap * 0.7, y: point.y + gap * 0.7 },
-    { x: point.x - gap * 0.7 - label.w, y: point.y + gap * 0.7 },
-    { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
-    { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
-  ]
+  const around = box ?? { x0: point.x, y0: point.y, x1: point.x, y1: point.y }
+  const cx = (around.x0 + around.x1) / 2
+  const cy = (around.y0 + around.y1) / 2
+  const g7 = gap * 0.7
+  const raws = ring
+    ? [{ x: cx - label.w / 2, y: around.y0 - gap - label.h }, { x: cx - label.w / 2, y: around.y1 + gap }]
+    : [
+      { x: cx - label.w / 2, y: around.y1 + gap },
+      { x: cx - label.w / 2, y: around.y0 - gap - label.h },
+      { x: around.x1 + gap, y: cy - label.h / 2 },
+      { x: around.x0 - gap - label.w, y: cy - label.h / 2 },
+      { x: around.x1 + g7, y: around.y1 + g7 },
+      { x: around.x0 - g7 - label.w, y: around.y1 + g7 },
+      { x: around.x1 + g7, y: around.y0 - g7 - label.h },
+      { x: around.x0 - g7 - label.w, y: around.y0 - g7 - label.h },
+      // Each side again, slid along it to line up with one end of the mark.
+      { x: around.x1 - label.w, y: around.y1 + gap },
+      { x: around.x0, y: around.y1 + gap },
+      { x: around.x1 - label.w, y: around.y0 - gap - label.h },
+      { x: around.x0, y: around.y0 - gap - label.h },
+      { x: around.x1 + gap, y: around.y1 - label.h },
+      { x: around.x1 + gap, y: around.y0 },
+      { x: around.x0 - gap - label.w, y: around.y1 - label.h },
+      { x: around.x0 - gap - label.w, y: around.y0 },
+    ]
   const spots = raws.map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
-  const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
   const overPoint = (s: { x: number; y: number }) =>
     s.x <= glyph.x1 && s.x + label.w >= glyph.x0 && s.y <= glyph.y1 && s.y + label.h >= glyph.y0
   const clearOfPoint = spots.filter((s) => !overPoint(s))
@@ -128,7 +139,8 @@ export function placeLabel(
   let best = candidates[0]
   let least = Infinity
   for (const spot of candidates) {
-    const area = obstacles.reduce((sum, o) => sum + overlap(spot, o), 0)
+    const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
+    const area = obstacles.reduce((sum, o) => sum + covers(rect, o) * (o.weight ?? 1), 0)
     if (area === 0) return { ...spot, clear: true, own }
     if (area < least) { least = area; best = spot }
   }
@@ -145,17 +157,20 @@ const DRIFT = 4
 const MARKER_WEIGHT = 15
 // A label placed before is never covered, so spots over one cost far more than any mark's.
 const LABEL_WEIGHT = 1000
-// A name may lie over the edge of another mark, as the game's own names do, as long as it leaves most of that
-// mark in sight (at most this share of the mark covered) and most of the name on clear ground (at most this
-// share of the name over marks).
-const SOFT_MARK = 0.3
-const SOFT_NAME = 0.25
+// The space (px) kept between two names side by side (1px above and below).
+const LABEL_PAD = 3
 const overlapArea = (a: Rect, b: Rect) => {
   const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)
   const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0)
   return w > 0 && h > 0 ? w * h : 0
 }
-const areaOf = (r: Rect) => (r.x1 - r.x0) * (r.y1 - r.y0)
+/** How much of `o` the box `a` covers (px²); a round obstacle counts only when the box reaches inside its circle. */
+function covers(a: Rect, o: Obstacle): number {
+  const area = overlapArea(a, o)
+  if (!area || !o.round) return area
+  const r = (o.x1 - o.x0) / 2
+  return distanceTo(a, o.x0 + r, o.y0 + r) < r ? area : 0
+}
 
 export interface LabelRequest {
   point: { x: number; y: number }
@@ -164,21 +179,25 @@ export interface LabelRequest {
   rank: number
   /** Shown even with no free spot (a night's ring name); every other label then hides, leaving its glyph. */
   keep: boolean
-  /** Distance from the point to the label, when its mark is larger than a glyph (a structure's art). */
+  /** Distance from the mark (its `box`, or the point) to the label; negative lies over the edge of its own art. */
   gap?: number
   /** Half the size of the mark on the point, which no label covers, when it is not the default glyph. */
   mark?: number
-  /** Written across the point (a night's ring, the castle's guard) instead of beside it. */
-  center?: boolean
+  /** A night's ring: its name goes centred above the ring, or below it. */
+  ring?: boolean
+  /** The mark's footprint (a structure's sprite and badge): its name goes around it, and it is the mark's own. */
+  box?: Rect
+  /** What the mark draws, which no other name may touch; by default its glyph (`mark` px around the point). */
+  body?: Obstacle[]
 }
 
 /**
- * Places every marker's label so none covers a label placed before it (in `rank` order) and none hides a pin or
- * any marker's glyph (`mark` px around each point): it may lie over a mark's edge, never across it (SOFT_MARK,
- * SOFT_NAME). A label is shown only when its glyph lies inside the visible band and it found such a spot (or is
- * `keep`); a shown label becomes an obstacle for the ones after it. `blocked` are screen areas drawn over the map
- * (the Nightlord's medallion and its card): no label crosses one, a kept one included, and a glyph under one gets
- * no label, since nobody can see the mark it would name.
+ * Places every marker's label so none covers a label placed before it (in `rank` order), and none touches any other
+ * mark's drawn body (its art and badge, a crest, a ring's disc) or a pin: a name may lie over terrain and the edge of
+ * its own art, nothing else. A label is shown only when its glyph lies inside the visible band and it found such a
+ * spot that reads as its own mark's name (or it is `keep`); a shown label becomes an obstacle for the ones after it.
+ * `blocked` are screen areas drawn over the map (the Nightlord's medallion and its card): no label crosses one, a
+ * kept one included, and a glyph under one gets no label, since nobody can see the mark it would name.
  * Returns one result per request, in input order, with the label's top-left corner in frame px.
  */
 export function placeLabels(
@@ -191,12 +210,13 @@ export function placeLabels(
   blocked: readonly Rect[] = [],
 ): { x: number; y: number; shown: boolean }[] {
   const top = frame.top ?? 0
-  // A glyph is tiny but covering it hides a whole marker, and text over text is unreadable: when a kept label
-  // has no free spot, covering either costs about as much as covering a whole pin, so a pin's edge loses first.
+  // Covering a mark hides what it marks, and text over text is unreadable: when a kept label has no free spot,
+  // covering either costs about as much as covering a whole pin, so a pin's edge loses first.
   const markOf = (r: LabelRequest) => r.mark ?? mark
-  const glyphs = requests.map((r) => {
+  const bodies = requests.map((r): Obstacle[] => {
+    if (r.body) return r.body.map((b) => ({ ...b, weight: MARKER_WEIGHT }))
     const m = markOf(r)
-    return { x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }
+    return [{ x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }]
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
   const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: LABEL_WEIGHT }))
@@ -205,27 +225,26 @@ export function placeLabels(
     const request = requests[i]
     const { point, label, keep } = request
     const m = markOf(request)
-    const marks = [...pins, ...glyphs.filter((_, j) => j !== i)]
-    // A name must sit nearer its own mark than any other mark (pins and the other requests' glyphs).
-    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.center, marks)
+    // Every other mark's body is in the way. A ring's disc is too, but no name reads as a ring's (the night's own
+    // name is in the game's face), so it does not count when judging whose name a spot reads as.
+    const marks: Obstacle[] = [...pins]
+    const nearest: Rect[] = [...pins]
+    bodies.forEach((body, j) => {
+      if (j === i) return
+      marks.push(...body)
+      if (!requests[j].ring) nearest.push(...body)
+    })
+    // A night's name is in the game's face, told apart from every other name: whose it is needs no nearness test.
+    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.ring, request.ring ? [] : nearest, request.box)
     const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
-    const soft = () => {
-      if (placed.some((o) => overlapArea(rect, o) > 0)) return false
-      let covered = 0
-      for (const o of marks) {
-        const a = overlapArea(rect, o)
-        if (a > SOFT_MARK * areaOf(o)) return false
-        covered += a
-      }
-      return covered <= SOFT_NAME * areaOf(rect)
-    }
     // A glyph partly under the pill or the sheet, or past a side of the screen, has no place for its label:
     // clamped into the band, it would float away from its glyph.
     const inBand = point.y - m >= top && point.y + m <= frame.h && point.x - m >= 0 && point.x + m <= frame.w
     const underBlock = blocked.some((b) => point.x > b.x0 && point.x < b.x1 && point.y > b.y0 && point.y < b.y1)
     const acrossBlock = blocked.some((b) => overlapArea(rect, b) > 0)
-    const shown = inBand && !underBlock && !acrossBlock && (keep || (spot.own && (spot.clear || soft())))
-    if (shown) placed.push({ ...rect, weight: LABEL_WEIGHT })
+    const shown = inBand && !underBlock && !acrossBlock && (keep || (spot.own && spot.clear))
+    // Kept a little apart from the next name, so two names side by side never run together into one.
+    if (shown) placed.push({ x0: rect.x0 - LABEL_PAD, y0: rect.y0 - 1, x1: rect.x1 + LABEL_PAD, y1: rect.y1 + 1, weight: LABEL_WEIGHT })
     results[i] = { x: spot.x, y: spot.y, shown }
   }
   return results
@@ -255,12 +274,13 @@ export function isTrackpadScroll(e: { deltaX: number; deltaY: number; deltaMode:
   return e.deltaMode === 0 && fractional && Math.abs(e.deltaY) < TRACKPAD_MAX_DELTA
 }
 
-/** What a name on the map belongs to; see labelRank. */
-export type NameKind = 'night' | 'castle' | 'site' | 'boss' | 'evergaol' | 'chest' | 'other'
-const NAME_ORDER: readonly NameKind[] = ['night', 'castle', 'site', 'boss', 'evergaol', 'chest', 'other']
+/** What a name on the map belongs to; see labelRank. `repeat` is a site's name already written at another site. */
+export type NameKind = 'night' | 'castle' | 'site' | 'boss' | 'evergaol' | 'repeat' | 'chest' | 'other'
+const NAME_ORDER: readonly NameKind[] = ['night', 'castle', 'site', 'boss', 'evergaol', 'repeat', 'chest', 'other']
 /**
  * Which names get first pick of the free room: the nights' bosses, then the castle's, then what is inside each
- * site, then field bosses, evergaols and chests. A name placed later yields to every one placed before it.
+ * site, then field bosses and evergaols, then a site's name the map already shows elsewhere (the fifth Spider
+ * Scorpions tells less than an evergaol's boss), then chests. A name placed later yields to every one placed before it.
  */
 export const labelRank = (kind: NameKind) => NAME_ORDER.indexOf(kind)
 
@@ -300,6 +320,30 @@ export function minSpacing(points: readonly { x: number; y: number }[]): number 
     for (let j = i + 1; j < points.length; j++) least = Math.min(least, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y))
   }
   return least
+}
+
+/**
+ * Each kind's sprite, height over width (public/structures, drawn to fit a square box): how much of the box it
+ * really fills, so map names can sit close under a low township and beside a tall rise.
+ */
+export const ART_ASPECT: Record<string, number> = {
+  'blacksmith-village': 0.58, church: 1.36, 'eastern-underground-fort': 0.66, fort: 0.77, 'great-church': 0.9,
+  'main-encampment': 0.62, marsh: 0.86, 'ruined-rise': 1.87, ruins: 0.56, 'scale-bearing-merchant': 1.22,
+  'sorcerers-rise': 2.06, township: 0.44, 'western-underground-fort': 0.68,
+}
+
+/**
+ * What a structure's art really covers on screen, drawn `size` px square about `at`: its sprite (`aspect` is height
+ * over width, fitted inside the square), and the element badge in the square's lower-right corner, 0.4 of its size.
+ */
+export function artFootprint(at: { x: number; y: number }, size: number, aspect: number, badge: boolean): Rect[] {
+  const w = size * Math.min(1, 1 / aspect)
+  const h = size * Math.min(1, aspect)
+  const sprite = { x0: at.x - w / 2, y0: at.y - h / 2, x1: at.x + w / 2, y1: at.y + h / 2 }
+  if (!badge) return [sprite]
+  const corner = size / 2
+  const b = size * 0.4
+  return [sprite, { x0: at.x + corner - b, y0: at.y + corner - b, x1: at.x + corner, y1: at.y + corner }]
 }
 
 /** A night boss as its ring names it: the lead of a named pair ("Tree Sentinel and Royal Cavalrymen"). */
