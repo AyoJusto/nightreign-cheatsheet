@@ -201,8 +201,9 @@ describe('placeLabels: markers never cover each other', () => {
     expect(intersects(rectOf(a), rectOf(b))).toBe(false)
   })
   it('places circles first, then bosses, then the rest, whatever the input order', () => {
-    // Same point pair, reversed ranks: the higher-priority marker keeps its first choice (below).
-    const [chest, circle] = placeLabels([at(200, 300, 2), at(240, 300, 0, true)], frame, [], 9, 8, 6)
+    // Reversed ranks, both wanting the same room below: the higher-priority marker keeps its first choice (below).
+    // The chest stands a little higher, so the circle's name below does not run under it (it would read as its name).
+    const [chest, circle] = placeLabels([at(200, 280, 2), at(240, 300, 0, true)], frame, [], 9, 8, 6)
     expect(circle).toMatchObject({ x: 190, y: 309, shown: true })
     expect(intersects(rectOf(chest), rectOf(circle))).toBe(false)
   })
@@ -425,6 +426,22 @@ describe('placeLabels: names sized to the art they belong to', () => {
     // Only there: with that gap taken as well, it stays bare rather than wrap anywhere else.
     const [none] = placeLabels([{ ...crestAt, wrap: { w: 40, h: 26 } }], frame, [...art, { x0: 190, y0: 330, x1: 210, y1: 345 }], 9, 8, 6)
     expect(none.shown).toBe(false)
+  })
+  it("never lets a long name run on past its own mark over or under another mark, named or not", () => {
+    // A tall tower's name above it, 105 wide: centred on the tower, its left end would lie 5px over a crest west of
+    // the tower (as "Rise · Above Door" over the Draconic Tree Sentinel's crest). Its middle is still nearer the tower.
+    const tower = { x0: 419, y0: 348, x1: 457, y1: 426 }
+    const crestBox = { x0: 376, y0: 352, x1: 408, y1: 383 }
+    const name = { w: 105, h: 15 }
+    const taken = [{ x0: 380, y0: 427, x1: 520, y1: 460 }]
+    const spot = placeLabel({ x: 438, y: 387 }, name, { w: 800, h: 800 }, [...taken, crestBox], 1, 8, 0, false, [crestBox], tower)
+    expect(spot.own && spot.clear).toBe(true)
+    // Not above, where its left end would run over the crest.
+    expect(spot).not.toMatchObject({ x: 385.5, y: 332 })
+    const rect = { x0: spot.x, y0: spot.y, x1: spot.x + name.w, y1: spot.y + name.h }
+    const crestMid = (crestBox.x0 + crestBox.x1) / 2
+    const gapY = Math.max(crestBox.y0 - rect.y1, rect.y0 - crestBox.y1)
+    expect(crestMid > rect.x0 && crestMid < rect.x1 && gapY < 12).toBe(false)
   })
   it('tries all eight spots round its mark before giving up: with below, above and both sides taken, a diagonal', () => {
     const block = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })

@@ -81,11 +81,20 @@ export function placeLabel(
     if (Math.abs(s.x - raw.x) > DRIFT || Math.abs(s.y - raw.y) > DRIFT) return false
     const cx = s.x + label.w / 2
     const cy = s.y + label.h / 2
+    const rect = { x0: s.x, y0: s.y, x1: s.x + label.w, y1: s.y + label.h }
+    // A long name centred on its own mark can still run on past its sides, right over or under another mark, named
+    // or not, and read as that mark's name there: no other mark whose middle lies under or over the name beyond its
+    // own mark's sides may come within END_CLEAR px of it. A night's name is in the game's face and needs no such test.
+    const overEnd = (o: Rect) => {
+      const mid = (o.x0 + o.x1) / 2
+      const beyond = mid < mine.x0 || mid > mine.x1
+      return beyond && mid > rect.x0 && mid < rect.x1 && Math.max(o.y0 - rect.y1, rect.y0 - o.y1) < END_CLEAR
+    }
+    if (!ring && others.some(overEnd)) return false
     const own = distanceTo(mine, cx, cy)
     if (others.every((o) => distanceTo(o, cx, cy) >= own)) return true
     // A long name beside a small mark: its middle may lie nearer a neighbour, but it touches its own mark and keeps
     // well clear of every other one, so it still reads as its own.
-    const rect = { x0: s.x, y0: s.y, x1: s.x + label.w, y1: s.y + label.h }
     const touching = boxDistance(mine, rect)
     return touching <= Math.abs(gap) + 2 && others.every((o) => boxDistance(o, rect) >= touching + CLEAR_OF_OTHERS)
   }
@@ -163,6 +172,8 @@ const distanceTo = (r: Rect, x: number, y: number) =>
 const DRIFT = 4
 // How much further (px) than its own mark every other mark must be from a name that is judged by its edge.
 const CLEAR_OF_OTHERS = 10
+// How near (px, about a line of a name) another mark may come to a name before the end nearest it reads as its name.
+const END_CLEAR = 12
 // A night's name lies within this many px of its ring's circle.
 const RING_TOUCH = 6
 
