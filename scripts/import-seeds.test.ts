@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside, toWeakness, weaknessTable } from './import-seeds.ts'
+import { EXPEDITIONS } from '../data/raw/weaknesses/data/nightlords.ts'
+import { NIGHT_BOSSES } from '../data/raw/weaknesses/data/nightbosses.ts'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
@@ -214,5 +216,68 @@ describe('element emblems', () => {
   it('fails loudly when an element has no emblem', () => {
     expect(() => emblemSources(icons.filter((f) => !f.endsWith('_sleep.webp')), statuses)).toThrow(/sleep/)
     expect(() => emblemSources(icons, [])).toThrow(/rot/)
+  })
+})
+
+describe('boss weaknesses', () => {
+  type Neg = Partial<Record<'standard' | 'slash' | 'strike' | 'pierce' | 'magic' | 'fire' | 'lightning' | 'holy', number>>
+  const form = (neg: Neg) => {
+    const n = { standard: 0, slash: 0, strike: 0, pierce: 0, magic: 0, fire: 0, lightning: 0, holy: 0, ...neg }
+    const status = { bleed: 252, frost: 252, rot: 252, poison: 252, sleep: 252, madness: 'Immune' as const }
+    return {
+      label: null, hp: null, poise: null, status,
+      phys: { standard: n.standard, slash: n.slash, strike: n.strike, pierce: n.pierce },
+      elem: { magic: n.magic, fire: n.fire, lightning: n.lightning, holy: n.holy },
+    }
+  }
+
+  it('is weak to the damage types tied at the lowest negation, and resists those tied at the highest', () => {
+    expect(toWeakness([form({ holy: -35, pierce: -10, fire: 50, magic: 20 })])).toEqual({ weak: ['holy'], resist: ['fire'] })
+    expect(toWeakness([form({ holy: -20, fire: -20, slash: 10, strike: 10 })])).toEqual({ weak: ['fire', 'holy'], resist: ['slash', 'strike'] })
+  })
+  it('names no weakness or resistance when nothing goes below or above zero', () => {
+    expect(toWeakness([form({})])).toEqual({ weak: [], resist: [] })
+  })
+  it('scores a fight of several forms by its worst case, as the cheatsheet does', () => {
+    // Fire is -40 on one form and +10 on the other: you carry one weapon into the arena, so it is not a weakness.
+    expect(toWeakness([form({ fire: -40, holy: -10 }), form({ fire: 10, holy: -10 })])).toEqual({ weak: ['holy'], resist: ['fire'] })
+  })
+  it("leads with a Nightlord's listed weakness, which may be a status no negation shows", () => {
+    expect(toWeakness([form({ strike: -10 })], 'sleep')).toEqual({ weak: ['sleep', 'strike'], resist: [] })
+    expect(toWeakness([form({ holy: -35 })], 'holy')).toEqual({ weak: ['holy'], resist: [] })
+  })
+
+  describe('against the copied cheatsheet data', () => {
+    const seeds = JSON.parse(readFileSync('src/data/seeds.json', 'utf8'))
+    const nightNames = [...new Set<string>(seeds.seeds.flatMap((s: any) => [s.nights[1].boss, s.nights[2].boss]))]
+    const table = weaknessTable(EXPEDITIONS, NIGHT_BOSSES, nightNames)
+
+    it('covers every Nightlord, by our slug', () => {
+      expect(Object.keys(table.nightlords).sort()).toEqual(Object.values<string>(aliases.nightlordByNumber).sort())
+      for (const [slug, w] of Object.entries(table.nightlords)) expect(w.weak.length, slug).toBeGreaterThan(0)
+    })
+    it('matches what the game says of Tricephalos: weak to holy, resists fire', () => {
+      expect(table.nightlords.tricephalos.weak[0]).toBe('holy')
+      expect(table.nightlords.tricephalos.resist).toContain('fire')
+    })
+    it('finds every night boss we show, bar the one the cheatsheet has no trustworthy numbers for', () => {
+      expect(nightNames).toHaveLength(41)
+      expect(table.unmatched).toEqual(['Artorias'])
+      expect(Object.keys(table.bosses)).toHaveLength(40)
+    })
+    it('keys only on night boss names, so castle and field bosses get none', () => {
+      for (const name of Object.keys(table.bosses)) expect(nightNames).toContain(name)
+    })
+    it('has an alias table that points at real cheatsheet entries and at names we really show', () => {
+      const cheatsheetNames = new Set(NIGHT_BOSSES.map((b) => b.name))
+      for (const [ours, theirs] of Object.entries<string>(aliases.weaknessBossNames)) {
+        if (ours === '_readme') continue
+        expect(cheatsheetNames.has(theirs), theirs).toBe(true)
+        expect(nightNames, ours).toContain(ours)
+      }
+    })
+    it('fails loudly when a Nightlord has no entry', () => {
+      expect(() => weaknessTable(EXPEDITIONS.slice(1), NIGHT_BOSSES, nightNames)).toThrow(/tricephalos/)
+    })
   })
 })

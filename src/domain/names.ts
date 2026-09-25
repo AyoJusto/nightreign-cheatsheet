@@ -4,6 +4,12 @@ export type NightlordId =
 export type EarthId = 'default' | 'crater' | 'mountaintop' | 'rotted-woods' | 'noklateo' | 'great-hollow'
 export type ElementId =
   | 'fire' | 'holy' | 'magic' | 'lightning' | 'frostbite' | 'poison' | 'bleed' | 'blight' | 'madness' | 'sleep' | 'rot'
+/** The game's 14 damage and status icons (public/damage/<key>.webp), as the weakness data names them. */
+export type DamageKey =
+  | 'standard' | 'slash' | 'strike' | 'pierce' | 'magic' | 'fire' | 'lightning' | 'holy'
+  | 'bleed' | 'frost' | 'rot' | 'poison' | 'sleep' | 'madness'
+/** What to hit a boss with (`weak`, best first) and what it shrugs off (`resist`). */
+export interface Weakness { weak: DamageKey[]; resist: DamageKey[] }
 export type SlotId = string
 /** `kind` or `kind:element`, e.g. `great-church:fire`. */
 export type StructureKey = string
@@ -50,6 +56,13 @@ const KIND_NAMES: Record<string, string> = {
 export const ELEMENT_NAMES: Record<ElementId, string> = {
   fire: 'Fire', holy: 'Holy', magic: 'Magic', lightning: 'Lightning', frostbite: 'Frostbite', poison: 'Poison',
   bleed: 'Bleed', blight: 'Blight', madness: 'Madness', sleep: 'Sleep', rot: 'Rot',
+}
+
+/** The game's own word for each damage type and status, for accessible labels beside the icons. */
+export const DAMAGE_NAMES: Record<DamageKey, string> = {
+  standard: 'Standard', slash: 'Slash', strike: 'Strike', pierce: 'Pierce',
+  magic: 'Magic', fire: 'Fire', lightning: 'Lightning', holy: 'Holy',
+  bleed: 'Blood Loss', frost: 'Frostbite', rot: 'Scarlet Rot', poison: 'Poison', sleep: 'Sleep', madness: 'Madness',
 }
 
 /** Two letters, unique per element, shown if an emblem image fails to load: first letters alone collide (Fire/Frostbite, Bleed/Blight). */

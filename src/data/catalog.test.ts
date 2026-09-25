@@ -80,6 +80,14 @@ describe('seed data', () => {
       }
     }
   })
+  it('knows every Nightlord weakness, and every night boss weakness the data has', () => {
+    for (const n of NIGHTLORDS) expect(catalog.nightlordWeakness(n.id).weak.length, n.id).toBeGreaterThan(0)
+    const missing = new Set<string>()
+    for (const seed of catalog.all) {
+      for (const night of [1, 2] as const) if (!catalog.nightBossWeakness(seed.nights[night].boss)) missing.add(seed.nights[night].boss)
+    }
+    expect([...missing]).toEqual(['Artorias'])
+  })
   it('offers every nightlord at least one shifting earth', () => {
     for (const n of NIGHTLORDS) expect(catalog.earthsFor(n.id).length).toBeGreaterThan(0)
     expect(EARTHS.length).toBe(6)

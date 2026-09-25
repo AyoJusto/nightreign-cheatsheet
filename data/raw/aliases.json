@@ -10,6 +10,30 @@
     "gnosterplague": "Sentient Pest Plague",
     "libracurse": "Equilibrious Beast Curse"
   },
+  "weaknessBossNames": {
+    "_readme": "Our night boss display name -> the cheatsheet's name for the same fight (data/raw/weaknesses). Names that already match are left out.",
+    "Artorias": "Knight Artorias",
+    "Crucible Knight & Hippo": "Crucible Knight & Golden Hippopotamus",
+    "Crucible Knight and Golden Hippopotamus": "Crucible Knight & Golden Hippopotamus",
+    "DBW & Curseblade": "Curseblade & Divine Beast Warrior",
+    "Dancer": "Dancer of the Boreal Valley",
+    "Dancing Lion": "Divine Beast Dancing Lion",
+    "Death Knights": "Death Knight",
+    "Demi-Human Queen and Swordmaster": "Demi-Human Queen & Swordmaster",
+    "Demons": "Demon in Pain & Demon from Below",
+    "Draconic Tree Sentinel": "Draconic Tree Sentinel & Royal Cavalrymen",
+    "Draconic Tree Sentinel and Royal Cavalrymen": "Draconic Tree Sentinel & Royal Cavalrymen",
+    "Dragonkin Soldier": "Nox Dragonkin Soldier",
+    "Fallingstar Beast": "Full-Grown Fallingstar Beast",
+    "Mohg": "Lord of Blood",
+    "Morgott": "Fell Omen",
+    "Night's Cavalries": "Night's Cavalry",
+    "Night's Cavalry Duo": "Night's Cavalry",
+    "The Duke's Dear Freja": "Duke's Dear Freja",
+    "Tibia Mariner": "Tibia Mariner & Those Who Live in Death",
+    "Tree Sentinel": "Tree Sentinel & Royal Cavalrymen",
+    "Tree Sentinel and Royal Cavalrymen": "Tree Sentinel & Royal Cavalrymen"
+  },
   "bossNameOverrides": {
     "Demihuman Queen & Swordmaster": "Demi-Human Queen and Swordmaster"
   },

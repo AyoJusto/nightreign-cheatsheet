@@ -3,6 +3,10 @@
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
+import { summarize } from '../data/raw/weaknesses/summary.ts'
+import type { Expedition, Form, IconKey, NightBoss } from '../data/raw/weaknesses/types.ts'
+import { EXPEDITIONS } from '../data/raw/weaknesses/data/nightlords.ts'
+import { NIGHT_BOSSES } from '../data/raw/weaknesses/data/nightbosses.ts'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
@@ -114,6 +118,46 @@ export function toBossNotes(details: BossDetail[], shown: Iterable<[name: string
     notes[name] = summary
   }
   return notes
+}
+
+export type Weakness = { weak: IconKey[]; resist: IconKey[] }
+
+/**
+ * What to hit a fight with and what not to, by the cheatsheet's own rules (data/raw/weaknesses/summary.ts):
+ * weak = the damage types tied at the lowest worst-case negation, when it is below zero. resist mirrors it: the
+ * types tied at the highest, when above zero. A Nightlord's `listed` weakness (the one the game and guides name,
+ * sometimes a status such as Sleep) leads its list.
+ */
+export function toWeakness(forms: Form[], listed?: IconKey): Weakness {
+  const summary = summarize(forms)
+  const values = Object.values(summary.neg)
+  const most = Math.max(...values)
+  const resist = most > 0 ? Object.keys(summary.neg).filter((k) => summary.neg[k as keyof typeof summary.neg] === most).sort() : []
+  const weak: IconKey[] = listed ? [listed, ...summary.weaknesses.filter((k) => k !== listed)] : summary.weaknesses
+  return { weak, resist: resist as IconKey[] }
+}
+
+/**
+ * Weaknesses for every Nightlord (by our slug, which is the cheatsheet's expedition id) and for every night boss
+ * name we show, joined through aliases.weaknessBossNames. A name with no cheatsheet entry, or an entry without
+ * trustworthy numbers, is `unmatched` and gets nothing: a missing weakness is honest, an invented one is not.
+ */
+export function weaknessTable(expeditions: Expedition[], nightBosses: NightBoss[], nightNames: string[]) {
+  const nightlords: Record<string, Weakness> = {}
+  for (const slug of Object.values<string>(aliases.nightlordByNumber)) {
+    const expedition = expeditions.find((e) => e.id === slug)
+    if (!expedition) throw new Error(`no weakness data for nightlord ${slug}`)
+    nightlords[slug] = toWeakness(expedition.forms, expedition.listed.key)
+  }
+  const byName = new Map(nightBosses.map((b) => [b.name, b]))
+  const bosses: Record<string, Weakness> = {}
+  const unmatched: string[] = []
+  for (const name of [...nightNames].sort()) {
+    const data = byName.get(aliases.weaknessBossNames[name] ?? name)?.data
+    if (data) bosses[name] = toWeakness(data.forms)
+    else unmatched.push(name)
+  }
+  return { nightlords, bosses, unmatched }
 }
 
 // Castle ids are snake_case ("ancient_hero_of_zamor"); "of" stays lowercase as in the boss roster.
@@ -268,7 +312,10 @@ function main() {
 
   if (seeds.length !== 520) problems.push(`expected 520 seeds, got ${seeds.length}`)
   const bossNotes = toBossNotes(observer.bossDetails, shownBosses)
-  const out = JSON.stringify({ maps, seeds, bossNotes })
+  const nightNames = [...new Set<string>(seeds.flatMap((s: any) => [s.nights[1].boss, s.nights[2].boss]))]
+  const { unmatched, ...weaknesses } = weaknessTable(EXPEDITIONS, NIGHT_BOSSES, nightNames)
+  console.log('night bosses without weakness data:', unmatched.join(', ') || 'none')
+  const out = JSON.stringify({ maps, seeds, bossNotes, weaknesses })
   if (hasCjk(out)) problems.push('non-English text in output')
   for (const name of aliases.internalNightlordNames) {
     if (new RegExp(`\\b${name}\\b`, 'i').test(out)) problems.push(`internal nightlord name in output: ${name}`)

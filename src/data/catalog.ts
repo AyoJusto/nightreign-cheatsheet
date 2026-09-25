@@ -1,10 +1,11 @@
 import data from './seeds.json'
 import type { CastlePoints, Seed } from '../domain/seed'
-import { EARTHS, mapFamily, type EarthId, type NightlordId, type SlotId } from '../domain/names'
+import { EARTHS, mapFamily, type EarthId, type NightlordId, type SlotId, type Weakness } from '../domain/names'
 
 const all = data.seeds as unknown as Seed[]
 const byId = new Map(all.map((s) => [s.id, s]))
 const notes = data.bossNotes as Record<string, string>
+const weaknesses = data.weaknesses as { nightlords: Record<NightlordId, Weakness>; bosses: Record<string, Weakness> }
 
 export const catalog = {
   all,
@@ -16,5 +17,8 @@ export const catalog = {
   bossNotes: (name: string): string | undefined => notes[name],
   /** The castle's points on this earth's map; undefined where there is no castle (Noklateo, Great Hollow). */
   castleOf: (earth: EarthId): CastlePoints | undefined => (earth === 'noklateo' || earth === 'great-hollow' ? undefined : data.maps.limveld.castle),
+  nightlordWeakness: (id: NightlordId): Weakness => weaknesses.nightlords[id],
+  /** By the night boss name a seed shows; undefined when there is no trustworthy data (never guessed). */
+  nightBossWeakness: (name: string): Weakness | undefined => weaknesses.bosses[name],
   slotsOf: (earth: EarthId) => data.maps[mapFamily(earth)].slots as Record<SlotId, { x: number; y: number }>,
 }
