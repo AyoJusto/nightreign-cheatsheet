@@ -370,7 +370,8 @@ test('the full result sheet shows a hairline under its header once content scrol
   expect((await hairline()).opacity).toBe(0)
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 40 })
   await expect.poll(async () => (await hairline()).opacity).toBe(1)
-  expect(await hairline()).toMatchObject({ color: 'rgba(84, 84, 88, 0.6)', height: '0.5px' })
+  // The theme's bronze rule (--rule), one pixel.
+  expect(await hairline()).toMatchObject({ color: 'rgba(201, 165, 92, 0.22)', height: '1px' })
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 0 })
   await expect.poll(async () => (await hairline()).opacity).toBe(0)
 })

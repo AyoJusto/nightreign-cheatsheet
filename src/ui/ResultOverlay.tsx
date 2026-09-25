@@ -3,7 +3,8 @@ import type { MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { collapseRepeats } from './collapseRepeats'
-import { Glass } from './Glass'
+import { Plate } from './Plate'
+import { Frame } from './Frame'
 import { Icon } from './Icon'
 import { useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
@@ -163,22 +164,22 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 
   return (
     <>
-      <Glass className="pill" ref={pillRef}>
+      <Plate className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={back}><Icon name="back" /></button>
         <div className="chips" ref={chips} onScroll={fadeChips} role="group" aria-label="Map layers">
           {available.map((l) => (
             <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
           ))}
         </div>
-      </Glass>
+      </Plate>
       {wide ? (
-        <aside className="side-panel" aria-label="Seed details">{title}{runCard}{lists}</aside>
+        <aside className="side-panel" aria-label="Seed details"><Frame /><div className="side-scroll">{title}{runCard}{lists}</div></aside>
       ) : (
         <Sheet detent={detent} onDetent={setDetent} height={bottomInset} rest={restInset} top={topInset} label="Seed details" header={title} more={lists}>
           {runCard}
         </Sheet>
       )}
-      {toast && <Glass className="toast" role="status">{toast}</Glass>}
+      {toast && <Plate className="toast" role="status">{toast}</Plate>}
     </>
   )
 }

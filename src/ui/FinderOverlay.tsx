@@ -2,7 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
-import { Glass } from './Glass'
+import { Plate } from './Plate'
+import { Frame } from './Frame'
 import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
 import { StructureButtons, StructureStrip } from './StructureStrip'
@@ -198,7 +199,7 @@ export function FinderOverlay(props: {
     <>
       {/* The three-column centring grid (pill-titled) only makes sense when a title actually renders:
           desktop carries the count in the side panel, so its pill is a plain flex row, a tight control group. */}
-      <Glass className={`pill${wide ? '' : ' pill-titled'}`} ref={pillRef}>
+      <Plate className={`pill${wide ? '' : ' pill-titled'}`} ref={pillRef}>
         <div className="pill-leading">
           <button className="pill-back" aria-label="Back" onClick={() => props.go('/', true)}><Icon name="back" /></button>
         </div>
@@ -218,49 +219,52 @@ export function FinderOverlay(props: {
           <button aria-label="Reset" disabled={!scouting.sightings.length}
             onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
         </div>
-      </Glass>
+      </Plate>
       {!wide && (
-        <StructureStrip glassRef={stripRef} open={open} hidden={!groups.length}>{structureButtons}</StructureStrip>
+        <StructureStrip plateRef={stripRef} open={open} hidden={!groups.length}>{structureButtons}</StructureStrip>
       )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
-          <h2 className="side-title"><span className="title side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
-          <p className="side-count"><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></p>
-          {preview || (choices ? (
-            <section>
-              <h3 className="side-heading">{choicesTitle}</h3>
-              {choices}
-            </section>
-          ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : `${verb} where you spawned on the map.`}</p>)}
-          {groups.length > 0 && (
-            <section>
-              {/* The tile's name goes here, not in a tooltip that would cover the tiles around it. */}
-              <h3 className="side-heading structure-heading">
-                {/* A hovered tile's name takes the heading's whole line (a kind's name lists its elements, too long to
-                    share it); the heading text stays for screen readers, which read the tile's own label. */}
-                <span className={tileName ? 'sr-only' : undefined}>Structures still possible</span>
-                {tileName && <span className="structure-name" aria-hidden>{tileName}</span>}
-              </h3>
-              {/* The heading above names it; a matching aria-label would be announced twice. */}
-              <div className="structure-grid">{structureButtons}</div>
-            </section>
-          )}
-          {scouting.sightings.length > 0 && (
-            <section>
-              <h3 className="side-heading">Sightings</h3>
-              <ul className="sightings">
-                {/* Each row leads with what the map shows there: the spawn puck, the structure, or an empty ring. */}
-                {scouting.sightings.map((s) => (
-                  <li key={targetOf(s)}>
-                    <span className="sighting-glyph" aria-hidden>
-                      {s.type === 'spawn' ? <span className="spawn-dot" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
-                    </span>
-                    {sightingLabel(s)}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <Frame />
+          <div className="side-scroll">
+            <h2 className="side-title"><span className="title side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
+            <p className="side-count"><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></p>
+            {preview || (choices ? (
+              <section>
+                <h3 className="side-heading">{choicesTitle}</h3>
+                {choices}
+              </section>
+            ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : `${verb} where you spawned on the map.`}</p>)}
+            {groups.length > 0 && (
+              <section>
+                {/* The tile's name goes here, not in a tooltip that would cover the tiles around it. */}
+                <h3 className="side-heading structure-heading">
+                  {/* A hovered tile's name takes the heading's whole line (a kind's name lists its elements, too long to
+                      share it); the heading text stays for screen readers, which read the tile's own label. */}
+                  <span className={tileName ? 'sr-only' : undefined}>Structures still possible</span>
+                  {tileName && <span className="structure-name" aria-hidden>{tileName}</span>}
+                </h3>
+                {/* The heading above names it; a matching aria-label would be announced twice. */}
+                <div className="structure-grid">{structureButtons}</div>
+              </section>
+            )}
+            {scouting.sightings.length > 0 && (
+              <section>
+                <h3 className="side-heading">Sightings</h3>
+                <ul className="sightings">
+                  {/* Each row leads with what the map shows there: the spawn puck, the structure, or an empty ring. */}
+                  {scouting.sightings.map((s) => (
+                    <li key={targetOf(s)}>
+                      <span className="sighting-glyph" aria-hidden>
+                        {s.type === 'spawn' ? <span className="spawn-dot" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
+                      </span>
+                      {sightingLabel(s)}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         </aside>
       ) : (
         <AnimatePresence>

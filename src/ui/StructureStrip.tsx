@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, type ReactNode, type Ref } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { StructureIcon, ElementEmblem } from './StructureIcon'
-import { Glass } from './Glass'
+import { Plate } from './Plate'
 import type { KindGroup } from './structureGroups'
 import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
 
@@ -77,9 +77,9 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
   ]
 }
 
-/** The phone's bottom strip: a glass capsule whose row scrolls, with edge fades wherever more is hidden. */
-export function StructureStrip({ glassRef, open, hidden, children }: {
-  glassRef: Ref<HTMLDivElement>; open: string | null; hidden: boolean; children: ReactNode
+/** The phone's bottom strip: a framed plate whose row scrolls, with edge fades wherever more is hidden. */
+export function StructureStrip({ plateRef, open, hidden, children }: {
+  plateRef: Ref<HTMLDivElement>; open: string | null; hidden: boolean; children: ReactNode
 }) {
   const scroller = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
@@ -105,8 +105,8 @@ export function StructureStrip({ glassRef, open, hidden, children }: {
     if (el && item) el.scrollTo({ left: item.offsetLeft - 32, behavior: reduce ? 'auto' : 'smooth' })
   }, [open, reduce])
   return (
-    <Glass className={`strip${hidden ? ' hidden' : ''}`} ref={glassRef} role="toolbar" aria-label="Structures still possible">
+    <Plate className={`strip${hidden ? ' hidden' : ''}`} ref={plateRef} role="toolbar" aria-label="Structures still possible">
       <div ref={scroller} className="strip-scroll" onScroll={fade}>{children}</div>
-    </Glass>
+    </Plate>
   )
 }
