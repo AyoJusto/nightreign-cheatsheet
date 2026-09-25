@@ -69,7 +69,8 @@ export type Obstacle = Rect & { weight?: number }
  * that covers none of `obstacles` wins; if every one covers something, the one covering the least area
  * (each obstacle's area scaled by its weight), with `clear: false`.
  * A spot must also read as this point's name: the frame's edge may not push it more than DRIFT px from where it
- * belongs, and its centre may not lie nearer any of `others` (the other marks' points) than this point. When no
+ * belongs, and its centre may not lie nearer any of `others` (the other marks' boxes) than its own mark (`mark` px
+ * around the point): measured to the boxes, so a large site's name just under its art still counts as its own. When no
  * spot qualifies the best of the rest is returned with `own: false`; only a name that must show uses it.
  */
 export function placeLabel(
@@ -81,7 +82,7 @@ export function placeLabel(
   edge: number,
   mark = 0,
   center = false,
-  others: readonly { x: number; y: number }[] = [],
+  others: readonly Rect[] = [],
 ): { x: number; y: number; clear: boolean; own: boolean } {
   const top = frame.top ?? 0
   const keepIn = (v: number, size: number, start: number, end: number) => Math.max(start + edge, Math.min(end - edge - size, v))
@@ -95,8 +96,8 @@ export function placeLabel(
     if (Math.abs(s.x - raw.x) > DRIFT || Math.abs(s.y - raw.y) > DRIFT) return false
     const cx = s.x + label.w / 2
     const cy = s.y + label.h / 2
-    const own = Math.hypot(cx - point.x, cy - point.y)
-    return others.every((o) => Math.hypot(cx - o.x, cy - o.y) >= own)
+    const own = distanceTo({ x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }, cx, cy)
+    return others.every((o) => distanceTo(o, cx, cy) >= own)
   }
   // A name written across its own mark (a night's ring) has one spot, on the point, kept inside the frame.
   if (center) {
@@ -133,6 +134,10 @@ export function placeLabel(
   }
   return { ...best, clear: false, own }
 }
+
+// How far a point is from a box (0 inside it).
+const distanceTo = (r: Rect, x: number, y: number) =>
+  Math.hypot(Math.max(r.x0 - x, 0, x - r.x1), Math.max(r.y0 - y, 0, y - r.y1))
 
 // How far (px) the frame's edge may push a name from its spot before it stops reading as that mark's name.
 const DRIFT = 4
@@ -194,8 +199,6 @@ export function placeLabels(
     return { x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
-  // Every mark's point, which a name must not sit nearer than its own: the other requests and every pin.
-  const pinPoints = pins.map((r) => ({ x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 }))
   const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: LABEL_WEIGHT }))
   const results: { x: number; y: number; shown: boolean }[] = new Array(requests.length)
   for (const i of order) {
@@ -203,8 +206,8 @@ export function placeLabels(
     const { point, label, keep } = request
     const m = markOf(request)
     const marks = [...pins, ...glyphs.filter((_, j) => j !== i)]
-    const others = [...pinPoints, ...requests.filter((_, j) => j !== i).map((r) => r.point)]
-    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.center, others)
+    // A name must sit nearer its own mark than any other mark (pins and the other requests' glyphs).
+    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.center, marks)
     const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
     const soft = () => {
       if (placed.some((o) => overlapArea(rect, o) > 0)) return false

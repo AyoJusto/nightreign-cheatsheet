@@ -278,9 +278,10 @@ describe('placeLabels: names sized to the art they belong to', () => {
   })
   it("may lie over the edge of another site's art, as the game's names do, but not across it", () => {
     const point = { x: 200, y: 300 }
-    // Art boxes crowd every spot around the point, each clipping a thin strip of where a label would go.
+    // Art above blocks the upper spots, and two sites' art below either side clips a corner of "below" (the
+    // least covered spot); its centre is still nearer its own point than either site's art.
     const edge = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
-    const clipped = [edge(0, 0, 400, 275), edge(0, 332, 400, 800), edge(0, 0, 125, 800), edge(275, 0, 400, 800)]
+    const clipped = [edge(0, 0, 400, 290), edge(108, 315, 168, 375), edge(232, 315, 292, 375)]
     const [name] = placeLabels([{ point, label, rank: 3, keep: false }], frame, clipped, 9, 8, 6)
     expect(name.shown).toBe(true)
     // Art across most of every spot hides it instead.
