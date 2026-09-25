@@ -68,13 +68,17 @@ export const DAMAGE_NAMES: Record<DamageKey, string> = {
   bleed: 'Blood Loss', frost: 'Frostbite', rot: 'Scarlet Rot', poison: 'Poison', sleep: 'Sleep', madness: 'Madness',
 }
 
-/** What a weakness card shows, as words for a screen reader: "weak to Holy, Pierce; resists Fire; fastest status Sleep". */
+/**
+ * What a Nightlord's weakness card shows, row by row (cardRows), as words for a screen reader:
+ * "weak to Holy, Pierce; resists Fire; weak status Sleep".
+ */
 export function weaknessPhrase(w: Weakness): string {
   const words = (keys: DamageKey[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
+  const { weak, resist, status } = cardRows(w)
   return [
-    w.weak.length ? `weak to ${words(w.weak)}` : '',
-    w.resist.length ? `resists ${words(w.resist)}` : '',
-    w.status?.length ? `fastest status ${words(w.status)}` : '',
+    weak.length ? `weak to ${words(weak)}` : '',
+    resist.length ? `resists ${words(resist)}` : '',
+    status.length ? `weak status ${words(status)}` : '',
   ].filter(Boolean).join('; ')
 }
 

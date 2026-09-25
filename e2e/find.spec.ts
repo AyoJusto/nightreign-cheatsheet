@@ -714,6 +714,15 @@ test.describe('the Nightlord medallion', () => {
     for (const k of statuses) await expect(pick.locator('.nl-row').filter({ hasText: 'Weak status' })).toContainText(DAMAGE_NAMES[k])
   })
 
+  // The card's accessible name says what its rows show: a status Balancers is listed weak to is spoken as its weak status.
+  test("Balancers' card speaks Sleep as its weak status, as its rows show it", async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Balancers' }).click()
+    const pick = page.getByRole('img', { name: 'Balancers: weak to Strike; resists Holy; weak status Sleep', exact: true })
+    await expect(pick).toBeVisible()
+    await expect(pick.locator('.nl-row').filter({ hasText: 'Weak status' })).toContainText('Sleep')
+  })
+
   test('no name on the map runs under it or its card', async ({ page, isMobile }) => {
     await page.goto(`/seed/${seed.id}`)
     if (isMobile) await page.locator('.nl-medal').click()
