@@ -371,6 +371,23 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const taken = [block(195, 315, 205, 335), block(195, 265, 205, 285), block(215, 295, 235, 305), block(165, 295, 185, 305)]
     expect(placeLabel({ x: 200, y: 300 }, label, frame, taken, 9, 8, 6)).toEqual({ x: 206.3, y: 306.3, clear: true, own: true })
   })
+  it('reaches the eighth spot, the upper-left diagonal, when the other seven are taken', () => {
+    const dot = (x: number, y: number) => ({ x0: x - 1, y0: y - 1, x1: x + 1, y1: y + 1 })
+    // One small block in the middle of each of the first seven spots: below, above, right, left, and three diagonals.
+    const taken = [dot(200, 324), dot(200, 276), dot(249, 300), dot(151, 300), dot(246, 321), dot(154, 321), dot(246, 279)]
+    const spot = placeLabel({ x: 200, y: 300 }, label, frame, taken, 9, 8, 6)
+    expect(spot).toMatchObject({ clear: true, own: true })
+    expect(spot.x).toBeCloseTo(113.7, 6)
+    expect(spot.y).toBeCloseTo(263.7, 6)
+  })
+  it("reserves a night's name and ring no wider than drawn: its caption plus the 4px pad, and the disc's circle, not its square", () => {
+    // The caption sits above the ring at 160..240 x 228..258. A name whose spot below its point starts 4px right of it shows there.
+    const [, beside] = placeLabels([ringAt(200, 300, 40), { point: { x: 284, y: 221 }, label, rank: 3, keep: false }], frame, [], 9, 8, 6)
+    expect(beside).toMatchObject({ x: 244, y: 230, shown: true })
+    // A name in the corner of the disc's square but outside its circle keeps its first spot too.
+    const [, corner] = placeLabels([ringAt(200, 300, 40), { point: { x: 272, y: 323 }, label, rank: 3, keep: false }], frame, [], 9, 8, 6)
+    expect(corner).toMatchObject({ x: 232, y: 332, shown: true })
+  })
   it('never lets a name lie over another name, even a little, on a crowded map', () => {
     // A fixed pseudo-random crowd of 80 marks among 40 art boxes, as on a busy phone map.
     let seed = 7
