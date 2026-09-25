@@ -321,6 +321,22 @@ function reportCoverage(seeds: any[]) {
   console.log('structure keys without any icon:', noIcon.length ? noIcon.sort().join(', ') : 'none')
 }
 
+/**
+ * The art with a soft dark shadow just under it, baked into the image: the map moves these marks every frame,
+ * and a CSS drop-shadow filter on each would be redrawn with them. The canvas grows a few px to hold it.
+ */
+export async function withShadow(img: sharp.Sharp): Promise<sharp.Sharp> {
+  const pad = { top: 2, bottom: 4, left: 3, right: 3 }
+  const art = await img.ensureAlpha().extend({ ...pad, background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer()
+  const { data, info } = await sharp(art).raw().toBuffer({ resolveWithObject: true })
+  // Black, with 85% of the art's own alpha, blurred and dropped 1.5px.
+  const dark = Buffer.alloc(data.length)
+  for (let i = 0; i < data.length; i += 4) dark[i + 3] = Math.round(data[i + 3] * 0.85)
+  const shadow = await sharp(dark, { raw: info }).blur(1.2).png().toBuffer()
+  const canvas = { width: info.width, height: info.height, channels: 4 as const, background: { r: 0, g: 0, b: 0, alpha: 0 } }
+  return sharp(await sharp({ create: canvas }).composite([{ input: shadow, top: 2, left: 0 }, { input: art, top: 0, left: 0 }]).png().toBuffer())
+}
+
 /** How much of a pixel is map (1) rather than background (0). */
 export type Coverage = (r: number, g: number, b: number, a: number) => number
 
@@ -458,7 +474,7 @@ async function copyAssets() {
     // Plain kind art only: an elemental structure draws its kind's art with the element's emblem as a badge.
     if (key.includes(':')) continue
     // The art sits in wide transparent margins; trimmed, it fills the box it is drawn in.
-    await sharp(`data/raw/assets/icons/${file}`).trim().webp({ quality: 90 }).toFile(`public/structures/${key}.webp`)
+    await withShadow(sharp(`data/raw/assets/icons/${file}`).trim()).then((img) => img.webp({ quality: 90 }).toFile(`public/structures/${key}.webp`))
   }
   // No trim here: the crop sits inside the emblem's own frame, so there is no margin to trim, and a trim
   // keyed on the corner colour would eat into dark emblems (bleed, blight).
@@ -483,9 +499,10 @@ async function copyAssets() {
   mkdirSync('public/markers', { recursive: true })
   const marker = (file: string) => sharp(`data/raw/assets/markers/${file}`, { density: 144 }).trim()
   for (const name of ['field-boss', 'evergaol', 'chest', 'merchant']) {
-    await marker(`${name}.png`).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
+    await withShadow(marker(`${name}.png`)).then((img) => img.webp({ quality: 90 }).toFile(`public/markers/${name}.webp`))
   }
-  await marker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).webp({ quality: 90 }).toFile('public/markers/great-boss.webp')
+  await withShadow(sharp(await marker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).png().toBuffer()))
+    .then((img) => img.webp({ quality: 90 }).toFile('public/markers/great-boss.webp'))
   for (const name of ['unknown', 'player']) {
     await marker(`${name}.svg`).resize(128, 128, { fit: 'inside' }).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
   }
