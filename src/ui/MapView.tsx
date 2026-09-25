@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
+import { useRef, useEffect, useLayoutEffect, useMemo, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import { type EarthId, type SlotId, type StructureKey } from '../domain/names'
@@ -312,17 +312,22 @@ export function MapView(props: MapContent & {
   const labelBoxes = useMotionValue<{ w: number; h: number }[]>([])
   const labelSizes = useRef<{ w: number; h: number }[]>([])
   const measured = (i: number, box: { w: number; h: number }) => { labelSizes.current[i] = box }
-  // Night names are in Cinzel, which may arrive after the first measure (font-display: swap): measure again
-  // whenever a font finishes loading. fonts.ready alone can resolve before Cinzel is even requested.
-  const [fonts, setFonts] = useState(0)
+  // Night names are in Cinzel, which may arrive after the first measure (font-display: swap): measure every
+  // name again whenever a font finishes loading (fonts.ready alone can resolve before Cinzel is even requested).
+  // Read straight from the DOM, so a font arriving mid-gesture costs no re-render of the pins.
   useEffect(() => {
     const set = document.fonts
     if (!set) return
-    const bump = () => setFonts((n) => n + 1)
-    set.addEventListener('loadingdone', bump)
-    set.ready.then(bump)
-    return () => set.removeEventListener('loadingdone', bump)
-  }, [])
+    const remeasure = () => {
+      frame.current?.querySelectorAll<HTMLElement>('[data-tag]').forEach((el) => {
+        labelSizes.current[Number(el.dataset.tag)] = { w: el.offsetWidth, h: el.offsetHeight }
+      })
+      labelBoxes.set(labelBoxes.get().map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 }))
+    }
+    set.addEventListener('loadingdone', remeasure)
+    set.ready.then(remeasure)
+    return () => set.removeEventListener('loadingdone', remeasure)
+  }, [labelBoxes])
   const labels = useTransform(() => {
     const { w, h } = size.get()
     const s = side()
@@ -366,7 +371,7 @@ export function MapView(props: MapContent & {
   // Tags measure their labels in their own layout effects, which run before this component's: published
   // from here, after the transform above has subscribed (in its own layout effect, declared earlier), so the
   // new sizes are never missed.
-  useLayoutEffect(() => labelBoxes.set(tags.map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 })), [tags, fonts, labelBoxes])
+  useLayoutEffect(() => labelBoxes.set(tags.map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 })), [tags, labelBoxes])
   const namedPins = props.pins.filter((p) => p.name && p.structure)
   const markerCount = props.markers?.length ?? 0
 
@@ -428,7 +433,7 @@ export function MapView(props: MapContent & {
         ))}
         {/* After the pins, so a name is never under a structure; placeLabels also keeps it off every mark. */}
         {props.markers?.map((m, i) => (
-          <Tag key={`m${i}`} index={i} at={m} className={`marker-${m.layer}${m.plain ? ' marker-plain' : ''}`} labels={labels} onMeasure={measured} measureKey={fonts} pinScale={pinScale}
+          <Tag key={`m${i}`} index={i} at={m} className={`marker-${m.layer}${m.plain ? ' marker-plain' : ''}`} labels={labels} onMeasure={measured} pinScale={pinScale}
             text={m.layer === 'circle' ? <RingName marker={m} /> : tags[i].silent ? null : m.label} textKey={m.label}>
             {m.layer !== 'circle' && <MarkerIcon marker={m} scale={iconScale} />}
           </Tag>
@@ -436,7 +441,7 @@ export function MapView(props: MapContent & {
         {/* A site's name: the pin above draws its art, the name goes under it where there is room. It is part of
             the pin's own accessible name (ResultOverlay), so the text itself is hidden from screen readers. */}
         {namedPins.map((p, j) => (
-          <Tag key={`p${p.slot}`} index={markerCount + j} at={p} className="marker-site" labels={labels} onMeasure={measured} measureKey={fonts}
+          <Tag key={`p${p.slot}`} index={markerCount + j} at={p} className="marker-site" labels={labels} onMeasure={measured}
             pinScale={pinScale} text={p.name!} textKey={p.name!} hidden />
         ))}
       </motion.div>
@@ -526,13 +531,12 @@ function Ring({ night }: { night: 1 | 2 }) {
 }
 
 /** A mark on the exact point, with its name beside it (or across it) where MapView's placement pass put it. */
-function Tag({ index, at, className, labels, onMeasure, measureKey, pinScale, text, textKey, hidden, children }: {
+function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey, hidden, children }: {
   index: number
   at: { x: number; y: number }
   className: string
   labels: MotionValue<{ x: number; y: number; shown: boolean }[]>
   onMeasure: (index: number, box: { w: number; h: number }) => void
-  measureKey: number
   pinScale: MotionValue<number>
   text: ReactNode
   textKey: string
@@ -551,12 +555,12 @@ function Tag({ index, at, className, labels, onMeasure, measureKey, pinScale, te
   useLayoutEffect(() => {
     const el = label.current
     onMeasure(index, el ? { w: el.offsetWidth, h: el.offsetHeight } : { w: 0, h: 0 })
-  }, [textKey, index, measureKey])
+  }, [textKey, index])
   return (
     <motion.span className={`marker ${className}`} style={{ left: `${at.x / 10}%`, top: `${at.y / 10}%`, scale: pinScale }}>
       {children}
       {text !== null && (
-        <motion.span ref={label} className="map-name" aria-hidden={hidden || undefined} style={{ x: labelX, y: labelY, opacity: labelOpacity }}>{text}</motion.span>
+        <motion.span ref={label} className="map-name" data-tag={index} aria-hidden={hidden || undefined} style={{ x: labelX, y: labelY, opacity: labelOpacity }}>{text}</motion.span>
       )}
     </motion.span>
   )
