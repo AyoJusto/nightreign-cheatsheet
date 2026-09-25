@@ -79,8 +79,9 @@
 .marker-circle .map-name { font-family: var(--font-display); font-weight: 600; max-width: none; white-space: nowrap; letter-spacing: 0.02em; }
 /* The number in the system face: Cinzel's 1 reads as an I. */
 .marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-family: var(--font); font-weight: 800; font-size: 1.2em; }
-/* A name alone (the castle's guard) sits on its point on one line, clear of the marks below it. */
-.marker-plain .map-name { max-width: none; white-space: nowrap; }
+/* A name alone (the castle's guard) sits on its point on one line, clear of the marks below it; on a phone it wraps
+   like every other name, as one line it is too long to fit anywhere round the castle. */
+@media (min-width: 900px) { .marker-plain .map-name { max-width: none; white-space: nowrap; } }
 /* The castle's guard, in the game's face, over the castle. */
 .marker-castle.marker-plain .map-name { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.02em; }
 /* A name called out by a tap on its mark: the same bone text, on an opaque dark plate with a bronze hairline, above

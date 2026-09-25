@@ -8,7 +8,7 @@ import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { useWide } from './useWide'
-import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
+import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind, type Rect } from './mapGeometry'
 import './map.css'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
@@ -419,6 +419,9 @@ export function MapView(props: MapContent & {
     })
     const boxes = labelBoxes.get()
     const points = tags.map((t) => toScreen(t.x, t.y))
+    // The castle, whose guard's name is its own: the box round its crests.
+    const castle = tags.flatMap((t, i) => (t.kind === 'castle' && t.mark === 'icon' ? [square(points[i], icon * ICON_BODY)] : []))
+      .reduce<Rect | undefined>((u, r) => (u ? { x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) } : r), undefined)
     const requests: LabelRequest[] = tags.map((t, i) => {
       const point = points[i]
       const label = t.silent ? { w: 0, h: 0 } : boxes[i] ?? { w: 0, h: 0 }
@@ -429,9 +432,10 @@ export function MapView(props: MapContent & {
         const disc = square(point, ring * RING_DISC)
         return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2, wrap: boxes[i]?.wrap }
       }
-      // A name alone sits just beside its point, on whichever side is clear of the marks around it (the castle's
-      // guard goes above its two crests).
-      if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2 }
+      // A name alone sits just beside its point, on whichever side is clear of the marks around it. On a phone the
+      // castle guard's point lies right on top of the castle's crests, drawn at their floor size, so every spot round
+      // the point runs into them: there its spots go round the crests instead, which read as its own.
+      if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2, box: t.kind === 'castle' && !wide ? castle : undefined }
       // A site's name hugs its sprite, over the top or bottom edge of the art, but never over its own element badge.
       if (t.mark === 'art') {
         const body = artOf(point, t.structure!)

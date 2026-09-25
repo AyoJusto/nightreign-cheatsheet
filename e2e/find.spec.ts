@@ -316,6 +316,14 @@ test('a tap on a crest calls out its name, and a second tap or a pan hides it', 
   await expect(callout).toHaveCount(0)
 })
 
+// The castle is the map's centre: at default zoom it carries its guard's name and at least one of its crests' names.
+test("the castle names its guard and at least one of its bosses at default zoom", async ({ page }) => {
+  await page.goto('/seed/1003')
+  await expect(page.locator('.marker-castle.marker-plain .map-name')).toHaveCSS('opacity', '1')
+  const crestNames = page.locator('.marker-castle:not(.marker-plain) .map-name')
+  await expect.poll(() => crestNames.evaluateAll((els) => els.filter((e) => getComputedStyle(e).opacity === '1').length)).toBeGreaterThanOrEqual(1)
+})
+
 test("a callout on a mark whose name shows hides that name while it is open, and its plate is opaque", async ({ page }) => {
   await page.goto('/seed/1003')
   const mark = page.locator('.marker-boss').filter({ hasText: "Night's Cavalry" })
