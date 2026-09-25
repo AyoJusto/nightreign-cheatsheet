@@ -19,6 +19,29 @@ export const normalizeBossName = (name: string) =>
 export const applyPerName = (label: string, resolve: (name: string) => string) =>
   label.split(', ').map(resolve).join(', ')
 
+/**
+ * What is inside each site of one seed, by slot (the source's poiLabels: "Guardian Golem", "Spider Scorpions").
+ * '@event' is the source's placeholder for the day's event, not a name, so it goes. Caravans stand on open
+ * ground, so theirs is the one label kept on a slot with nothing built; any other label there (or on a slot the
+ * map has no place for) is a source slip, skipped and reported rather than drawn floating over nothing.
+ */
+export function toInside(
+  labels: Record<string, string> | undefined,
+  slots: Record<string, string | null>,
+  resolve: (name: string) => string,
+) {
+  const inside: Record<string, string> = {}
+  const skipped: string[] = []
+  for (const [slot, label] of Object.entries(labels ?? {})) {
+    if (label === '@event') continue
+    if (hasCjk(label)) throw new Error(`non-English inside label: ${label}`)
+    const built = Boolean(slots[slot])
+    if (!built && !(slot in slots && label === 'Caravans')) { skipped.push(`${slot}: ${label}`); continue }
+    inside[slot] = applyPerName(label, resolve)
+  }
+  return { inside, skipped }
+}
+
 export function toStructureKey(raw: string): string | null {
   if (raw === '' || raw === 'empty_spawn') return null
   const value = raw.replace(/_spawn$/, '')
@@ -126,8 +149,22 @@ function main() {
 
   const slotMap = (list: { id: string; x: number; y: number }[]) =>
     Object.fromEntries(list.map((c) => [c.id, { x: c.x, y: c.y }]))
+  // Where the Limveld castle's guard label and its two bosses sit. The source places the boss icons per earth,
+  // but they differ by at most a unit or two, so one point per role serves every Limveld earth (checked below).
+  // Noklateo swallows the castle and Great Hollow has none in this data, so neither ever reads it.
+  const castleBoss = (slot: string) => {
+    const points = Object.entries<any[]>(remote.bossPositions.positions)
+      .flatMap(([mapType, list]) => list.filter((p) => p.slot === slot).map((p) => ({ mapType, x: p.x, y: p.y })))
+    const normal = points.find((p) => p.mapType === 'Normal')
+    if (!normal) throw new Error(`no ${slot} position on the Normal map`)
+    for (const p of points) {
+      if (Math.hypot(p.x - normal.x, p.y - normal.y) > 3) problems.push(`${slot} on ${p.mapType} is far from Normal's`)
+    }
+    return { x: normal.x, y: normal.y }
+  }
+  const castleAt = { crew: remote.castleCrew.position, rooftop: castleBoss('Castle Rooftop'), basement: castleBoss('Castle Basement') }
   const maps = {
-    limveld: { slots: slotMap(observer.coordinates.baseSlots) },
+    limveld: { slots: slotMap(observer.coordinates.baseSlots), castle: castleAt },
     'great-hollow': { slots: slotMap(observer.coordinates.greatHollowSlots) },
   }
   const evergaolAt = Object.fromEntries(observer.coordinates.evergaols.map((e: any) => [e.id, e]))
@@ -151,6 +188,9 @@ function main() {
       if (key !== null && !map.slots[slot]) problems.push(`seed ${id} slot ${slot} has no coordinates`)
       if (key !== null || map.slots[slot]) slots[slot] = key
     }
+
+    const labelled = toInside(remote.poiLabels.seeds[id], slots, bossName)
+    for (const slip of labelled.skipped) console.warn(`seed ${id} inside label skipped, ${slip}`)
 
     const markers: any[] = []
     const nc = remote.nightCircles.seeds[id]
@@ -204,6 +244,7 @@ function main() {
       event: toEvent(s.Event, observer.eventInfo),
       spawn: spawnEntry?.[0] ?? '',
       slots,
+      inside: labelled.inside,
       nights: {
         1: { boss: bossName(nc?.night1?.boss ?? ''), circle: nc?.night1?.circle ?? null },
         2: { boss: bossName(nc?.night2?.boss ?? ''), circle: nc?.night2?.circle ?? null },
@@ -245,6 +286,7 @@ function main() {
 function reportCoverage(seeds: any[], bossNotes: Record<string, string>) {
   const count = (pred: (s: any) => boolean) => seeds.filter(pred).length
   console.log('castle', count((s) => s.castle), 'event', count((s) => s.event), 'boss notes', Object.keys(bossNotes).length)
+  console.log('inside labels', seeds.reduce((n, s) => n + Object.keys(s.inside).length, 0), 'on', count((s) => Object.keys(s.inside).length > 0), 'seeds')
   for (const layer of ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing']) {
     console.log(layer, count((s) => s.markers.some((m: any) => m.layer === layer)))
   }

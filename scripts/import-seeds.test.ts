@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside } from './import-seeds.ts'
 
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
@@ -81,13 +81,42 @@ describe('import translation', () => {
         if (s.castle?.basement) addAll(s.castle.basement)
         if (s.castle?.rooftop) addAll(s.castle.rooftop)
         for (const m of s.markers) if (m.layer === 'boss' || m.layer === 'evergaol') addAll(m.label)
+        for (const label of Object.values<string>(s.inside)) addAll(label)
       }
+      expect(names.has('Guardian Golem'), "the inside labels are part of the check").toBe(true)
       const byKey = new Map<string, string>()
       for (const name of names) {
         const key = normalizeBossName(name)
         expect(byKey.get(key), `"${name}" and "${byKey.get(key)}" normalize to the same key`).toBeUndefined()
         byKey.set(key, name)
       }
+    })
+  })
+
+  describe("what's inside each site", () => {
+    const slots = { '1': 'great-church', '2': 'ruined-rise', '3': null, '4': 'marsh:poison' }
+    const same = (n: string) => n
+    it('keeps the label of every built slot, by slot', () => {
+      expect(toInside({ '1': 'Guardian Golem', '4': 'Spider Scorpions' }, slots, same).inside).toEqual({ '1': 'Guardian Golem', '4': 'Spider Scorpions' })
+    })
+    it('spells each name the canonical way, including every name in a joined label', () => {
+      const resolve = (n: string) => (n === 'Windy Trees' ? 'Windy Tree' : n)
+      expect(toInside({ '2': 'Imp Statue, Windy Trees, Second Floor' }, slots, resolve).inside).toEqual({ '2': 'Imp Statue, Windy Tree, Second Floor' })
+    })
+    it("drops the source's event sentinel, which is not a name", () => {
+      expect(toInside({ '3': '@event', '1': '@event' }, slots, same)).toEqual({ inside: {}, skipped: [] })
+    })
+    it('keeps Caravans on open ground, where they stand with no building', () => {
+      expect(toInside({ '3': 'Caravans' }, slots, same).inside).toEqual({ '3': 'Caravans' })
+    })
+    it('skips, and reports, any other label on a slot with nothing built or no place on the map', () => {
+      expect(toInside({ '3': 'Mausoleum Knight', '99': 'Guardian Golem' }, slots, same)).toEqual({ inside: {}, skipped: ['3: Mausoleum Knight', '99: Guardian Golem'] })
+    })
+    it('treats a seed with no labels (Great Hollow) as nothing inside', () => {
+      expect(toInside(undefined, slots, same)).toEqual({ inside: {}, skipped: [] })
+    })
+    it('rejects non-English labels', () => {
+      expect(() => toInside({ '1': '教堂' }, slots, same)).toThrow(/non-English/)
     })
   })
 

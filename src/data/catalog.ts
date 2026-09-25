@@ -1,5 +1,5 @@
 import data from './seeds.json'
-import type { Seed } from '../domain/seed'
+import type { CastlePoints, Seed } from '../domain/seed'
 import { EARTHS, mapFamily, type EarthId, type NightlordId, type SlotId } from '../domain/names'
 
 const all = data.seeds as unknown as Seed[]
@@ -14,5 +14,7 @@ export const catalog = {
     EARTHS.map((e) => e.id).filter((earth) => all.some((s) => s.nightlord === nightlord && s.earth === earth)),
   /** Short fight notes for a boss, by the name a seed shows; undefined when the data has none. */
   bossNotes: (name: string): string | undefined => notes[name],
+  /** The castle's points on this earth's map; undefined where there is no castle (Noklateo, Great Hollow). */
+  castleOf: (earth: EarthId): CastlePoints | undefined => (earth === 'noklateo' || earth === 'great-hollow' ? undefined : data.maps.limveld.castle),
   slotsOf: (earth: EarthId) => data.maps[mapFamily(earth)].slots as Record<SlotId, { x: number; y: number }>,
 }

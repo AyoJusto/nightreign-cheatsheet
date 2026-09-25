@@ -59,6 +59,27 @@ describe('seed data', () => {
       for (const boss of bosses) if (boss) expect(catalog.bossNotes(boss), `seed ${seed.id} ${boss}`).toBeTruthy()
     }
   })
+  it('knows where the castle is on every map a castle crew holds', () => {
+    for (const seed of catalog.all) {
+      if (!seed.castle) continue
+      const at = catalog.castleOf(seed.earth)
+      expect(at, `seed ${seed.id}`).toBeDefined()
+      for (const point of [at!.crew, at!.rooftop, at!.basement]) {
+        expect(point.x).toBeGreaterThan(0)
+        expect(point.y).toBeGreaterThan(0)
+      }
+    }
+    expect(catalog.castleOf('great-hollow')).toBeUndefined()
+  })
+  it("says what is inside the sites of every Limveld seed, and only on built slots or open-ground caravans", () => {
+    for (const seed of catalog.all) {
+      const labels = Object.entries(seed.inside)
+      if (seed.earth !== 'great-hollow') expect(labels.length, `seed ${seed.id}`).toBeGreaterThan(0)
+      for (const [slot, label] of labels) {
+        expect(seed.slots[slot] !== null || label === 'Caravans', `seed ${seed.id} slot ${slot} ${label}`).toBe(true)
+      }
+    }
+  })
   it('offers every nightlord at least one shifting earth', () => {
     for (const n of NIGHTLORDS) expect(catalog.earthsFor(n.id).length).toBeGreaterThan(0)
     expect(EARTHS.length).toBe(6)

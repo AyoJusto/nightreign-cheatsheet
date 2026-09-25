@@ -4,7 +4,7 @@ import type { Seed } from './seed'
 import { catalog } from '../data/catalog'
 
 const seed = (id: string, spawn: string, slots: Record<string, string | null>): Seed => ({
-  id, nightlord: 'tricephalos', earth: 'default', event: null, spawn, slots,
+  id, nightlord: 'tricephalos', earth: 'default', event: null, spawn, slots, inside: {},
   nights: { 1: { boss: 'A', circle: null }, 2: { boss: 'B', circle: null } },
   castle: null, oldGaol: false, markers: [],
 })
