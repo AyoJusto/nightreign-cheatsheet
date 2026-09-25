@@ -258,6 +258,17 @@ test("a sighted site's sheet marks the recorded option as current", async ({ pag
   await expect(options.locator('[aria-current]')).toHaveCount(0)
 })
 
+// A slot sighted empty ("Nothing here") must not read as an unexplored site: it draws its own empty mark, not
+// the unknown-site "?" orb (final I2).
+test('a "Nothing here" sighting does not draw the unknown-site orb', async ({ page }) => {
+  const target = targets[0]
+  const emptySlot = Object.entries<string | null>(target.slots).find(([slot, key]) => key === null && slot !== target.spawn)![0]
+  await page.goto(`/find/${target.nightlord}/${target.earth}?s=spawn@${target.spawn},${emptySlot}@none`)
+  const pin = page.locator(`.pin[data-slot="${emptySlot}"]`)
+  await expect(pin).toHaveClass(/\bpin-sighted\b/)
+  await expect(pin.locator('img[src*="unknown.webp"]')).toHaveCount(0)
+})
+
 // A kind tile shows its elements as 14px emblems; hovering it names them, so no element rests on colour (iter-10 fix 2).
 test('desktop: hovering a kind tile names its elements', async ({ page, isMobile }) => {
   test.skip(isMobile, 'the side panel is desktop only')

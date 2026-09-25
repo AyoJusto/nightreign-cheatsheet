@@ -508,9 +508,11 @@ export function MapView(props: MapContent & {
             animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
             transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
           >
-            <motion.span className="pin-body" style={{ scale: p.structure ? artScale : p.state === 'spawn' ? iconScale : orbScale }}>
-              <motion.span className={p.structure ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
-                {p.structure
+            {/* A site sighted empty ("Nothing here") draws the same dashed-ring empty mark as the sheet and the
+                Sightings list (StructureIcon with no structure), never the unexplored "?" orb (final I2). */}
+            <motion.span className="pin-body" style={{ scale: p.structure || p.state === 'sighted' ? artScale : p.state === 'spawn' ? iconScale : orbScale }}>
+              <motion.span className={p.structure || p.state === 'sighted' ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
+                {p.structure || p.state === 'sighted'
                   ? <StructureIcon structure={p.structure} size={ART_SIZE} />
                   : p.state === 'spawn'
                     ? <img className="orb" src={ORB_ART.spawn} width={PLAYER_BOX} height={PLAYER_BOX} data-disc={0.48} alt="" draggable={false} />
