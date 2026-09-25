@@ -79,7 +79,20 @@ test('a slot sheet at half scrolls to its last option', async ({ page, isMobile 
   await page.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
   const list = page.locator('.options')
   await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
-  await page.waitForTimeout(700) // let the sheet rise
+  // Let the sheet rise: wait until it holds still for several frames, not a fixed time, since a slow
+  // (software-rendered) frame rate stretches the spring's wall-clock time.
+  await page.locator('.sheet').evaluate((el) => new Promise<void>((done) => {
+    let last = NaN
+    let still = 0
+    const tick = () => {
+      const top = el.getBoundingClientRect().top
+      still = top === last ? still + 1 : 0
+      last = top
+      if (still >= 4) done()
+      else requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }))
   const last = await list.evaluate((el) => {
     const body = el.closest('.sheet-body') as HTMLElement
     body.scrollTop = body.scrollHeight
