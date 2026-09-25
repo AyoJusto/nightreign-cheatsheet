@@ -683,6 +683,8 @@ test.describe('the Nightlord medallion', () => {
     const pick = page.getByRole('img', { name: phrase, exact: true })
     await expect(pick).toBeVisible()
     await expect(pick.locator('.nl-medal')).toBeVisible()
+    // On phone the panel rises over the grid's picked medallion and its name, so it names the pick itself.
+    if (isMobile) await expect(pick.locator('.nl-pick-name')).toHaveText(nightlordName(seed.nightlord))
     for (const k of statuses) await expect(pick.locator('.nl-row').filter({ hasText: 'Weak status' })).toContainText(DAMAGE_NAMES[k])
   })
 

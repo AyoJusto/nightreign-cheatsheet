@@ -139,7 +139,11 @@ export function WeaknessCard({ nightlord }: { nightlord: NightlordId }) {
   const weakness = catalog.nightlordWeakness(nightlord)
   return (
     <div className="nl-pick" role="img" aria-label={`${nightlordName(nightlord)}: ${weaknessPhrase(weakness)}`}>
-      <span className="nl-medal"><MedallionArt nightlord={nightlord} /></span>
+      {/* Named under its medallion: on a phone the panel rises over the grid's own picked medallion and its name. */}
+      <span className="nl-pick-who">
+        <span className="nl-medal"><MedallionArt nightlord={nightlord} /></span>
+        <span className="nl-pick-name">{nightlordName(nightlord)}</span>
+      </span>
       <div className="nl-card">
         <Frame />
         <CardRows weakness={weakness} />
