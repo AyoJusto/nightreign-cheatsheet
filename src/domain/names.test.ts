@@ -24,4 +24,9 @@ describe('weaknessPhrase', () => {
     expect(weaknessPhrase({ weak: [], resist: ['holy', 'lightning'] })).toBe('resists Holy, Lightning')
     expect(weaknessPhrase({ weak: [], resist: [] })).toBe('')
   })
+  it("speaks a Nightlord's fastest status last, as its card's third row shows it", () => {
+    expect(weaknessPhrase({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })).toBe('weak to Holy; resists Fire; fastest status Sleep')
+    expect(weaknessPhrase({ weak: ['holy'], resist: [], status: ['frost', 'rot'] })).toBe('weak to Holy; fastest status Frostbite, Scarlet Rot')
+    expect(weaknessPhrase({ weak: ['poison'], resist: [], status: [] })).toBe('weak to Poison')
+  })
 })

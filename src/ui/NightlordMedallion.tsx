@@ -118,6 +118,8 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
             <Frame />
             {weakness.weak.length > 0 && <CardRow label="Weak" keys={weakness.weak} />}
             {weakness.resist.length > 0 && <CardRow label="Resist" keys={weakness.resist} />}
+            {/* The statuses that build up fastest on it (the cheatsheet's "Also"), where its listed weakness is a damage type. */}
+            {weakness.status && weakness.status.length > 0 && <CardRow label="Status" keys={weakness.status} hint="builds up fastest" />}
           </motion.div>
         )}
       </AnimatePresence>
@@ -125,12 +127,12 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
   )
 }
 
-function CardRow({ label, keys }: { label: string; keys: DamageKey[] }) {
+function CardRow({ label, keys, hint }: { label: string; keys: DamageKey[]; hint?: string }) {
   return (
     <div className="nl-row">
       <span className="nl-row-label">{label}</span>
       <span className="nl-icons">
-        {keys.map((k) => <img key={k} src={`/damage/${k}.webp`} alt="" title={DAMAGE_NAMES[k]} draggable={false} />)}
+        {keys.map((k) => <img key={k} src={`/damage/${k}.webp`} alt="" title={hint ? `${DAMAGE_NAMES[k]}: ${hint}` : DAMAGE_NAMES[k]} draggable={false} />)}
       </span>
     </div>
   )

@@ -8,8 +8,11 @@ export type ElementId =
 export type DamageKey =
   | 'standard' | 'slash' | 'strike' | 'pierce' | 'magic' | 'fire' | 'lightning' | 'holy'
   | 'bleed' | 'frost' | 'rot' | 'poison' | 'sleep' | 'madness'
-/** What to hit a boss with (`weak`, best first) and what it shrugs off (`resist`). */
-export interface Weakness { weak: DamageKey[]; resist: DamageKey[] }
+/**
+ * What to hit a boss with (`weak`, best first) and what it shrugs off (`resist`). A Nightlord listed for a damage
+ * type also has `status`: the statuses that build up fastest on it, the cheatsheet's "Also" line.
+ */
+export interface Weakness { weak: DamageKey[]; resist: DamageKey[]; status?: DamageKey[] }
 export type SlotId = string
 /** `kind` or `kind:element`, e.g. `great-church:fire`. */
 export type StructureKey = string
@@ -65,11 +68,14 @@ export const DAMAGE_NAMES: Record<DamageKey, string> = {
   bleed: 'Blood Loss', frost: 'Frostbite', rot: 'Scarlet Rot', poison: 'Poison', sleep: 'Sleep', madness: 'Madness',
 }
 
-/** What a weakness card shows, as words for a screen reader: "weak to Holy, Pierce; resists Fire". */
+/** What a weakness card shows, as words for a screen reader: "weak to Holy, Pierce; resists Fire; fastest status Sleep". */
 export function weaknessPhrase(w: Weakness): string {
   const words = (keys: DamageKey[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
-  return [w.weak.length ? `weak to ${words(w.weak)}` : '', w.resist.length ? `resists ${words(w.resist)}` : '']
-    .filter(Boolean).join('; ')
+  return [
+    w.weak.length ? `weak to ${words(w.weak)}` : '',
+    w.resist.length ? `resists ${words(w.resist)}` : '',
+    w.status?.length ? `fastest status ${words(w.status)}` : '',
+  ].filter(Boolean).join('; ')
 }
 
 /** Two letters, unique per element, shown if an emblem image fails to load: first letters alone collide (Fire/Frostbite, Bleed/Blight). */

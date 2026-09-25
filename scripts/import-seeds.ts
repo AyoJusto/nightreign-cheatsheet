@@ -124,11 +124,14 @@ export function toWeakness(forms: Form[], listed?: IconKey): Weakness {
  * trustworthy numbers, is `unmatched` and gets nothing: a missing weakness is honest, an invented one is not.
  */
 export function weaknessTable(expeditions: Expedition[], nightBosses: NightBoss[], nightNames: string[]) {
-  const nightlords: Record<string, Weakness> = {}
+  const nightlords: Record<string, Weakness & { status: IconKey[] }> = {}
   for (const slug of Object.values<string>(aliases.nightlordByNumber)) {
     const expedition = expeditions.find((e) => e.id === slug)
     if (!expedition) throw new Error(`no weakness data for nightlord ${slug}`)
-    nightlords[slug] = toWeakness(expedition.forms, expedition.listed.key)
+    // The cheatsheet's "Also" line: a Nightlord listed for a damage type also gets the statuses that build up
+    // fastest on it (Sleep for Tricephalos); one listed for a status already leads weak with it.
+    const status = expedition.listed.kind === 'damage' ? summarize(expedition.forms).fastestStatuses : []
+    nightlords[slug] = { ...toWeakness(expedition.forms, expedition.listed.key), status }
   }
   const byName = new Map(nightBosses.map((b) => [b.name, b]))
   const bosses: Record<string, Weakness> = {}

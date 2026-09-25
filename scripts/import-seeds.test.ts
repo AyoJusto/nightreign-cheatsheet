@@ -233,6 +233,12 @@ describe('boss weaknesses', () => {
       expect(Object.keys(table.nightlords).sort()).toEqual(Object.values<string>(aliases.nightlordByNumber).sort())
       for (const [slug, w] of Object.entries(table.nightlords)) expect(w.weak.length, slug).toBeGreaterThan(0)
     })
+    it("gives a Nightlord listed for a damage type its fastest status too, as the cheatsheet's Also line does", () => {
+      expect(table.nightlords.tricephalos.status).toEqual(['sleep'])
+      // Gaping Jaw is listed for Poison, a status: its other lever is a damage type, already in weak.
+      expect(table.nightlords['gaping-jaw'].status).toEqual([])
+      for (const e of EXPEDITIONS) expect(table.nightlords[e.id].status, e.id).toEqual(e.listed.kind === 'damage' ? e.fastestStatuses : [])
+    })
     it('matches what the game says of Tricephalos: weak to holy, resists fire', () => {
       expect(table.nightlords.tricephalos.weak[0]).toBe('holy')
       expect(table.nightlords.tricephalos.resist).toContain('fire')
