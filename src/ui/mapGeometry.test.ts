@@ -281,6 +281,23 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const [ring] = placeLabels([ringAt(200, 100, 40)], { w: 400, h: 800, top: 60 }, [], 9, 8, 6)
     expect(ring).toMatchObject({ x: 160, y: 142, shown: true })
   })
+  // A crest's drawn box, as MapView asks for it: another mark's art, which a night's name may not lie across.
+  const crest = (x: number, y: number) => ({ point: { x, y }, label: { w: 0, h: 0 }, rank: 3, keep: false, mark: 12 })
+  it("writes a night's name below its ring when a crest stands above it, never across the crest", () => {
+    const [ring] = placeLabels([ringAt(200, 300, 40), crest(200, 245)], frame, [], 9, 8, 6)
+    expect(ring).toMatchObject({ x: 160, y: 342, shown: true })
+  })
+  it('writes it across the middle of its ring when crests stand above and below, and beside it when the middle is taken too', () => {
+    const [across] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355)], frame, [], 9, 8, 6)
+    expect(across).toMatchObject({ x: 160, y: 285, shown: true })
+    const [beside] = placeLabels([ringAt(200, 300, 40), crest(200, 245), crest(200, 355), crest(200, 300)], frame, [], 9, 8, 6)
+    expect(beside).toMatchObject({ x: 242, y: 285, shown: true })
+  })
+  it("keeps every other name off a night's name, as off any name placed before it", () => {
+    const [ring, name] = placeLabels([ringAt(200, 300, 40), { point: { x: 200, y: 215 }, label, rank: 3, keep: false }], frame, [], 9, 8, 6)
+    expect(name.shown).toBe(true)
+    expect(intersects(rectOf(ring), rectOf(name))).toBe(false)
+  })
   it("keeps every other name off a ring's disc, so no site's name reads as the night's", () => {
     // A site in the ring: its name would go just under its art, inside the disc. Only outside the disc will do.
     const site = { point: { x: 200, y: 300 }, label, rank: 2, keep: false, gap: 12, mark: 10 }
@@ -314,6 +331,39 @@ describe('placeLabels: names sized to the art they belong to', () => {
     const own = { x0: 160, y0: 282, x1: 240, y1: 318 }
     const [name] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 2, keep: false, box: own, body: [own], gap: -2 }], frame, [], 9, 8, 6)
     expect(name).toMatchObject({ x: 160, y: 316, shown: true })
+  })
+  it('never covers its own element badge: where the tuck under its art would, it moves, tucked elsewhere or clear of the whole mark', () => {
+    // A township's sprite (80 x 36) with its badge in the lower-right corner of its 80px square, reaching below it.
+    const sprite = { x0: 160, y0: 282, x1: 240, y1: 318 }
+    const badge = { x0: 208, y0: 308, x1: 240, y1: 340 }
+    const box = { x0: 160, y0: 282, x1: 240, y1: 340 }
+    const heart = { ...sprite, y0: sprite.y0 + 6, y1: sprite.y1 - 6 }
+    const [name] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 2, keep: false, box, body: [sprite, badge], own: [heart, badge], gap: -6 }], frame, [], 9, 8, 6)
+    expect(name.shown).toBe(true)
+    expect(intersects(rectOf(name), badge)).toBe(false)
+    expect(intersects(rectOf(name), heart)).toBe(false)
+    // Below, the tuck would cover the badge; above, tucked over the top of the sprite, is clear of both.
+    expect(name).toMatchObject({ x: 160, y: 258 })
+    // With the top and both sides taken, the spot below comes back, 1px clear of the whole mark.
+    const taken = [{ x0: 150, y0: 240, x1: 250, y1: 280 }, { x0: 241, y0: 250, x1: 400, y1: 340 }, { x0: 0, y0: 250, x1: 159, y1: 340 }]
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [...taken, heart, badge], -6, 8, 0, false, [], box)).toEqual({ x: 160, y: 341, clear: true, own: true })
+  })
+  it('tucks over the top or bottom of its own art, never its sides', () => {
+    const sprite = { x0: 170, y0: 270, x1: 230, y1: 330 }
+    const heart = { ...sprite, y0: 280, y1: 320 }
+    // Below and above are taken: the name goes beside the art, 1px clear of it, not tucked into it.
+    const taken = [{ x0: 150, y0: 322, x1: 250, y1: 360 }, { x0: 150, y0: 240, x1: 250, y1: 278 }]
+    expect(placeLabel({ x: 200, y: 300 }, label, frame, [...taken, heart], -10, 8, 0, false, [], sprite)).toEqual({ x: 231, y: 285, clear: true, own: true })
+  })
+  it('keeps at least 4px between names of different marks, above and below as well as side by side', () => {
+    // A's name goes below its point (309 to 339). B's spot below is taken, and its spot above would sit 2px under A's.
+    const a = { point: { x: 200, y: 300 }, label, rank: 2, keep: false }
+    const b = { point: { x: 200, y: 380 }, label, rank: 2, keep: false }
+    const [first, second] = placeLabels([a, b], frame, [], 9, 8, 6, [{ x0: 150, y0: 388, x1: 250, y1: 430 }])
+    expect(first.shown && second.shown).toBe(true)
+    const gapX = Math.max(second.x - (first.x + label.w), first.x - (second.x + label.w))
+    const gapY = Math.max(second.y - (first.y + label.h), first.y - (second.y + label.h))
+    expect(Math.max(gapX, gapY)).toBeGreaterThanOrEqual(4)
   })
   it('tries all eight spots round its mark before giving up: with below, above and both sides taken, a diagonal', () => {
     const block = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
@@ -425,6 +475,17 @@ describe('placeLabels: a name stays with its own mark', () => {
     const [name] = placeLabels([{ point: { x: 398, y: 300 }, label: { w: 150, h: 30 }, rank: 2, keep: false, mark: 30, gap: 34 }], frame, [], 9, 8, 6)
     expect(name.shown).toBe(false)
   })
+  it("counts a long name beside its crest as the crest's when it touches it and keeps 10px clear of every other mark", () => {
+    const crest = { x0: 188, y0: 288, x1: 212, y1: 312 }
+    const wide = { w: 120, h: 16 }
+    const taken = [{ x0: 150, y0: 315, x1: 250, y1: 330 }, { x0: 150, y0: 270, x1: 250, y1: 285 }]
+    // Right of the crest, the name's middle lies nearer a mark below its far end, but its edge is 20px from that mark.
+    const far = { x0: 288, y0: 328, x1: 312, y1: 352 }
+    expect(placeLabel({ x: 200, y: 300 }, wide, frame, [...taken, far], 1, 8, 12, false, [far], crest)).toEqual({ x: 213, y: 292, clear: true, own: true })
+    // 2px from it, the name would read as that mark's: it goes to the crest's other side.
+    const near = { x0: 288, y0: 310, x1: 312, y1: 334 }
+    expect(placeLabel({ x: 200, y: 300 }, wide, frame, [...taken, near], 1, 8, 12, false, [near], crest)).toEqual({ x: 67, y: 292, clear: true, own: true })
+  })
   it("never puts a name nearer another mark's point than its own", () => {
     // Below the site at (200, 300) is free of every box, but its centre would sit right on a nameless point
     // mark at (200, 345), such as a chest whose icon covers nothing there.
@@ -451,6 +512,8 @@ describe('night boss names on the ring', () => {
     // Names already written short keep both halves.
     expect(shortBossName('DBW & Curseblade')).toBe('DBW & Curseblade')
     expect(shortBossName('Tree Sentinel')).toBe('Tree Sentinel')
+    // One line on a phone: a name too long for it by its short name.
+    expect(shortBossName('Dancer of the Boreal Valley')).toBe('Dancer')
   })
 })
 

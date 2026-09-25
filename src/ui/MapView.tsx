@@ -394,8 +394,8 @@ export function MapView(props: MapContent & {
       const point = points[i]
       const label = t.silent ? { w: 0, h: 0 } : boxes[i] ?? { w: 0, h: 0 }
       const rank = labelRank(t.kind)
-      // A night's name sits centred just above its ring (below it where the pill leaves no room), and no other name
-      // may enter the ring's disc: inside it, a site's name would read as the night's.
+      // A night's name sits centred just above its ring, else below it, across it or beside it, wherever it covers no
+      // other mark's art; no other name may enter the ring's disc: inside it, a site's name would read as the night's.
       if (t.mark === 'ring') {
         const disc = square(point, ring * RING_DISC)
         return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2 }
@@ -403,11 +403,15 @@ export function MapView(props: MapContent & {
       // A name alone sits just beside its point, on whichever side is clear of the marks around it (the castle's
       // guard goes above its two crests).
       if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2 }
-      // A site's name hugs its sprite, over the art's own edge.
+      // A site's name hugs its sprite, over the top or bottom edge of the art, but never over its own element badge.
       if (t.mark === 'art') {
         const body = artOf(point, t.structure!)
+        const [sprite, ...badge] = body
         const box = body.reduce((u, r) => ({ x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) }))
-        return { point, label, rank, keep: false, mark: 0, box, body, gap: -art * ART_TUCK }
+        const tuck = art * ART_TUCK
+        const heart = { ...sprite, y0: sprite.y0 + tuck, y1: sprite.y1 - tuck }
+        const own = [...(heart.y1 > heart.y0 ? [heart] : []), ...badge]
+        return { point, label, rank, keep: false, mark: 0, box, body, own, gap: -tuck }
       }
       const r = icon * (t.kind === 'evergaol' ? EVERGAOL_BODY : ICON_BODY)
       return { point, label, rank, keep: false, mark: r, box: square(point, r), gap: 1 }

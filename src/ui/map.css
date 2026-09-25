@@ -74,14 +74,11 @@
   text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 @media (min-width: 900px) { .map-name { font-size: 13px; line-height: 15px; max-width: 124px; } }
-/* A night's boss above its ring, in the game's face; the night's number in the ring's colour. */
-.marker-circle .map-name {
-  font-family: var(--font-display); font-weight: 700; max-width: 112px; letter-spacing: 0.02em;
-  text-shadow: 0 0 2px #000, 0 0 3px #000, 0 0 6px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
-}
+/* A night's boss by its ring, in the game's face, on one line (never broken mid-name); the night's number in the
+   ring's colour. The same bone and stacked dark glow as the other names, a weight heavier for Cinzel's thin strokes. */
+.marker-circle .map-name { font-family: var(--font-display); font-weight: 600; max-width: none; white-space: nowrap; letter-spacing: 0.02em; }
 /* The number in the system face: Cinzel's 1 reads as an I. */
 .marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-family: var(--font); font-weight: 800; font-size: 1.2em; }
-@media (min-width: 900px) { .marker-circle .map-name { max-width: 128px; } }
 /* A name alone (the castle's guard) sits on its point on one line, clear of the marks below it. */
 .marker-plain .map-name { max-width: none; white-space: nowrap; }
 /* The castle's guard, in the game's face, over the castle. */
