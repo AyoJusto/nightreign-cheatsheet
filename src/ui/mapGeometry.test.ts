@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName } from './mapGeometry'
 import { catalog } from '../data/catalog'
 
 // Great Hollow slots 9 and 18 sit 32 units apart, so their 44px hit areas overlap at default zoom.
@@ -234,5 +234,115 @@ describe('placeLabels: markers never cover each other', () => {
   it('hides the label of a glyph outside the visible band', () => {
     const [off] = placeLabels([at(200, 790)], { w: 400, h: 700 }, [], 9, 8, 6)
     expect(off.shown).toBe(false)
+  })
+})
+
+describe('placeLabels: names sized to the art they belong to', () => {
+  const frame = { w: 400, h: 800 }
+  const label = { w: 80, h: 30 }
+  const rectOf = (s: { x: number; y: number }, l = label) => ({ x0: s.x, y0: s.y, x1: s.x + l.w, y1: s.y + l.h })
+  const intersects = (a: { x0: number; y0: number; x1: number; y1: number }, b: typeof a) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0
+
+  it('puts a name its own gap below its point, clear of its own large art', () => {
+    const [site] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 2, keep: false, gap: 34, mark: 30 }], frame, [], 9, 8, 6)
+    expect(site).toMatchObject({ x: 160, y: 334, shown: true })
+  })
+  it("keeps other names off a large art's whole box, not only a small glyph around its point", () => {
+    // The boss's first choice (below its point) would lie across the site's art, 30px around (200, 330).
+    const site = { point: { x: 200, y: 330 }, label, rank: 2, keep: false, gap: 34, mark: 30 }
+    const boss = { point: { x: 200, y: 262 }, label, rank: 3, keep: false }
+    const [, b] = placeLabels([site, boss], frame, [], 9, 8, 6)
+    expect(b.shown).toBe(true)
+    expect(intersects(rectOf(b), { x0: 170, y0: 300, x1: 230, y1: 360 })).toBe(false)
+  })
+  it('centres a night name on its ring and shows it even over art', () => {
+    const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
+    const [ring] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 0, keep: true, center: true }], frame, [everywhere], 9, 8, 6)
+    expect(ring).toMatchObject({ x: 160, y: 285, shown: true })
+  })
+  it('a centred name that is not kept hides when something is under it', () => {
+    const pin = { x0: 190, y0: 290, x1: 210, y1: 310 }
+    const [guard] = placeLabels([{ point: { x: 200, y: 300 }, label, rank: 1, keep: false, center: true }], frame, [pin], 9, 8, 6)
+    expect(guard.shown).toBe(false)
+  })
+  it("may lie over the edge of another site's art, as the game's names do, but not across it", () => {
+    const point = { x: 200, y: 300 }
+    // Art boxes crowd every spot around the point, each clipping a thin strip of where a label would go.
+    const edge = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
+    const clipped = [edge(0, 0, 400, 275), edge(0, 332, 400, 800), edge(0, 0, 125, 800), edge(275, 0, 400, 800)]
+    const [name] = placeLabels([{ point, label, rank: 3, keep: false }], frame, clipped, 9, 8, 6)
+    expect(name.shown).toBe(true)
+    // Art across most of every spot hides it instead.
+    const covered = [edge(0, 0, 400, 290), edge(0, 312, 400, 800), edge(0, 0, 190, 800), edge(210, 0, 400, 800)]
+    const [hidden] = placeLabels([{ point, label, rank: 3, keep: false }], frame, covered, 9, 8, 6)
+    expect(hidden.shown).toBe(false)
+  })
+  it('never lets a name lie over another name, even a little, on a crowded map', () => {
+    // A fixed pseudo-random crowd of 80 marks among 40 art boxes, as on a busy phone map.
+    let seed = 7
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+    const crowd = Array.from({ length: 80 }, (_, i) => ({
+      point: { x: random() * 400, y: random() * 800 }, label: { w: 40 + random() * 60, h: 15 + (i % 2) * 15 }, rank: i % 6, keep: false, mark: 12,
+    }))
+    const art = Array.from({ length: 40 }, () => {
+      const x = random() * 400, y = random() * 800
+      return { x0: x - 18, y0: y - 18, x1: x + 18, y1: y + 18 }
+    })
+    const spots = placeLabels(crowd, frame, art, 9, 8, 6)
+    const rects = spots.map((s, i) => ({ ...rectOf(s, crowd[i].label), shown: s.shown })).filter((r) => r.shown)
+    expect(rects.length).toBeGreaterThan(10)
+    for (const a of rects) for (const b of rects) if (a !== b) expect(intersects(a, b)).toBe(false)
+  })
+  it('never lets two shown names overlap, whatever their ranks', () => {
+    const at = (x: number, y: number, rank: number) => ({ point: { x, y }, label, rank, keep: false, gap: 20, mark: 16 })
+    const requests = [at(200, 300, 4), at(215, 305, 2), at(190, 290, 3), at(205, 320, 1), at(200, 300, 5)]
+    const spots = placeLabels(requests, frame, [], 9, 8, 6)
+    const shown = spots.filter((s) => s.shown)
+    for (const a of shown) for (const b of shown) if (a !== b) expect(intersects(rectOf(a), rectOf(b))).toBe(false)
+  })
+})
+
+describe('what gets named first when room is short', () => {
+  it('orders night rings, the castle, site names, field bosses, evergaols, then chests and the rest', () => {
+    const kinds = ['other', 'chest', 'evergaol', 'boss', 'site', 'castle', 'night'] as const
+    const sorted = [...kinds].sort((a, b) => labelRank(a) - labelRank(b))
+    expect(sorted).toEqual(['night', 'castle', 'site', 'boss', 'evergaol', 'chest', 'other'])
+  })
+})
+
+describe('marks at game scale', () => {
+  // The fitted map is about 574px wide on an iPhone 15 and 1209px on a 1440x900 desktop.
+  it('draws structure art near the game scale the reference measured: ~37 phone, ~79 desktop', () => {
+    expect(Math.round(markSize('art', 574))).toBeGreaterThanOrEqual(35)
+    expect(Math.round(markSize('art', 574))).toBeLessThanOrEqual(40)
+    expect(Math.round(markSize('art', 1209))).toBeGreaterThanOrEqual(74)
+    expect(Math.round(markSize('art', 1209))).toBeLessThanOrEqual(82)
+  })
+  it('draws the unknown-site orb at ~24 phone and ~50 desktop', () => {
+    expect(Math.round(markSize('orb', 574))).toBe(24)
+    expect(Math.round(markSize('orb', 1209))).toBeGreaterThanOrEqual(48)
+    expect(Math.round(markSize('orb', 1209))).toBeLessThanOrEqual(52)
+  })
+  it('draws night rings ~110 on desktop, and no smaller than 64 on a phone', () => {
+    expect(Math.round(markSize('ring', 1209))).toBeGreaterThanOrEqual(105)
+    expect(Math.round(markSize('ring', 1209))).toBeLessThanOrEqual(115)
+    expect(markSize('ring', 574)).toBe(64)
+  })
+  it('scales with zoom between a floor and a cap', () => {
+    expect(markSize('art', 1000)).toBeGreaterThan(markSize('art', 800))
+    expect(markSize('art', 100)).toBe(markSize('art', 50))
+    expect(markSize('art', 5000)).toBe(markSize('art', 9000))
+    expect(markSize('icon', 1209)).toBeGreaterThanOrEqual(32)
+    expect(markSize('icon', 1209)).toBeLessThanOrEqual(38)
+  })
+})
+
+describe('night boss names on the ring', () => {
+  it('keeps the lead boss of a named pair, as the game map does', () => {
+    expect(shortBossName('Demi-Human Queen and Swordmaster')).toBe('Demi-Human Queen')
+    expect(shortBossName('Tree Sentinel and Royal Cavalrymen')).toBe('Tree Sentinel')
+    // Names already written short keep both halves.
+    expect(shortBossName('DBW & Curseblade')).toBe('DBW & Curseblade')
+    expect(shortBossName('Tree Sentinel')).toBe('Tree Sentinel')
   })
 })

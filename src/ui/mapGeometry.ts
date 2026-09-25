@@ -77,9 +77,20 @@ export function placeLabel(
   gap: number,
   edge: number,
   mark = 0,
+  center = false,
 ): { x: number; y: number; clear: boolean } {
   const top = frame.top ?? 0
   const keepIn = (v: number, size: number, start: number, end: number) => Math.max(start + edge, Math.min(end - edge - size, v))
+  const overlap = (s: { x: number; y: number }, o: Obstacle) => {
+    const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
+    const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
+    return w > 0 && h > 0 ? w * h * (o.weight ?? 1) : 0
+  }
+  // A name written across its own mark (a night's ring) has one spot, on the point, kept inside the frame.
+  if (center) {
+    const spot = { x: keepIn(point.x - label.w / 2, label.w, 0, frame.w), y: keepIn(point.y - label.h / 2, label.h, top, frame.h) }
+    return { ...spot, clear: obstacles.every((o) => overlap(spot, o) === 0) }
+  }
   const spots = [
     { x: point.x - label.w / 2, y: point.y + gap },
     { x: point.x - label.w / 2, y: point.y - gap - label.h },
@@ -90,11 +101,6 @@ export function placeLabel(
     { x: point.x + gap * 0.7, y: point.y - gap * 0.7 - label.h },
     { x: point.x - gap * 0.7 - label.w, y: point.y - gap * 0.7 - label.h },
   ].map((s) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) }))
-  const overlap = (s: { x: number; y: number }, o: Obstacle) => {
-    const w = Math.min(s.x + label.w, o.x1) - Math.max(s.x, o.x0)
-    const h = Math.min(s.y + label.h, o.y1) - Math.max(s.y, o.y0)
-    return w > 0 && h > 0 ? w * h * (o.weight ?? 1) : 0
-  }
   const glyph = { x0: point.x - mark, y0: point.y - mark, x1: point.x + mark, y1: point.y + mark }
   const overPoint = (s: { x: number; y: number }) =>
     s.x <= glyph.x1 && s.x + label.w >= glyph.x0 && s.y <= glyph.y1 && s.y + label.h >= glyph.y0
@@ -112,20 +118,40 @@ export function placeLabel(
 }
 
 const MARKER_WEIGHT = 15
+// A label placed before is never covered, so spots over one cost far more than any mark's.
+const LABEL_WEIGHT = 1000
+// A name may lie over the edge of another mark, as the game's own names do, as long as it leaves most of that
+// mark in sight (at most this share of the mark covered) and most of the name on clear ground (at most this
+// share of the name over marks).
+const SOFT_MARK = 0.3
+const SOFT_NAME = 0.25
+const overlapArea = (a: Rect, b: Rect) => {
+  const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)
+  const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0)
+  return w > 0 && h > 0 ? w * h : 0
+}
+const areaOf = (r: Rect) => (r.x1 - r.x0) * (r.y1 - r.y0)
 
 export interface LabelRequest {
   point: { x: number; y: number }
   label: { w: number; h: number }
   /** Placement order, lowest first: circles, then bosses, then the rest. Ties keep their input order. */
   rank: number
-  /** Shown even with no free spot (a night's circle chip); every other label then hides, leaving its glyph. */
+  /** Shown even with no free spot (a night's ring name); every other label then hides, leaving its glyph. */
   keep: boolean
+  /** Distance from the point to the label, when its mark is larger than a glyph (a structure's art). */
+  gap?: number
+  /** Half the size of the mark on the point, which no label covers, when it is not the default glyph. */
+  mark?: number
+  /** Written across the point (a night's ring, the castle's guard) instead of beside it. */
+  center?: boolean
 }
 
 /**
- * Places every marker's label so none covers a pin, any marker's glyph (`mark` px around each point) or a
- * label placed before it, in `rank` order. A label is shown only when its glyph lies inside the visible band
- * and it found a free spot (or is `keep`); a shown label becomes an obstacle for the ones after it.
+ * Places every marker's label so none covers a label placed before it (in `rank` order) and none hides a pin or
+ * any marker's glyph (`mark` px around each point): it may lie over a mark's edge, never across it (SOFT_MARK,
+ * SOFT_NAME). A label is shown only when its glyph lies inside the visible band and it found such a spot (or is
+ * `keep`); a shown label becomes an obstacle for the ones after it.
  * Returns one result per request, in input order, with the label's top-left corner in frame px.
  */
 export function placeLabels(
@@ -139,19 +165,36 @@ export function placeLabels(
   const top = frame.top ?? 0
   // A glyph is tiny but covering it hides a whole marker, and text over text is unreadable: when a kept label
   // has no free spot, covering either costs about as much as covering a whole pin, so a pin's edge loses first.
-  const glyphs = requests.map(({ point: p }) => ({ x0: p.x - mark, y0: p.y - mark, x1: p.x + mark, y1: p.y + mark, weight: MARKER_WEIGHT }))
+  const markOf = (r: LabelRequest) => r.mark ?? mark
+  const glyphs = requests.map((r) => {
+    const m = markOf(r)
+    return { x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }
+  })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
   const placed: Obstacle[] = []
   const results: { x: number; y: number; shown: boolean }[] = new Array(requests.length)
   for (const i of order) {
-    const { point, label, keep } = requests[i]
-    const obstacles = [...pins, ...glyphs.filter((_, j) => j !== i), ...placed]
-    const spot = placeLabel(point, label, frame, obstacles, gap, edge, mark)
+    const request = requests[i]
+    const { point, label, keep } = request
+    const m = markOf(request)
+    const marks = [...pins, ...glyphs.filter((_, j) => j !== i)]
+    const spot = placeLabel(point, label, frame, [...marks, ...placed], request.gap ?? gap, edge, m, request.center)
+    const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
+    const soft = () => {
+      if (placed.some((o) => overlapArea(rect, o) > 0)) return false
+      let covered = 0
+      for (const o of marks) {
+        const a = overlapArea(rect, o)
+        if (a > SOFT_MARK * areaOf(o)) return false
+        covered += a
+      }
+      return covered <= SOFT_NAME * areaOf(rect)
+    }
     // A glyph partly under the pill or the sheet has no place for its label: clamped into the band, it would
     // float away from its glyph.
-    const inBand = point.y - mark >= top && point.y + mark <= frame.h
-    const shown = inBand && (spot.clear || keep)
-    if (shown) placed.push({ x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h, weight: MARKER_WEIGHT })
+    const inBand = point.y - m >= top && point.y + m <= frame.h
+    const shown = inBand && (spot.clear || keep || soft())
+    if (shown) placed.push({ ...rect, weight: LABEL_WEIGHT })
     results[i] = { x: spot.x, y: spot.y, shown }
   }
   return results
@@ -180,3 +223,36 @@ export function isTrackpadScroll(e: { deltaX: number; deltaY: number; deltaMode:
   const fractional = !Number.isInteger(e.deltaY)
   return e.deltaMode === 0 && fractional && Math.abs(e.deltaY) < TRACKPAD_MAX_DELTA
 }
+
+/** What a name on the map belongs to; see labelRank. */
+export type NameKind = 'night' | 'castle' | 'site' | 'boss' | 'evergaol' | 'chest' | 'other'
+const NAME_ORDER: readonly NameKind[] = ['night', 'castle', 'site', 'boss', 'evergaol', 'chest', 'other']
+/**
+ * Which names get first pick of the free room: the nights' bosses, then the castle's, then what is inside each
+ * site, then field bosses, evergaols and chests. A name placed later yields to every one placed before it.
+ */
+export const labelRank = (kind: NameKind) => NAME_ORDER.indexOf(kind)
+
+/**
+ * How big a mark is drawn, in screen px, for a map this many px wide on screen. It follows the map as it zooms,
+ * like the game's own map, between a floor (still legible zoomed out on a phone) and a cap (zoomed in, it
+ * would hide the ground it marks). `share` of the map's width is tuned to the reference's game-scale measure
+ * (docs/specs/compare-2026-09-24.md): a fitted map is about 574px wide on a phone and 1209px on a desktop.
+ */
+const MARK_SIZES = {
+  // Structure art, and the orb's visible disc (its image carries a halo around it).
+  art: { share: 0.065, min: 28, max: 96 },
+  orb: { share: 0.042, min: 22, max: 60 },
+  // Boss crests, evergaols, chests.
+  icon: { share: 0.029, min: 26, max: 48 },
+  // A night's closing ring, with the boss's name written across it.
+  ring: { share: 0.09, min: 64, max: 240 },
+} as const
+export type MarkKind = keyof typeof MARK_SIZES
+export function markSize(kind: MarkKind, mapWidth: number): number {
+  const { share, min, max } = MARK_SIZES[kind]
+  return Math.min(max, Math.max(min, mapWidth * share))
+}
+
+/** A night boss as its ring names it: the lead of a named pair ("Tree Sentinel and Royal Cavalrymen"). */
+export const shortBossName = (name: string) => name.split(' and ')[0]
