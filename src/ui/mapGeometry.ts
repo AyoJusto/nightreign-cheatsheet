@@ -151,7 +151,9 @@ export interface LabelRequest {
  * Places every marker's label so none covers a label placed before it (in `rank` order) and none hides a pin or
  * any marker's glyph (`mark` px around each point): it may lie over a mark's edge, never across it (SOFT_MARK,
  * SOFT_NAME). A label is shown only when its glyph lies inside the visible band and it found such a spot (or is
- * `keep`); a shown label becomes an obstacle for the ones after it.
+ * `keep`); a shown label becomes an obstacle for the ones after it. `blocked` are screen areas drawn over the map
+ * (the Nightlord's medallion and its card): no label crosses one, a kept one included, and a glyph under one gets
+ * no label, since nobody can see the mark it would name.
  * Returns one result per request, in input order, with the label's top-left corner in frame px.
  */
 export function placeLabels(
@@ -161,6 +163,7 @@ export function placeLabels(
   gap: number,
   edge: number,
   mark: number,
+  blocked: readonly Rect[] = [],
 ): { x: number; y: number; shown: boolean }[] {
   const top = frame.top ?? 0
   // A glyph is tiny but covering it hides a whole marker, and text over text is unreadable: when a kept label
@@ -171,7 +174,7 @@ export function placeLabels(
     return { x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
-  const placed: Obstacle[] = []
+  const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: LABEL_WEIGHT }))
   const results: { x: number; y: number; shown: boolean }[] = new Array(requests.length)
   for (const i of order) {
     const request = requests[i]
@@ -193,7 +196,9 @@ export function placeLabels(
     // A glyph partly under the pill or the sheet has no place for its label: clamped into the band, it would
     // float away from its glyph.
     const inBand = point.y - m >= top && point.y + m <= frame.h
-    const shown = inBand && (spot.clear || keep || soft())
+    const underBlock = blocked.some((b) => point.x > b.x0 && point.x < b.x1 && point.y > b.y0 && point.y < b.y1)
+    const acrossBlock = blocked.some((b) => overlapArea(rect, b) > 0)
+    const shown = inBand && !underBlock && !acrossBlock && (spot.clear || keep || soft())
     if (shown) placed.push({ ...rect, weight: LABEL_WEIGHT })
     results[i] = { x: spot.x, y: spot.y, shown }
   }

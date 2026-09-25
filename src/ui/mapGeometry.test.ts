@@ -204,6 +204,16 @@ describe('placeLabels: markers never cover each other', () => {
     expect(circle).toMatchObject({ x: 190, y: 309, shown: true })
     expect(intersects(rectOf(chest), rectOf(circle))).toBe(false)
   })
+  it('keeps every name off a blocked corner (the Nightlord medallion), and hides the names of marks under it', () => {
+    const medallion = { x0: 0, y0: 600, x1: 150, y1: 800 }
+    // Below its point would run into the medallion; a free spot elsewhere wins.
+    const [beside, under, ring] = placeLabels([at(100, 580), at(60, 700), at(80, 690, 0, true)], frame, [], 9, 8, 6, [medallion])
+    expect(beside.shown).toBe(true)
+    expect(intersects(rectOf(beside), medallion)).toBe(false)
+    // A mark the medallion covers has nothing to name, even a kept one.
+    expect(under.shown).toBe(false)
+    expect(ring.shown).toBe(false)
+  })
   it('hides a label with no free spot, but a circle keeps its chip', () => {
     const everywhere = { x0: 0, y0: 0, x1: 400, y1: 800 }
     const [boss, circle] = placeLabels([at(200, 300, 1), at(200, 600, 0, true)], frame, [everywhere], 9, 8, 6)
