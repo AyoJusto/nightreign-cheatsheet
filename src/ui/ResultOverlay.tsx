@@ -22,6 +22,16 @@ const LAYER_NAMES: Record<Layer, string> = {
   structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
   chest: 'Chests', merchant: 'Merchant', 'rot-blessing': 'Rot Blessing',
 }
+// A phone's chips: the layer's own map mark over a short name, each the same width, so six fit an iPhone's pill
+// and a longer row scrolls a whole chip at a time. The full name is the chip's accessible name.
+const LAYER_SHORT: Record<Layer, string> = {
+  structures: 'Sites', spawn: 'Spawn', circle: 'Rings', boss: 'Bosses', evergaol: 'Gaols', chest: 'Chests', merchant: 'Shop', 'rot-blessing': 'Rot',
+}
+const LAYER_ICON: Record<Layer, string> = {
+  structures: '/structures/great-church.webp', spawn: '/markers/player.webp', circle: '', boss: '/markers/field-boss.webp',
+  evergaol: '/markers/evergaol.webp', chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', 'rot-blessing': '/elements/rot.webp',
+}
+const CHIP_STEP = 46 + 4 // a phone chip's width and the gap after it
 const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
@@ -40,13 +50,25 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     el.toggleAttribute('data-more-left', el.scrollLeft > 1)
     el.toggleAttribute('data-more-right', el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
   }, [])
+  // Phone: the row is cut to the chips that fit whole, so a scrolled row never shows half a chip (or half a word).
+  const fitChips = useCallback(() => {
+    const el = chips.current
+    const pill = el?.parentElement
+    if (!el || !pill) return
+    el.style.flex = ''
+    if (wide) return fadeChips()
+    const room = el.getBoundingClientRect().width
+    const whole = Math.max(1, Math.floor((room + 4) / CHIP_STEP))
+    if (whole * CHIP_STEP - 4 < el.scrollWidth - 1) el.style.flex = `0 0 ${whole * CHIP_STEP - 4}px`
+    fadeChips()
+  }, [wide, fadeChips])
   useEffect(() => {
-    const el = chips.current!
-    const observer = new ResizeObserver(fadeChips)
-    observer.observe(el)
+    const pill = chips.current!.parentElement!
+    const observer = new ResizeObserver(fitChips)
+    observer.observe(pill)
     return () => observer.disconnect()
-  }, [fadeChips])
-  useEffect(fadeChips)
+  }, [fitChips])
+  useEffect(fitChips)
   const [detent, setDetent] = useState<Detent>('peek')
   const [toast, setToast] = useState<string | null>(null)
   // Circle names are never shown as places: Great Hollow reports "Divine Tower" for every Night 2 circle.
@@ -197,8 +219,13 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       <Plate className="pill" ref={pillRef}>
         <button className="pill-back" aria-label="Back" onClick={back}><Icon name="back" /></button>
         <div className="chips" ref={chips} onScroll={fadeChips} role="group" aria-label="Map layers">
-          {available.map((l) => (
+          {available.map((l) => wide ? (
             <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
+          ) : (
+            <button key={l} className="chip chip-tile" aria-label={LAYER_NAMES[l]} aria-pressed={on.has(l)} onClick={() => toggle(l)}>
+              {LAYER_ICON[l] ? <img className={l === 'spawn' ? 'chip-player' : undefined} src={LAYER_ICON[l]} alt="" draggable={false} /> : <span className="chip-ring" />}
+              <span aria-hidden>{LAYER_SHORT[l]}</span>
+            </button>
           ))}
         </div>
       </Plate>

@@ -301,6 +301,24 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 .pill .chip[aria-pressed='true'] { color: var(--bronze); }
 .pill .chip[aria-pressed='true']::before { background: linear-gradient(180deg, #22305a, var(--panel-2)); box-shadow: var(--glow); }
 .chips { isolation: isolate; }
+/* Phone: each chip is the layer's map mark over a short name, all one width (ResultOverlay's CHIP_STEP). The row
+   shows only whole chips and scrolls one chip at a time; a narrow fade on a side says there is more that way. */
+.pill .chip-tile {
+  width: 46px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 11px; line-height: 12px; letter-spacing: 0.02em; scroll-snap-align: start;
+}
+.pill .chip-tile::before { inset: 1px 0; }
+.chip-tile img { width: 22px; height: 18px; object-fit: contain; }
+/* The player's marker carries a wide halo in its image: drawn larger, so its disc matches the other marks. */
+.chip-tile img.chip-player { width: 36px; height: 36px; margin: -9px 0; }
+.pill .chip-tile[aria-pressed='false'] img, .pill .chip-tile[aria-pressed='false'] .chip-ring { opacity: 0.55; filter: grayscale(0.6); }
+/* The Rings chip's mark: a small night ring, green like night 1's. */
+.chip-ring { width: 14px; height: 14px; margin: 2px 0; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--night-1), 0 0 6px rgba(111, 227, 154, 0.7); }
+@media (max-width: 899px) {
+  .chips { scroll-snap-type: x mandatory; margin-right: 12px; padding-right: 0; }
+  .chips[data-more-left] { --fade-left: 10px; }
+  .chips[data-more-right] { --fade-right: 10px; }
+}
 /* Centred, but never lets its own padding reach past the notch: a max-width built from the same side
    gutter (plus the safe inset) the other floating controls use. Solid, not blurred: the pill and sheet own the blur. */
 .toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 12px 20px; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter) - var(--safe-left) - var(--safe-right)); }
