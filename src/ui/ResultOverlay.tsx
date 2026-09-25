@@ -31,7 +31,7 @@ const LAYER_ICON: Record<Layer, string> = {
   structures: '/structures/great-church.webp', spawn: '/markers/player.webp', circle: '', boss: '/markers/field-boss.webp',
   evergaol: '/markers/evergaol.webp', chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', 'rot-blessing': '/elements/rot.webp',
 }
-const CHIP_STEP = 47 + 4 // a phone chip's width and the gap after it
+const CHIP_STEP = 49 + 4 // a phone chip's width and the gap after it
 const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
