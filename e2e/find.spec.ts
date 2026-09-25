@@ -610,3 +610,16 @@ test.describe('the Nightlord medallion', () => {
   })
 })
 
+// Each night's boss row names what it is weak to, from the weakness data, and nothing where the data has none.
+test("the run card names each night boss's weaknesses", async ({ page }) => {
+  const seed = targets[0]
+  await page.goto(`/seed/${seed.id}`)
+  for (const n of [1, 2] as const) {
+    const boss: string = seed.nights[n].boss
+    const weak: DamageKey[] = data.weaknesses.bosses[boss]?.weak ?? []
+    const row = page.locator('.run-row', { has: page.locator('dt', { hasText: `Night ${n}` }) })
+    // The text a screen reader reads: the visible tag is hidden from it, so this is its whole phrase.
+    if (weak.length) await expect(row.locator('.weak-line')).toContainText(`weak to ${weak.map((k) => DAMAGE_NAMES[k]).join(', ')}`)
+    else await expect(row.locator('.weak-line')).toHaveCount(0)
+  }
+})

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { MotionValue } from 'motion/react'
 import type { MapContent, MapMarker, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
@@ -7,10 +7,11 @@ import { Plate } from './Plate'
 import { Frame } from './Frame'
 import { Icon } from './Icon'
 import { useWide } from './useWide'
+import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
 import { decodeSightings, encodeSightings } from './useSightings'
 import { catalog } from '../data/catalog'
-import { earthName, nightlordName, structureName } from '../domain/names'
+import { DAMAGE_NAMES, earthName, nightlordName, structureName, type DamageKey } from '../domain/names'
 import type { MarkerLayer, Seed } from '../domain/seed'
 
 // The user's experience: the Night 1 circle is fixed per seed. Flip this if that proves wrong.
@@ -150,7 +151,8 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
         <div className="result-line">
           {/* "Seed" in the game's face; the number in the system face, where 0 never reads as O. */}
           <h1 className="title result-title">Seed <span className="num seed-number">{seed.id}</span></h1>
-          {seed.event && <span className="event-badge">{seed.event.name}</span>}
+          {/* The event and its day: the run card no longer repeats it. */}
+          {seed.event && <span className="event-badge">{seed.event.name}{seed.event.day ? ` · Day ${seed.event.day}` : ''}</span>}
         </div>
         <p className="result-sub">{nightlordName(seed.nightlord)} · {earthName(seed.earth)}</p>
       </div>
@@ -159,10 +161,11 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       </button>
     </div>
   )
-  const rows: [string, string | null][] = [
-    ['Night 1', seed.nights[1].boss || null],
-    ['Night 2', seed.nights[2].boss || null],
-    ['Event', seed.event ? `${seed.event.name}${seed.event.day ? ` · Day ${seed.event.day}` : ''}` : null],
+  // Each night's boss with what to hit it with, where the weakness data knows the fight (never guessed).
+  const weakOf = (boss: string) => catalog.nightBossWeakness(boss)?.weak ?? []
+  const rows: [string, string | null, ReactNode?][] = [
+    ['Night 1', seed.nights[1].boss || null, <WeakLine keys={weakOf(seed.nights[1].boss)} />],
+    ['Night 2', seed.nights[2].boss || null, <WeakLine keys={weakOf(seed.nights[2].boss)} />],
     ['Castle', seed.castle?.crew || null],
     // Short labels under the Castle row: the label column fits the longest one, and a wide column wrapped the boss names.
     ['Basement', seed.castle?.basement || null],
@@ -171,7 +174,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   ]
   const runCard = (
     <dl className="run-card">
-      {rows.filter(([, v]) => v).map(([k, v]) => <RunRow key={`${k}:${v}`} label={k} value={v!} />)}
+      {rows.filter(([, v]) => v).map(([k, v, more]) => <RunRow key={`${k}:${v}`} label={k} value={v!} more={more} />)}
     </dl>
   )
   const lists = (
@@ -213,14 +216,29 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 
 // With a label it is a run card row (dt/dd); without, an item in a list of names.
 // `count` is display only (e.g. two identical field bosses -> "Name ×2").
-function RunRow({ label, value, count }: { label?: string; value: string; count?: number }) {
+// `more` goes under the value (a night boss's weaknesses).
+function RunRow({ label, value, count, more }: { label?: string; value: string; count?: number; more?: ReactNode }) {
   const shown = count && count > 1 ? `${value} ×${count}` : value
   const Row = label ? 'div' : 'li'
   const Value = label ? 'dd' : 'span'
   return (
     <Row className="run-row">
       {label && <dt>{label}</dt>}
-      <Value className="run-value">{shown}</Value>
+      <Value className="run-value">{shown}{more}</Value>
     </Row>
+  )
+}
+
+// What a night boss is weak to, as the game's damage icons with their names. Nothing when it has no weakness.
+function WeakLine({ keys }: { keys: DamageKey[] }) {
+  if (!keys.length) return null
+  return (
+    <span className="weak-line">
+      <span className="weak-tag" aria-hidden>Weak</span>
+      <span className="sr-only">, weak to </span>
+      {keys.map((k, i) => (
+        <span key={k} className="weak-item">{i > 0 && <span className="sr-only">, </span>}<img src={`/damage/${k}.webp`} alt="" draggable={false} />{DAMAGE_NAMES[k]}</span>
+      ))}
+    </span>
   )
 }

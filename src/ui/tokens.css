@@ -346,7 +346,8 @@ li.run-row .run-value { font-weight: 400; }
 
 .result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .result-text { min-width: 0; }
-.result-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* A long event and its day take their own line under the title rather than lose the day to an ellipsis. */
+.result-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
 .result-title { font-size: 24px; line-height: 30px; font-weight: 600; margin: 0; white-space: nowrap; }
 /* The number in the system face, where 0 never reads as O. */
 .seed-number { font-family: var(--font); font-weight: 600; letter-spacing: 0; }

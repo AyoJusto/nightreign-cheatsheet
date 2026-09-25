@@ -47,3 +47,11 @@
   .nl-row-label { font-size: 14px; }
   .nl-icons { gap: 6px; }
 }
+
+/* ---------- A night boss's weaknesses under its name in the run card (ResultOverlay.tsx) ---------- */
+
+/* A small Cinzel tag, then each game damage icon with its name. */
+.weak-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; font-size: 13px; line-height: 18px; font-weight: 400; color: var(--bone-2); }
+.weak-tag { font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bronze); }
+.weak-item { display: inline-flex; align-items: center; gap: 5px; color: var(--bone); }
+.weak-item img { width: 20px; height: 20px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(201, 165, 92, 0.35); }
