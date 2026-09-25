@@ -322,29 +322,28 @@ describe('what gets named first when room is short', () => {
 })
 
 describe('marks at game scale', () => {
-  // The fitted map is about 574px wide on an iPhone 15 and 1209px on a 1440x900 desktop.
-  it('draws structure art near the game scale the reference measured: ~37 phone, ~79 desktop', () => {
-    expect(Math.round(markSize('art', 574))).toBeGreaterThanOrEqual(35)
-    expect(Math.round(markSize('art', 574))).toBeLessThanOrEqual(40)
-    expect(Math.round(markSize('art', 1209))).toBeGreaterThanOrEqual(74)
-    expect(Math.round(markSize('art', 1209))).toBeLessThanOrEqual(82)
+  // The fitted map is about 574px wide on an iPhone 15 and 1209px on a 1440x900 desktop. Marks are sized to the
+  // map as drawn, not to fixed px: the user found them tiny, and our map is drawn wider than the reference's.
+  const share = (kind: Parameters<typeof markSize>[0], width: number) => markSize(kind, width) / width
+  it('draws structure art at about 8% of the map width at the fitted zoom, phone and desktop', () => {
+    expect(share('art', 574)).toBeCloseTo(0.08, 3)
+    expect(share('art', 1209)).toBeCloseTo(0.08, 3)
   })
-  it('draws the unknown-site orb at ~24 phone and ~50 desktop', () => {
-    expect(Math.round(markSize('orb', 574))).toBe(24)
-    expect(Math.round(markSize('orb', 1209))).toBeGreaterThanOrEqual(48)
-    expect(Math.round(markSize('orb', 1209))).toBeLessThanOrEqual(52)
+  it('scales orbs, crests and rings in proportion with the art', () => {
+    const ratio = (kind: Parameters<typeof markSize>[0]) => markSize(kind, 1209) / markSize('art', 1209)
+    expect(ratio('orb')).toBeCloseTo(0.65, 1)
+    expect(ratio('icon')).toBeCloseTo(0.45, 1)
+    expect(ratio('ring')).toBeCloseTo(1.38, 1)
   })
-  it('draws night rings ~110 on desktop, and no smaller than 64 on a phone', () => {
-    expect(Math.round(markSize('ring', 1209))).toBeGreaterThanOrEqual(105)
-    expect(Math.round(markSize('ring', 1209))).toBeLessThanOrEqual(115)
+  it('keeps a phone ring no smaller than 64 and a crest no smaller than 26', () => {
     expect(markSize('ring', 574)).toBe(64)
+    expect(markSize('icon', 574)).toBe(26)
   })
   it('scales with zoom between a floor and a cap', () => {
     expect(markSize('art', 1000)).toBeGreaterThan(markSize('art', 800))
     expect(markSize('art', 100)).toBe(markSize('art', 50))
     expect(markSize('art', 5000)).toBe(markSize('art', 9000))
-    expect(markSize('icon', 1209)).toBeGreaterThanOrEqual(32)
-    expect(markSize('icon', 1209)).toBeLessThanOrEqual(38)
+    expect(markSize('art', 1209)).toBeLessThan(markSize('art', 5000))
   })
 })
 

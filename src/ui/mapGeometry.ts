@@ -264,17 +264,18 @@ export const labelRank = (kind: NameKind) => NAME_ORDER.indexOf(kind)
 /**
  * How big a mark is drawn, in screen px, for a map this many px wide on screen. It follows the map as it zooms,
  * like the game's own map, between a floor (still legible zoomed out on a phone) and a cap (zoomed in, it
- * would hide the ground it marks). `share` of the map's width is tuned to the reference's game-scale measure
- * (docs/specs/compare-2026-09-24.md): a fitted map is about 574px wide on a phone and 1209px on a desktop.
+ * would hide the ground it marks). Sizes are a share of the map as drawn, not fixed px, so a wider map gets larger
+ * marks: structure art is 8% of its width at the fitted zoom (about 46px on a phone's 574px map and 97px on a
+ * desktop's 1209px one), close to the reference's 9%; orbs, crests and rings keep their proportion to the art.
  */
 const MARK_SIZES = {
   // Structure art, and the orb's visible disc (its image carries a halo around it).
-  art: { share: 0.065, min: 28, max: 96 },
-  orb: { share: 0.042, min: 22, max: 60 },
+  art: { share: 0.08, min: 28, max: 140 },
+  orb: { share: 0.052, min: 22, max: 90 },
   // Boss crests, evergaols, chests.
-  icon: { share: 0.029, min: 26, max: 48 },
+  icon: { share: 0.036, min: 26, max: 64 },
   // A night's closing ring, with the boss's name written across it.
-  ring: { share: 0.09, min: 64, max: 240 },
+  ring: { share: 0.11, min: 64, max: 300 },
 } as const
 export type MarkKind = keyof typeof MARK_SIZES
 export function markSize(kind: MarkKind, mapWidth: number): number {
