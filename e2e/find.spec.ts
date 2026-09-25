@@ -436,6 +436,32 @@ test('a tapped layer chip shows one capsule', async ({ page, isMobile }) => {
   await expect(chip).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
 })
 
+// A phone chip's short name keeps clear of its tile's rim, so two neighbouring names never run together.
+test("a phone layer chip's name keeps 4px from its tile's edges", async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'desktop chips are plain names')
+  await page.goto(`/seed/${targets[0].id}`)
+  await expect(page.locator('.chip-tile').first()).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  const margins = await page.locator('.chip-tile').evaluateAll((tiles) => tiles.map((b) => {
+    const range = document.createRange()
+    range.selectNodeContents(b.querySelector('span[aria-hidden]')!)
+    const text = range.getBoundingClientRect()
+    const tile = b.getBoundingClientRect()
+    return Math.min(text.left - tile.left, tile.right - text.right)
+  }))
+  expect(margins.length).toBeGreaterThanOrEqual(6)
+  for (const m of margins) expect(m).toBeGreaterThanOrEqual(4)
+})
+
+// Desktop: the finder's back, undo and reset sit in the map's top-left corner, not floating over its middle.
+test("the desktop finder's controls sit in the map's top-left corner", async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the phone pill spans the screen')
+  await page.goto(`/find/${targets[0].nightlord}/${targets[0].earth}`)
+  const pill = await page.locator('.pill').evaluate((el) => el.getBoundingClientRect().toJSON())
+  expect(pill.left).toBeLessThanOrEqual(16)
+  expect(pill.top).toBeLessThanOrEqual(16)
+})
+
 // A share sheet that fails for any reason but the user closing it still gets the link out, by copying (final m5).
 test('a failed share falls back to copying the link', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the native share sheet is phone only')

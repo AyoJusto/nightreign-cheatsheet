@@ -319,8 +319,10 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* Phone: each chip is the layer's map mark over a short name, all one width (ResultOverlay's CHIP_STEP). The row
    shows only whole chips and scrolls one chip at a time; a narrow fade on a side says there is more that way. */
 .pill .chip-tile {
-  width: 46px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-size: 11px; line-height: 12px; letter-spacing: 0.02em; scroll-snap-align: start;
+  width: 47px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  /* No tracking, and a half px under the map names: the longest name (Chests) keeps 4px from the tile's rim, and
+     six tiles still fit a 390px iPhone's pill. */
+  font-size: 10.5px; line-height: 12px; letter-spacing: 0; scroll-snap-align: start;
 }
 .pill .chip-tile::before { inset: 1px 0; }
 .chip-tile img { width: 22px; height: 18px; object-fit: contain; }
