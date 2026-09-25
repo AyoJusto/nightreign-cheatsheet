@@ -12,9 +12,15 @@ export function AboutScreen({ go }: { go: (path: string, back?: boolean) => void
         thefifthmatt (Nightreign Map Patterns) and the nightreign-seed-observer project.
       </p>
       <p>
-        The Nightlord medallions, the Scarlet Rot icon and the Marsh and Underground Fort map icons come from the
-        Fextralife Elden Ring Nightreign wiki, used here for a free fan project.
+        Boss weaknesses come from the Nightreign Cheat Sheet, whose night boss numbers were transcribed from the
+        Fextralife Elden Ring Nightreign wiki.
       </p>
+      <p>
+        The Nightlord medallions, the damage and status icons, the Scarlet Rot icon, the Marsh and Underground Fort
+        map icons and the field boss, evergaol, treasure and merchant map markers come from the Fextralife Elden
+        Ring Nightreign wiki, used here for a free fan project.
+      </p>
+      <p>Titles are set in Cinzel by Natanael Gama, under the SIL Open Font License (fonts/OFL.txt).</p>
       <p>Not affiliated with FromSoftware or Bandai Namco. Game art belongs to its owners.</p>
     </main>
   )

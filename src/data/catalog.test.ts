@@ -1,8 +1,8 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { catalog } from './catalog'
-import { NIGHTLORDS, EARTHS, structureName } from '../domain/names'
+import { NIGHTLORDS, EARTHS, DAMAGE_NAMES, structureName } from '../domain/names'
 
 const raw = readFileSync('src/data/seeds.json', 'utf8')
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
@@ -85,5 +85,24 @@ describe('seed data', () => {
   it('offers every nightlord at least one shifting earth', () => {
     for (const n of NIGHTLORDS) expect(catalog.earthsFor(n.id).length).toBeGreaterThan(0)
     expect(EARTHS.length).toBe(6)
+  })
+})
+
+describe('game art for the new look', () => {
+  const size = (file: string) => statSync(`public/${file}`).size
+  it('has an icon for every damage type and status the weaknesses name', () => {
+    for (const key of Object.keys(DAMAGE_NAMES)) expect(size(`damage/${key}.webp`), key).toBeLessThan(30_000)
+  })
+  it('has every map marker, each within the 30 KB budget', () => {
+    for (const name of ['unknown', 'player', 'field-boss', 'great-boss', 'evergaol', 'chest', 'merchant']) {
+      expect(size(`markers/${name}.webp`), name).toBeLessThan(30_000)
+    }
+  })
+  it('has a map thumbnail for every earth, each within 25 KB', () => {
+    for (const earth of EARTHS) expect(size(`maps/thumb/${earth.id}.webp`), earth.id).toBeLessThanOrEqual(25_000)
+  })
+  it('self-hosts Cinzel within 60 KB, with its licence', () => {
+    expect(size('fonts/cinzel-latin.woff2')).toBeLessThan(60_000)
+    expect(readFileSync('public/fonts/OFL.txt', 'utf8')).toMatch(/SIL Open Font License/)
   })
 })

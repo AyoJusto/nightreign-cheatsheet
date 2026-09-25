@@ -1,0 +1,28 @@
+# Asset sources
+
+Everything here is fetched or copied once; the app never fetches at runtime. `npm run import` turns it into `public/`.
+
+## markers/ (map markers, fetched 2026-09-24)
+
+From the Fextralife Elden Ring Nightreign wiki's map legend on its Locations page (https://eldenringnightreign.wiki.fextralife.com/Locations):
+
+- `field-boss.png` from https://static0.fextralifeimages.com/file/eldenringnightreign/2/2b/Field-boss-map-icon-nightreign-wiki-guide.png
+- `evergaol.png` from https://static0.fextralifeimages.com/file/eldenringnightreign/e/e2/Evergaol-map-icon-nightreign-wiki-guide.png
+- `chest.png` is the game's Buried Treasure icon, the only chest on the legend: https://static0.fextralifeimages.com/file/eldenringnightreign/d/df/Buried-treature-map-icon-nightreign-wiki-guide.png
+- `merchant.png` is the game's merchant map icon: https://static0.fextralifeimages.com/file/eldenringnightreign/3/35/Merchants-and-smithing-tables-map-icon-nightreign-wiki-guide.png
+
+The wiki has no "?" unexplored-site orb, player marker, great boss crest or caravan icon. I checked the whole file list with the wiki's `api.php?action=query&list=allimages`, about 7,700 files. So:
+
+- `unknown.svg` (a gold orb with a "?") and `player.svg` (an arrowhead in a bronze ring) were drawn for Bonfire Buddy.
+- `public/markers/great-boss.webp` is `field-boss.png` hue-shifted to red by the import.
+- Caravans get no icon.
+
+## damage/ (damage and status icons)
+
+The game's 14 icons, copied from the nightreign-cheatsheet repo (`public/icons/*.png`, commit c9eb829). That repo took them from the same wiki.
+
+## Elsewhere
+
+- `public/fonts/cinzel-latin.woff2` is Cinzel from Google Fonts: https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2 (the latin subset of the variable font, weights 400 to 700).
+- `public/fonts/OFL.txt` is its licence: https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/OFL.txt
+- `maps/`, `icons/`, `elements/`, `nightlords/`: see `scripts/fetch-raw.ts`.

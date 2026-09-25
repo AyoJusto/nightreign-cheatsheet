@@ -1,3 +1,12 @@
+/* Cinzel (SIL OFL, public/fonts/OFL.txt): one variable latin file carries every weight from 400 to 700. */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/cinzel-latin.woff2') format('woff2');
+}
+
 :root {
   --bg: #000000;
   --surface: #1c1c1e;
@@ -22,6 +31,7 @@
   --radius-group: 12px;
   --font: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-title: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-display: 'Cinzel', var(--font-title);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);

@@ -21,6 +21,23 @@ const files: Record<string, string> = {
   'data/raw/assets/maps/GreatHollow.webp': `${OBSERVER}/assets/GreatHollow.webp`,
 }
 
+// Game map markers from the Fextralife wiki's Locations legend (https://eldenringnightreign.wiki.fextralife.com/Locations),
+// fetched 2026-09-24. The wiki has no "?" unexplored-site orb, player marker, great boss crest or caravan icon:
+// unknown.svg and player.svg in data/raw/assets/markers are drawn by hand, and the great boss crest is derived
+// from the field boss crest in import-seeds.ts. See data/raw/assets/SOURCES.md.
+const FEXTRALIFE = 'https://static0.fextralifeimages.com/file/eldenringnightreign'
+Object.assign(files, {
+  'data/raw/assets/markers/field-boss.png': `${FEXTRALIFE}/2/2b/Field-boss-map-icon-nightreign-wiki-guide.png`,
+  'data/raw/assets/markers/evergaol.png': `${FEXTRALIFE}/e/e2/Evergaol-map-icon-nightreign-wiki-guide.png`,
+  'data/raw/assets/markers/chest.png': `${FEXTRALIFE}/d/df/Buried-treature-map-icon-nightreign-wiki-guide.png`,
+  'data/raw/assets/markers/merchant.png': `${FEXTRALIFE}/3/35/Merchants-and-smithing-tables-map-icon-nightreign-wiki-guide.png`,
+  // Cinzel from Google Fonts: the latin subset of the variable font (every weight 400-700 in one file), and its licence.
+  'public/fonts/cinzel-latin.woff2': 'https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2',
+  'public/fonts/OFL.txt': 'https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/OFL.txt',
+})
+// data/raw/assets/damage and data/raw/weaknesses are copied from the nightreign-cheatsheet repo, not fetched:
+// see data/raw/weaknesses/SOURCE.md.
+
 // Fextralife's map-icon images for the three location kinds missing from OBSERVER's icon set
 // (marsh, western/eastern underground fort). Stable file-storage URLs, not the wiki page
 // itself. Served as PNG; converted to webp to match the other icons.

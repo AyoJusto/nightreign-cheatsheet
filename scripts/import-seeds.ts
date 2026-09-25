@@ -409,6 +409,12 @@ function boxBlur(src: Float32Array, width: number, height: number, r: number): F
   return pass(pass(src, true), false)
 }
 
+/** The game's damage and status icons (data/raw/assets/damage), keyed as the weakness data names them. */
+export const DAMAGE_ICONS = [
+  'standard', 'slash', 'strike', 'pierce', 'magic', 'fire', 'lightning', 'holy',
+  'bleed', 'frost', 'rot', 'poison', 'sleep', 'madness',
+] as const
+
 // The Limveld maps' baked ocean colour.
 const OCEAN = [73, 119, 153]
 
@@ -431,6 +437,10 @@ async function copyAssets() {
     const keyed = keyBackground(data, info.width, info.height, coverage)
     await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
       .resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
+    // Home's Shifting Earth cards: a small picture of the same keyed map (budget 25 KB each).
+    mkdirSync('public/maps/thumb', { recursive: true })
+    await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
+      .resize(240, 240).webp({ quality: 70 }).toFile(`public/maps/thumb/${earth}.webp`)
   }
   // Emptied first, so art the app no longer uses (the old per-element variant art) does not linger.
   rmSync('public/structures', { recursive: true, force: true })
@@ -455,6 +465,24 @@ async function copyAssets() {
   mkdirSync('public/nightlords', { recursive: true })
   for (const file of readdirSync('data/raw/assets/nightlords')) {
     copyFileSync(`data/raw/assets/nightlords/${file}`, `public/nightlords/${toNightlord(file.replace('.webp', '') + '_')}.webp`)
+  }
+  // The game's damage and status icons, for the weakness card: square tiles, one size.
+  rmSync('public/damage', { recursive: true, force: true })
+  mkdirSync('public/damage', { recursive: true })
+  for (const key of DAMAGE_ICONS) {
+    await sharp(`data/raw/assets/damage/${key}.png`).resize(64, 64).webp({ quality: 85 }).toFile(`public/damage/${key}.webp`)
+  }
+  // Map markers: the wiki's game icons, trimmed so they fill the box they are drawn in, plus two drawn here
+  // (data/raw/assets/SOURCES.md). The great boss crest is the field boss crest turned red, as the game tints it.
+  rmSync('public/markers', { recursive: true, force: true })
+  mkdirSync('public/markers', { recursive: true })
+  const marker = (file: string) => sharp(`data/raw/assets/markers/${file}`, { density: 144 }).trim()
+  for (const name of ['field-boss', 'evergaol', 'chest', 'merchant']) {
+    await marker(`${name}.png`).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
+  }
+  await marker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).webp({ quality: 90 }).toFile('public/markers/great-boss.webp')
+  for (const name of ['unknown', 'player']) {
+    await marker(`${name}.svg`).resize(128, 128, { fit: 'inside' }).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
   }
   console.log('assets copied')
 }
