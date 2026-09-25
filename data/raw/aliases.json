@@ -34,6 +34,10 @@
     "Tree Sentinel": "Tree Sentinel & Royal Cavalrymen",
     "Tree Sentinel and Royal Cavalrymen": "Tree Sentinel & Royal Cavalrymen"
   },
+  "bossSlots": {
+    "_readme": "Field boss spots the source sheets spell two ways -> the name bossPositions uses. The DLC sheet (seeds 1000 on) writes Southwest of Lake where the base sheet writes Far Southwest of Lake; no seed has both, and the reference map draws that seed's boss there.",
+    "Southwest of Lake": "Far Southwest of Lake"
+  },
   "bossNameOverrides": {
     "Demihuman Queen & Swordmaster": "Demi-Human Queen and Swordmaster"
   },

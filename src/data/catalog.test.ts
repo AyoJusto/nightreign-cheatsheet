@@ -116,4 +116,9 @@ describe('boss crests', () => {
     for (const name of ['Royal Revenant', 'Ancient Hero of Zamor', 'Elder Lion', "Night's Cavalry"]) expect(great(name), name).toBe(false)
     expect(catalog.all.every((s) => s.markers.every((m) => m.great === undefined || m.layer === 'boss'))).toBe(true)
   })
+  it('places the field boss south-west of the lake on the seeds whose sheet spells that spot without "Far"', () => {
+    // The DLC sheet (seeds 1000 on) writes "Southwest of Lake" for the spot the base sheet calls "Far Southwest of Lake".
+    const seed = catalog.all.find((s) => s.id === '1003')!
+    expect(seed.markers).toContainEqual({ layer: 'boss', x: 309, y: 823, label: 'Grafted Scion' })
+  })
 })

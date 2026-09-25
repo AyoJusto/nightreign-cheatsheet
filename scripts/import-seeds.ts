@@ -227,7 +227,9 @@ function main() {
       if (pos) markers.push({ layer: 'circle', night, x: pos.x, y: pos.y, label: `Night ${night}: ${bossName(nc[`night${night}`].boss)}` })
       else problems.push(`seed ${id} night ${night} circle has no position`)
     }
-    const fieldBosses = remote.bossAssignments.seeds[id] ?? {}
+    // Keyed by the spot's name as bossPositions spells it (aliases.bossSlots: the two sheets spell one spot two ways).
+    const fieldBosses = Object.fromEntries(Object.entries<string>(remote.bossAssignments.seeds[id] ?? {})
+      .map(([slot, boss]) => [aliases.bossSlots[slot] ?? slot, boss]))
     for (const p of remote.bossPositions.positions[s.map_type] ?? []) {
       const boss = p.slot && fieldBosses[p.slot]
       if (boss && !p.slot.startsWith('Castle') && !notFieldBosses.has(boss)) {
