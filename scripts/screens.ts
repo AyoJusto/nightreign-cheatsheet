@@ -55,9 +55,8 @@ const shots: [string, Shot][] = [
   }],
   ['result-peek', async (p) => { await p.goto(`${base}/seed/${seed.id}`) }],
   ['result-layers', async (p) => {
-    // The busiest marker set a player turns on: labels must stay clear of each other and of every glyph.
+    // The busiest marker set, which is every layer, on by default: names must stay clear of each other and of every mark.
     await p.goto(`${base}/seed/000`)
-    for (const layer of ['Bosses', 'Chests']) await p.getByRole('button', { name: layer, exact: true }).click()
   }],
   ['result-spawn-church', async (p) => {
     // A Church at the spawn point: the puck draws over it and both stay visible (final m1).
