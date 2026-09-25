@@ -453,9 +453,10 @@ export function MapView(props: MapContent & {
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
 // The part of a structure's art box that holds the sprite (a half-size, as a share of the box), and where its
-// name starts below the point: just under the sprite, which the element badge may overhang a little.
+// name starts below the point: under the art's whole box, so its glow never clips the element badge in the
+// box's lower-right corner.
 const ART_BODY = 0.4
-const ART_LABEL_GAP = 0.44
+const ART_LABEL_GAP = 0.5
 // How wide a night's name may be, as a share of its ring's size, and still be written inside it (across the glow).
 const RING_TEXT = 1.2
 // The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
