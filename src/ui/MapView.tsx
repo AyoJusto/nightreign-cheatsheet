@@ -510,14 +510,17 @@ function Ring({ night }: { night: 1 | 2 }) {
     <svg className={`ring ring-${night}`} width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden>
       <defs>
         <radialGradient id={glow}>
-          <stop offset="0.55" stopColor="currentColor" stopOpacity="0" />
-          <stop offset="0.8" stopColor="currentColor" stopOpacity="0.6" />
+          <stop offset="0.45" stopColor="currentColor" stopOpacity="0" />
+          <stop offset="0.62" stopColor="currentColor" stopOpacity="0.6" />
+          <stop offset="0.76" stopColor="currentColor" stopOpacity="1" />
+          <stop offset="0.9" stopColor="currentColor" stopOpacity="0.5" />
           <stop offset="1" stopColor="currentColor" stopOpacity="0" />
         </radialGradient>
       </defs>
       <circle cx={c} cy={c} r={c} fill={`url(#${glow})`} />
-      <circle cx={c} cy={c} r={c * 0.8} fill="currentColor" fillOpacity="0.07" stroke="currentColor" strokeWidth="4.5" />
-      <circle cx={c} cy={c} r={c * 0.8} fill="none" stroke="#fff" strokeOpacity="0.6" strokeWidth="1.2" />
+      <circle cx={c} cy={c} r={c * 0.76} fill="none" stroke="currentColor" strokeOpacity="0.45" strokeWidth="16" />
+      <circle cx={c} cy={c} r={c * 0.76} fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="6" />
+      <circle cx={c} cy={c} r={c * 0.76} fill="none" stroke="#fff" strokeOpacity="0.7" strokeWidth="1.5" />
     </svg>
   )
 }

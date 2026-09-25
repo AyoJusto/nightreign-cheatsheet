@@ -76,7 +76,8 @@
   font-family: var(--font-display); font-weight: 700; max-width: 112px; letter-spacing: 0.02em;
   text-shadow: 0 0 2px #000, 0 0 3px #000, 0 0 6px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
 }
-.marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-size: 1.2em; }
+/* The number in the system face: Cinzel's 1 reads as an I. */
+.marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-family: var(--font); font-weight: 800; font-size: 1.2em; }
 @media (min-width: 900px) { .marker-circle .map-name { max-width: 128px; } }
 /* A name alone (the castle's guard, caravans) sits on its point on one line, clear of the marks below it. */
 .marker-plain .map-name { max-width: none; white-space: nowrap; }
