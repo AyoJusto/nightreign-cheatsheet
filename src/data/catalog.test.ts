@@ -53,12 +53,6 @@ describe('seed data', () => {
       expect(text, file).not.toMatch(/[\u3000-\u9FFF\uFF00-\uFFEF]/)
     }
   })
-  it('has fight notes for every night and castle boss', () => {
-    for (const seed of catalog.all) {
-      const bosses = [seed.nights[1].boss, seed.nights[2].boss, seed.castle?.basement, seed.castle?.rooftop]
-      for (const boss of bosses) if (boss) expect(catalog.bossNotes(boss), `seed ${seed.id} ${boss}`).toBeTruthy()
-    }
-  })
   it('knows where the castle is on every map a castle crew holds', () => {
     for (const seed of catalog.all) {
       if (!seed.castle) continue

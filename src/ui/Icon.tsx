@@ -5,7 +5,6 @@ const PATHS = {
   reset: 'M3 12a9 9 0 1 0 2.64-6.36L3 8.3M3 3v5.3h5.3',
   share: 'M12 3v12M8 7l4-4 4 4M7 11H5v10h14V11h-2',
   arrow: 'M5 12h14M13 6l6 6-6 6',
-  chevron: 'M9 6l6 6-6 6',
   check: 'M5 12.5l4.5 4.5L19 7.5',
 } as const
 

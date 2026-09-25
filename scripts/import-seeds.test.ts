@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { toStructureKey, toNightlord, toEvent, hasCjk, toBossNotes, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside, toWeakness, weaknessTable } from './import-seeds.ts'
+import { toStructureKey, toNightlord, toEvent, hasCjk, keyBackground, oceanCoverage, normalizeBossName, applyPerName, emblemSources, toInside, toWeakness, weaknessTable } from './import-seeds.ts'
 import { EXPEDITIONS } from '../data/raw/weaknesses/data/nightlords.ts'
 import { NIGHT_BOSSES } from '../data/raw/weaknesses/data/nightbosses.ts'
 
@@ -37,29 +37,6 @@ describe('import translation', () => {
   it('detects non-English text', () => {
     expect(hasCjk('教堂')).toBe(true)
     expect(hasCjk('Great Church')).toBe(false)
-  })
-
-  describe('boss notes', () => {
-    const details = [
-      { key: 'tree_sentinel', name: 'Tree Sentinel', summary: 'Keep moving.' },
-      { key: 'demi_human_queen', name: 'Demi-Human Queen', summary: 'Kill the adds.' },
-      { key: 'mute', name: 'Mute', summary: '' },
-    ]
-    it('keys notes by the name the run card shows, joined on the source key', () => {
-      expect(toBossNotes(details, [['Tree Sentinel and Royal Cavalrymen', 'tree_sentinel']])).toEqual({ 'Tree Sentinel and Royal Cavalrymen': 'Keep moving.' })
-    })
-    it('joins by name when the source gives no key', () => {
-      expect(toBossNotes(details, [['Demi-Human Queen', null]])).toEqual({ 'Demi-Human Queen': 'Kill the adds.' })
-    })
-    it('leaves out bosses without notes instead of writing blanks', () => {
-      expect(toBossNotes(details, [['Trolls', 'trolls'], ['Mute', 'mute'], ['Evergaol Knight', null]])).toEqual({})
-    })
-    it('drops non-English notes', () => {
-      expect(toBossNotes([{ key: 'x', name: 'X', summary: '樹' }], [['X', 'x']])).toEqual({})
-    })
-    it('rejects one shown name meaning two bosses', () => {
-      expect(() => toBossNotes(details, [['Sentinel', 'tree_sentinel'], ['Sentinel', 'demi_human_queen']])).toThrow(/two bosses/)
-    })
   })
 
   describe('boss name normalization', () => {

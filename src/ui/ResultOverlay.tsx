@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { motion, type MotionValue } from 'motion/react'
+import type { MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './MapView'
 import { Sheet, type Detent } from './Sheet'
 import { collapseRepeats } from './collapseRepeats'
@@ -183,28 +183,16 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   )
 }
 
-// A boss with notes in the data expands in place to show them; anything else is a plain row.
 // With a label it is a run card row (dt/dd); without, an item in a list of names.
-// `count` is display only (e.g. two identical field bosses -> "Name ×2"); notes still key off the plain name.
+// `count` is display only (e.g. two identical field bosses -> "Name ×2").
 function RunRow({ label, value, count }: { label?: string; value: string; count?: number }) {
-  const [open, setOpen] = useState(false)
-  const notes = catalog.bossNotes(value)
   const shown = count && count > 1 ? `${value} ×${count}` : value
   const Row = label ? 'div' : 'li'
   const Value = label ? 'dd' : 'span'
-  const Notes = label ? motion.dd : motion.p
   return (
     <Row className="run-row">
       {label && <dt>{label}</dt>}
-      <Value className="run-value">
-        {notes ? (
-          <button className="run-more" aria-expanded={open} onClick={() => setOpen(!open)}>
-            {shown}
-            <Icon name="chevron" size={14} className="run-chevron" />
-          </button>
-        ) : shown}
-      </Value>
-      {open && <Notes className="run-notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{notes}</Notes>}
+      <Value className="run-value">{shown}</Value>
     </Row>
   )
 }
