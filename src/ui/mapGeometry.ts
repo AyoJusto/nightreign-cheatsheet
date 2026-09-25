@@ -197,6 +197,11 @@ export interface LabelRequest {
   mark?: number
   /** A night's ring: its name goes centred above the ring, below it or beside it, else inside it (placeLabel). */
   ring?: boolean
+  /**
+   * The name wrapped onto two lines as narrow as its words allow (a crest's name on a phone): tried directly under
+   * the mark when no spot fits the one-line box, under every rule a name follows.
+   */
+  wrap?: { w: number; h: number }
   /** The mark's footprint (a structure's sprite and badge): its name goes around it, and it is the mark's own. */
   box?: Rect
   /** What the mark draws, which no other name may touch; by default its glyph (`mark` px around the point). */
@@ -214,7 +219,8 @@ export interface LabelRequest {
  * kept one included, and a glyph under one gets no label, since nobody can see the mark it would name.
  * A name placed keeps LABEL_PAD px from the next beside it, and half a `line` (the names' line height) above and
  * below it, so two names of different marks never stack into what reads as one two-line name.
- * Returns one result per request, in input order, with the label's top-left corner in frame px.
+ * Returns one result per request, in input order, with the label's top-left corner in frame px; `wrapped` when it
+ * is the request's `wrap` box that shows.
  */
 export function placeLabels(
   requests: readonly LabelRequest[],
@@ -225,7 +231,7 @@ export function placeLabels(
   mark: number,
   blocked: readonly Rect[] = [],
   line = 0,
-): { x: number; y: number; shown: boolean }[] {
+): { x: number; y: number; shown: boolean; wrapped?: boolean }[] {
   const top = frame.top ?? 0
   // Covering a mark hides what it marks, and text over text is unreadable: when a kept label has no free spot,
   // covering either costs about as much as covering a whole pin, so a pin's edge loses first.
@@ -237,7 +243,7 @@ export function placeLabels(
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
   const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: LABEL_WEIGHT }))
-  const results: { x: number; y: number; shown: boolean }[] = new Array(requests.length)
+  const results: { x: number; y: number; shown: boolean; wrapped?: boolean }[] = new Array(requests.length)
   for (const i of order) {
     const request = requests[i]
     const { point, label, keep } = request
@@ -254,8 +260,22 @@ export function placeLabels(
     const own = (request.own ?? []).map((o) => ({ ...o, weight: MARKER_WEIGHT }))
     const obstacles = [...marks, ...placed, ...own]
     const markGap = request.gap ?? gap
-    const spot = placeLabel(point, label, frame, obstacles, markGap, edge, m, request.ring, nearest, request.box)
-    const rect = { x0: spot.x, y0: spot.y, x1: spot.x + label.w, y1: spot.y + label.h }
+    let size = label
+    let wrapped = false
+    let spot = placeLabel(point, label, frame, obstacles, markGap, edge, m, request.ring, nearest, request.box)
+    // The two-line wrap, directly under the mark and nowhere else: the spot placeLabel tries first, clamped by nothing.
+    if (!(spot.own && spot.clear) && request.wrap) {
+      const around = request.box ?? { x0: point.x - m, y0: point.y - m, x1: point.x + m, y1: point.y + m }
+      const under = placeLabel(point, request.wrap, frame, obstacles, markGap, edge, m, false, nearest, request.box)
+      const x = (around.x0 + around.x1) / 2 - request.wrap.w / 2
+      const y = request.box ? around.y1 + markGap : point.y + markGap
+      if (under.own && under.clear && under.x === x && under.y === y) {
+        spot = under
+        size = request.wrap
+        wrapped = true
+      }
+    }
+    const rect = { x0: spot.x, y0: spot.y, x1: spot.x + size.w, y1: spot.y + size.h }
     // A glyph partly under the pill or the sheet, or past a side of the screen, has no place for its label:
     // clamped into the band, it would float away from its glyph.
     const inBand = point.y - m >= top && point.y + m <= frame.h && point.x - m >= 0 && point.x + m <= frame.w
@@ -266,7 +286,7 @@ export function placeLabels(
     // line above and below, where the gap between a wrapped name's own lines would make two names read as one.
     const padY = Math.max(LABEL_PAD, line / 2)
     if (shown) placed.push({ x0: rect.x0 - LABEL_PAD, y0: rect.y0 - padY, x1: rect.x1 + LABEL_PAD, y1: rect.y1 + padY, weight: LABEL_WEIGHT })
-    results[i] = { x: spot.x, y: spot.y, shown }
+    results[i] = { x: spot.x, y: spot.y, shown, ...(wrapped && { wrapped }) }
   }
   return results
 }

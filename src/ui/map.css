@@ -83,3 +83,10 @@
 .marker-plain .map-name { max-width: none; white-space: nowrap; }
 /* The castle's guard, in the game's face, over the castle. */
 .marker-castle.marker-plain .map-name { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.02em; }
+/* A name called out by a tap on its mark: the same bone text, on a dark plate with a bronze hairline, above every
+   other mark and name. */
+.marker.marker-callout { z-index: 4; }
+.marker-callout .map-name {
+  max-width: 160px; padding: 2px 6px; border-radius: 4px;
+  background: rgba(14, 22, 40, 0.9); box-shadow: 0 0 0 1px var(--bronze-halo), 0 2px 8px rgba(0, 0, 0, 0.6);
+}

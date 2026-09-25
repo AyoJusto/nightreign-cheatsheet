@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useMemo, type ReactNode } from 'react'
+import { useRef, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import { splitStructure, type EarthId, type SlotId, type StructureKey } from '../domain/names'
@@ -7,6 +7,7 @@ import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
+import { useWide } from './useWide'
 import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind } from './mapGeometry'
 import './map.css'
 
@@ -166,7 +167,10 @@ export function MapView(props: MapContent & {
     queued.current = null
     fade.jump(1)
   }
-  const moved = () => props.moves?.set(props.moves.get() + 1)
+  const moved = () => {
+    props.moves?.set(props.moves.get() + 1)
+    setCallout(null)
+  }
   // Springs each value to its target. With reduced motion a far move crossfades instead; `targets` is read
   // again when the map is faded out, so the jump lands where things are by then, not where they were.
   // Moves that arrive during a crossfade wait for its jump, and each is read again there, in order.
@@ -315,7 +319,8 @@ export function MapView(props: MapContent & {
     return () => offs.forEach((off) => off())
   }, [props.topInset, props.restInset, props.bottomInset, props.corner, props.selected, props.pins])
 
-  // A tap goes to the nearest slot within reach, preferring the step's own pins, not to whichever hit area is on top.
+  // A tap on a named mark shows its name in a callout, and another tap on it, or anywhere else, hides it.
+  // Otherwise a tap goes to the nearest slot within reach, preferring the step's own pins, not to whichever hit area is on top.
   const tapAt = (clientX: number, clientY: number) => {
     const r = frame.current!.getBoundingClientRect()
     const s = side()
@@ -323,6 +328,9 @@ export function MapView(props: MapContent & {
       x: ((clientX - r.left - r.width / 2 - x.get()) / s + 0.5) * 1000,
       y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
     }
+    const tapped = nearestTag(point, s)
+    setCallout(tapped === null || tapped === calloutAt ? null : { tags, at: tapped })
+    if (tapped !== null) return
     const reach = Math.max(TAP_REACH, markSize('art', s) / 2)
     const pin = nearestPin(props.pins, point, (reach / s) * 1000, props.preferred)
     if (pin) props.onPin?.(pin.slot, pin.state)
@@ -348,9 +356,30 @@ export function MapView(props: MapContent & {
     })
     return [...(props.markers ?? []).map(tagOf), ...sites]
   }, [props.markers, props.pins])
-  const labelBoxes = useMotionValue<{ w: number; h: number }[]>([])
-  const labelSizes = useRef<{ w: number; h: number }[]>([])
-  const measured = (i: number, box: { w: number; h: number }) => { labelSizes.current[i] = box }
+  const namedPins = props.pins.filter((p) => p.name && p.structure)
+  const markerCount = props.markers?.length ?? 0
+  // The mark whose name a tap called out, by its index in `tags`; a change of tags (a layer turned off) drops it.
+  const [callout, setCallout] = useState<{ tags: TagSpec[]; at: number } | null>(null)
+  const calloutAt = callout?.tags === tags ? callout.at : null
+  // Its text: a site's name, or a marker's own (a night's ring already writes its name, and a chest's icon says it all).
+  const nameOf = (i: number) => (i < markerCount ? props.markers![i].label : namedPins[i - markerCount].name!)
+  // The named mark nearest a tap, within reach of what it draws (a site's art, else a 44px target), or null.
+  const nearestTag = (point: { x: number; y: number }, s: number): number | null => {
+    const art = markSize('art', s) / 2
+    let best: number | null = null
+    let least = Infinity
+    tags.forEach((t, i) => {
+      if (t.mark === 'ring' || t.silent) return
+      const reach = ((t.mark === 'art' ? art : 22) / s) * 1000
+      const distance = Math.hypot(t.x - point.x, t.y - point.y)
+      if (distance <= reach && distance < least) { best = i; least = distance }
+    })
+    return best
+  }
+  const labelBoxes = useMotionValue<NameBox[]>([])
+  const labelSizes = useRef<NameBox[]>([])
+  const measured = (i: number, box: NameBox) => { labelSizes.current[i] = box }
+  const wide = useWide()
   // Night names are in Cinzel, which may arrive after the first measure (font-display: swap): measure every
   // name again whenever a font finishes loading (fonts.ready alone can resolve before Cinzel is even requested).
   // Read straight from the DOM, so a font arriving mid-gesture costs no re-render of the pins.
@@ -414,7 +443,10 @@ export function MapView(props: MapContent & {
         return { point, label, rank, keep: false, mark: 0, box, body, own, gap: -tuck }
       }
       const r = icon * (t.kind === 'evergaol' ? EVERGAOL_BODY : ICON_BODY)
-      return { point, label, rank, keep: false, mark: r, box: square(point, r), gap: 1 }
+      // A crest's name on a phone may also go on two narrow lines straight under it.
+      const crest = t.kind === 'boss' || t.kind === 'castle'
+      const wrap = crest && !wide ? boxes[i]?.wrap : undefined
+      return { point, label, rank, keep: false, mark: r, box: square(point, r), gap: 1, wrap }
     })
     // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
     // so no label is sliced by the sheet or drawn under the pill's controls.
@@ -423,15 +455,23 @@ export function MapView(props: MapContent & {
     const blocked = (props.corner?.get().rects ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
     // One line of a name: the shortest name box, as every map has names on one line.
     const line = Math.min(...requests.filter((r) => !r.ring && r.label.h > 0).map((r) => r.label.h))
-    return placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked, Number.isFinite(line) ? line : 0)
+    const spots = placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked, Number.isFinite(line) ? line : 0)
       .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
+    // A called-out name goes centred just above its mark, over everything, or below it where the pill leaves no room.
+    if (calloutAt === null) return spots
+    const { point, box, mark = 0 } = requests[calloutAt]
+    const called = boxes[tags.length] ?? { w: 0, h: 0 }
+    const around = box ?? square(point, mark)
+    const calloutX = Math.min(w - LABEL_EDGE - called.w, Math.max(LABEL_EDGE, (around.x0 + around.x1) / 2 - called.w / 2))
+    const above = around.y0 - CALLOUT_GAP - called.h
+    const calloutY = above >= visible.top + LABEL_EDGE ? above : around.y1 + CALLOUT_GAP
+    return [...spots, { x: calloutX - point.x, y: calloutY - point.y, shown: true }]
   })
   // Tags measure their labels in their own layout effects, which run before this component's: published
   // from here, after the transform above has subscribed (in its own layout effect, declared earlier), so the
   // new sizes are never missed.
-  useLayoutEffect(() => labelBoxes.set(tags.map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 })), [tags, labelBoxes])
-  const namedPins = props.pins.filter((p) => p.name && p.structure)
-  const markerCount = props.markers?.length ?? 0
+  // The callout's size comes last, after every tag's.
+  useLayoutEffect(() => labelBoxes.set([...tags, null].map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 })), [tags, labelBoxes, calloutAt])
 
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
@@ -504,6 +544,11 @@ export function MapView(props: MapContent & {
           <Tag key={`p${p.slot}`} index={markerCount + j} at={p} className="marker-site" labels={labels} onMeasure={measured}
             pinScale={pinScale} text={p.name!} textKey={p.name!} hidden />
         ))}
+        {/* The called-out name, over every other mark; the mark's own accessible name already says it. */}
+        {calloutAt !== null && (
+          <Tag key={`c${calloutAt}`} index={tags.length} at={tags[calloutAt]} className="marker-callout" labels={labels} onMeasure={measured}
+            pinScale={pinScale} text={nameOf(calloutAt)} textKey={nameOf(calloutAt)} hidden />
+        )}
       </motion.div>
     </div>
   )
@@ -512,6 +557,8 @@ export function MapView(props: MapContent & {
 // Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
+// Distance from a mark to its called-out name.
+const CALLOUT_GAP = 4
 // A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
 // name enters it.
 const RING_DISC = 0.4
@@ -598,8 +645,8 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   index: number
   at: { x: number; y: number }
   className: string
-  labels: MotionValue<{ x: number; y: number; shown: boolean }[]>
-  onMeasure: (index: number, box: { w: number; h: number }) => void
+  labels: MotionValue<{ x: number; y: number; shown: boolean; wrapped?: boolean }[]>
+  onMeasure: (index: number, box: NameBox) => void
   pinScale: MotionValue<number>
   text: ReactNode
   textKey: string
@@ -614,6 +661,13 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   // A name with no free spot steps aside, leaving its mark; it comes back as zooming in makes room.
   // A night's name always shows while its ring is in sight (placeLabels).
   const labelOpacity = useTransform(spot, (o) => (o.shown ? 1 : 0))
+  // A crest's name placed on its two-line wrap takes that narrower width (measureName keeps both).
+  useEffect(() => spot.on('change', (o) => {
+    const el = label.current
+    if (!el) return
+    const width = o.wrapped ? el.dataset.wrap : el.dataset.w
+    if (width !== undefined && el.style.width !== width) el.style.width = width
+  }), [spot])
   // Reported to MapView, which publishes every size at once after its placement pass has subscribed.
   useLayoutEffect(() => {
     const el = label.current
@@ -629,11 +683,15 @@ function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey,
   )
 }
 
+/** A name's box as placed, and `wrap`, its box on two lines as narrow as its words allow, when that is narrower. */
+interface NameBox { w: number; h: number; wrap?: { w: number; h: number } }
+
 /**
  * A name's size as placed. A name that wraps is as wide as its longest line, not its max-width: the box is shrunk
- * to that line (the same breaks still fit), so its neighbours may come as close as the words themselves.
+ * to that line (the same breaks still fit), so its neighbours may come as close as the words themselves. Both
+ * widths are kept on the element for Tag, which shows whichever the placement chose.
  */
-function measureName(el: HTMLElement): { w: number; h: number } {
+function measureName(el: HTMLElement): NameBox {
   el.style.width = ''
   const range = document.createRange()
   range.selectNodeContents(el)
@@ -641,5 +699,29 @@ function measureName(el: HTMLElement): { w: number; h: number } {
   const scale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
   const w = Math.ceil(range.getBoundingClientRect().width / scale)
   if (w > 0 && w < el.offsetWidth) el.style.width = `${w}px`
-  return { w: el.offsetWidth, h: el.offsetHeight }
+  const box = { w: el.offsetWidth, h: el.offsetHeight }
+  const two = twoLines(el)
+  const wrap = two && two.w < box.w ? two : undefined
+  el.dataset.w = el.style.width
+  el.dataset.wrap = wrap ? `${wrap.w}px` : el.style.width
+  return wrap ? { ...box, wrap } : box
+}
+
+let canvas: CanvasRenderingContext2D | null = null
+/** The name split into two lines at the word break that leaves the longer line shortest, as its box. */
+function twoLines(el: HTMLElement): { w: number; h: number } | undefined {
+  const words = (el.textContent ?? '').split(' ')
+  if (words.length < 2) return undefined
+  const style = getComputedStyle(el)
+  canvas ??= document.createElement('canvas').getContext('2d')
+  if (!canvas) return undefined
+  canvas.font = style.font
+  const ctx = canvas
+  const width = (text: string) => ctx.measureText(text).width
+  let longer = Infinity
+  for (let k = 1; k < words.length; k++) {
+    longer = Math.min(longer, Math.max(width(words.slice(0, k).join(' ')), width(words.slice(k).join(' '))))
+  }
+  // 1px spare, so the browser's own measure never breaks it onto a third line.
+  return { w: Math.ceil(longer) + 1, h: 2 * parseFloat(style.lineHeight) }
 }

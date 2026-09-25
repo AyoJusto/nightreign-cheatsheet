@@ -400,6 +400,21 @@ describe('placeLabels: names sized to the art they belong to', () => {
     expect(d).toMatchObject({ x: 244, y: 309, shown: true })
     expect(d.x - (c.x + label.w)).toBe(4)
   })
+  it("on a phone, writes a crest's name on two narrow lines directly under it when the one-line name fits nowhere", () => {
+    const crestAt = { point: { x: 200, y: 300 }, label: { w: 100, h: 13 }, rank: 3, keep: false, mark: 12, box: { x0: 188, y0: 288, x1: 212, y1: 312 }, gap: 1 }
+    // Art all round the crest, but for a 40px gap straight under it.
+    const art = [
+      { x0: 100, y0: 200, x1: 300, y1: 287 }, { x0: 213, y0: 250, x1: 400, y1: 312 }, { x0: 0, y0: 250, x1: 187, y1: 312 },
+      { x0: 221, y0: 313, x1: 400, y1: 400 }, { x0: 0, y0: 313, x1: 179, y1: 400 },
+    ]
+    const [bare] = placeLabels([crestAt], frame, art, 9, 8, 6)
+    expect(bare.shown).toBe(false)
+    const [wrapped] = placeLabels([{ ...crestAt, wrap: { w: 40, h: 26 } }], frame, art, 9, 8, 6)
+    expect(wrapped).toEqual({ x: 180, y: 313, shown: true, wrapped: true })
+    // Only there: with that gap taken as well, it stays bare rather than wrap anywhere else.
+    const [none] = placeLabels([{ ...crestAt, wrap: { w: 40, h: 26 } }], frame, [...art, { x0: 190, y0: 330, x1: 210, y1: 345 }], 9, 8, 6)
+    expect(none.shown).toBe(false)
+  })
   it('tries all eight spots round its mark before giving up: with below, above and both sides taken, a diagonal', () => {
     const block = (x0: number, y0: number, x1: number, y1: number) => ({ x0, y0, x1, y1 })
     // Names placed before fill the four straight spots, leaving the diagonals free.

@@ -290,6 +290,32 @@ test('result map pins are named images, not buttons', async ({ page }) => {
   await expect(page.locator('.map-frame button')).toHaveCount(0)
 })
 
+// Too many marks to name them all at a phone's default zoom: a tap on any named mark calls out its name, and
+// another tap on it, or a pan of the map, puts it away.
+test('a tap on a crest calls out its name, and a second tap or a pan hides it', async ({ page }) => {
+  await page.goto('/seed/1003')
+  const callout = page.locator('.marker-callout .map-name')
+  const crest = page.locator('.marker-boss').filter({ hasText: 'Black Blade Kindred' }).locator('.marker-icon')
+  await page.waitForTimeout(600)
+  const tap = async () => {
+    const r = (await crest.boundingBox())!
+    await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
+  }
+  await tap()
+  await expect(callout).toHaveText('Black Blade Kindred')
+  await expect(callout).toHaveCSS('opacity', '1')
+  await tap()
+  await expect(callout).toHaveCount(0)
+  await tap()
+  await expect(callout).toBeVisible()
+  const map = (await page.locator('.map-frame').boundingBox())!
+  await page.mouse.move(map.width / 2, map.height / 3)
+  await page.mouse.down()
+  await page.mouse.move(map.width / 2 + 50, map.height / 3 + 40, { steps: 6 })
+  await page.mouse.up()
+  await expect(callout).toHaveCount(0)
+})
+
 // Focus mode before the spawn is set: only the candidates stay gold, the spawn options dim with the map,
 // and a tap on one cancels focus without recording a spawn (iter-8 M1; spec: "tap one to confirm or elsewhere to cancel").
 test('in focus mode a tap on a dimmed spawn option cancels and records nothing', async ({ page }) => {
