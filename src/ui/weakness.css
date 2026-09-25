@@ -48,6 +48,12 @@
   .nl-icons { gap: 6px; }
 }
 
+/* On Home, beside the Shifting Earth heading: the same card, its rows in one line, at the phone's size. */
+.nl-card-inline { --icon: 22px; display: flex; gap: 12px; padding: 4px 10px; }
+.nl-card-inline .nl-row { display: flex; gap: 6px; padding: 2px 0; }
+.nl-card-inline .nl-row + .nl-row { background: none; }
+.nl-card-inline .nl-row-label { font-size: 11px; }
+
 /* ---------- A night boss's weaknesses under its name in the run card (ResultOverlay.tsx) ---------- */
 
 /* A small Cinzel tag, then each game damage icon with its name. */

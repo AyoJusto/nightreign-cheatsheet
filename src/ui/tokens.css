@@ -141,14 +141,21 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
 /* Nightlords are named in the game's own face. */
 .nightlord-name { font-family: var(--font-display); font-weight: 600; font-size: 12px; line-height: 16px; letter-spacing: 0.06em; color: rgba(236, 227, 207, 0.85); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9); }
 .nightlord[aria-pressed='true'] .nightlord-name { color: var(--bone); }
+/* Once a Nightlord is picked, the others' portraits dim and their names drop to the secondary tone. */
+.nightlord .medallion, .nightlord .nightlord-name { transition: opacity 0.3s ease-out, color 0.3s ease-out; }
+.nightlord[data-dim] .medallion { opacity: 0.5; }
+.nightlord[data-dim] .nightlord-name { color: var(--bone-2); }
+@media (prefers-reduced-motion: reduce) { .nightlord .medallion, .nightlord .nightlord-name { transition: none; } }
 @media (min-width: 900px) { .nightlord-name { font-size: 15px; } .medallion { width: 84%; } }
 /* Phone: a sticky framed plate over the grid's bottom edge (8px from the screen edges). Desktop: under the grid. */
 .earth-bar { position: sticky; z-index: 10; bottom: calc(var(--safe-bottom) + var(--gutter)); margin: 24px -8px 0; padding: 10px 10px 12px; }
 .earths:not(.earth-bar) { max-width: 880px; margin: 48px auto 0; }
-.earth-heading { margin: 0 0 10px; font-family: var(--font-display); font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: 0.08em; color: var(--bronze); text-align: center; }
+/* The heading, with the picked Nightlord's weakness card beside it (it wraps under the heading when narrow). */
+.earth-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; margin: 0 0 10px; }
+.earth-heading { margin: 0; font-family: var(--font-display); font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: 0.08em; color: var(--bronze); text-align: center; }
 /* All six at once: three across and two down on phone, one row on desktop. */
 .earth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-@media (min-width: 900px) { .earth-grid { grid-template-columns: repeat(6, 1fr); gap: 12px; } .earth-heading { font-size: 17px; margin-bottom: 16px; } }
+@media (min-width: 900px) { .earth-grid { grid-template-columns: repeat(6, 1fr); gap: 12px; } .earth-heading { font-size: 17px; } .earth-head { margin-bottom: 16px; } }
 /* A card: the earth's map in a dark well, its name in Cinzel, then its seed count. */
 .earth {
   position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 6px 8px;

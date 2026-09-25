@@ -4,7 +4,7 @@ import { Frame } from './Frame'
 import { useWide } from './useWide'
 import { catalog } from '../data/catalog'
 import './weakness.css'
-import { DAMAGE_NAMES, nightlordName, weaknessPhrase, type DamageKey, type NightlordId } from '../domain/names'
+import { DAMAGE_NAMES, nightlordName, weaknessPhrase, type DamageKey, type NightlordId, type Weakness } from '../domain/names'
 
 /**
  * A screen area drawn over the map, in px: x from the left edge, and `bottom`/`top` measured up from the line
@@ -116,14 +116,36 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner }: {
             transition={cardMotion}
           >
             <Frame />
-            {weakness.weak.length > 0 && <CardRow label="Weak" keys={weakness.weak} />}
-            {weakness.resist.length > 0 && <CardRow label="Resist" keys={weakness.resist} />}
-            {/* The statuses that build up fastest on it (the cheatsheet's "Also"), where its listed weakness is a damage type. */}
-            {weakness.status && weakness.status.length > 0 && <CardRow label="Status" keys={weakness.status} hint="builds up fastest" />}
+            <CardRows weakness={weakness} />
           </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
+  )
+}
+
+/**
+ * A Nightlord's weaknesses as the game's status card lists them, on its own (Home, once a Nightlord is picked): the
+ * same rows as the corner's card, laid in one line. Its facts are its accessible name.
+ */
+export function WeaknessCard({ nightlord }: { nightlord: NightlordId }) {
+  const weakness = catalog.nightlordWeakness(nightlord)
+  return (
+    <div className="nl-card nl-card-inline" role="img" aria-label={`${nightlordName(nightlord)}: ${weaknessPhrase(weakness)}`}>
+      <Frame />
+      <CardRows weakness={weakness} />
+    </div>
+  )
+}
+
+function CardRows({ weakness }: { weakness: Weakness }) {
+  return (
+    <>
+      {weakness.weak.length > 0 && <CardRow label="Weak" keys={weakness.weak} />}
+      {weakness.resist.length > 0 && <CardRow label="Resist" keys={weakness.resist} />}
+      {/* The statuses that build up fastest on it (the cheatsheet's "Also"), where its listed weakness is a damage type. */}
+      {weakness.status && weakness.status.length > 0 && <CardRow label="Status" keys={weakness.status} hint="builds up fastest" />}
+    </>
   )
 }
 
