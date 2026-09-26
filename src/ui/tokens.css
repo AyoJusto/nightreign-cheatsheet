@@ -9,6 +9,7 @@
 }
 
 :root {
+  /* Desktop is min-width: 900px in every @media rule here and in useWide.ts: keep them in step. */
   /* The palette. Every colour in the app derives from these (alpha shades by color-mix), SVG art included (the svg-* classes at the end),
      so a new palette is a change here alone. The PWA manifest in vite.config.ts repeats --bg: JSON cannot read CSS. */
   /* Sampled from the game's own menus (Game UI Database, 1080p captures; .playwright-mcp/ui-refs/SPEC.md): a cold,
