@@ -199,9 +199,7 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      {/* The three-column centring grid (pill-titled) only makes sense when a title actually renders:
-          desktop carries the count in the side panel, so its pill is a plain flex row, a tight control group,
-          anchored to the map's top-left corner like a game menu's back button. */}
+      {/* Desktop's count lives in the side panel, so its pill is just a control group in the map's corner. */}
       <Plate className={`pill${wide ? ' pill-corner' : ' pill-titled'}`} ref={pillRef}>
         <div className="pill-leading">
           <button className="pill-back" aria-label="Back" onClick={() => props.go('/', true)}><Icon name="back" /></button>
@@ -209,10 +207,8 @@ export function FinderOverlay(props: {
         {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
         {!wide && (
           <span className="pill-text">
-            {/* The live region carries the whole phrase, so the words around the digits are hidden from screen readers.
-                Count keeps one slot in both states: remounted, the digits would not roll and a pre-filled live region
-                may never be announced. */}
-            {/* Short enough to sit whole between the buttons on an iPhone SE; the live phrase says it in full. */}
+            {/* Count's live region speaks the whole phrase, so the visible words are hidden from screen readers. It keeps
+                one slot in both states: remounted, a pre-filled live region may never be announced. */}
             {!spawn && <span aria-hidden>Spawn point? · </span>}
             <Count value={count} phrase={spawn ? `${count} possible` : `${verb} where you spawned, ${count} possible`} />
             {spawn && <span aria-hidden> possible</span>}
@@ -231,7 +227,7 @@ export function FinderOverlay(props: {
         <aside className="side-panel" aria-label="Scouting">
           <Frame />
           <div className="side-scroll">
-            <h2 className="side-title"><span className="title side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
+            <h2 className="side-title"><span className="side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
             <p className="side-count"><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></p>
             {preview || (choices ? (
               <section>

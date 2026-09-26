@@ -167,7 +167,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       <div className="result-text">
         <div className="result-line">
           {/* "Seed" in the game's face; the number in the system face, where 0 never reads as O. */}
-          <h1 className="title result-title">Seed <span className="num seed-number">{seed.id}</span></h1>
+          <h1 className="result-title">Seed <span className="num">{seed.id}</span></h1>
           {/* The event and its day: the run card no longer repeats it. */}
           {seed.event && <span className="event-badge">{seed.event.name}{seed.event.day ? ` · Day ${seed.event.day}` : ''}</span>}
         </div>
