@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, fitInDisc, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_ASPECT } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, fitInDisc, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_ASPECT, labelRequest, structureFootprint } from './mapGeometry'
 import { catalog } from '../data/catalog'
 import seedData from '../data/seeds.json'
 // A night's name as a phone draws it (11px Cinzel): each character's advance, measured in WebKit (iPhone 15).
@@ -683,5 +683,40 @@ describe("a night's name inside its ring on a phone", () => {
     expect(fitInDisc({ w: 30, h: 20 }, 25.6, 8 / 11)).toBe(1)
     expect(fitInDisc({ w: 60, h: 30 }, 25.6, 8 / 11)).toBeCloseTo(25.6 / Math.hypot(30, 15), 9)
     expect(fitInDisc({ w: 90, h: 30 }, 25.6, 8 / 11)).toBeNull()
+  })
+})
+
+describe('a map name placement request', () => {
+  const size = { art: 40, icon: 20, ring: 60 }
+  const at = { x: 100, y: 100 }
+  const name = { w: 50, h: 12, wrap: { w: 30, h: 24 }, font: 11, digit: { w: 6, h: 12 } }
+
+  it("keeps a night's name, rounds its ring's disc into a body no name enters, and lets it shrink to the legible floor", () => {
+    const r = labelRequest({ ...at, kind: 'night', mark: 'ring' }, at, name, size, false, undefined)
+    expect(r).toMatchObject({ keep: true, ring: true, box: { x0: 76, y0: 76, x1: 124, y1: 124 }, wrap: name.wrap, digit: name.digit })
+    expect(r.body).toEqual([{ x0: 76, y0: 76, x1: 124, y1: 124, round: true }])
+    expect(r.minScale).toBeCloseTo(8 / 11)
+  })
+
+  it("lets a site's name tuck over its sprite's edge but never over its element badge", () => {
+    const r = labelRequest({ ...at, kind: 'site', mark: 'art', structure: 'ruins:fire' }, at, name, size, false, undefined)
+    const [sprite, badge] = structureFootprint(at, size.art, 'ruins:fire')
+    expect(r.gap).toBeCloseTo(-size.art * 0.17)
+    expect(r.body).toEqual([sprite, badge])
+    expect(r.own).toContainEqual(badge)
+  })
+
+  it("gives a crest's name its two-line wrap on a phone only", () => {
+    const boss = { ...at, kind: 'boss', mark: 'icon' } as const
+    expect(labelRequest(boss, at, name, size, false, undefined).wrap).toEqual(name.wrap)
+    expect(labelRequest(boss, at, name, size, true, undefined).wrap).toBeUndefined()
+  })
+
+  it("sends the castle guard's name round the castle's crests on a phone, and a silent name nowhere", () => {
+    const crests = { x0: 90, y0: 90, x1: 110, y1: 110 }
+    const guard = { ...at, kind: 'castle', mark: 'none' } as const
+    expect(labelRequest(guard, at, name, size, false, crests).box).toEqual(crests)
+    expect(labelRequest(guard, at, name, size, true, crests).box).toBeUndefined()
+    expect(labelRequest({ ...at, kind: 'chest', mark: 'icon', silent: true }, at, name, size, false, undefined).label).toEqual({ w: 0, h: 0 })
   })
 })

@@ -1,16 +1,13 @@
 import { useRef, useEffect, useLayoutEffect, type ReactNode } from 'react'
 import { motion, useTransform, type MotionValue } from 'motion/react'
-import type { StructureKey } from '../domain/names'
 import type { MapMarker } from './mapTypes'
-import { shortBossName, type NameKind } from './mapGeometry'
+import { shortBossName, type TagSpec } from './mapGeometry'
 import { measureName, type NameBox } from './mapNames'
 
 // The marks MapView draws on the map, each laid out at its own size and scaled with the map.
 export const ICON_SIZE = 36
 export const RING_SIZE = 110
 
-/** How a tag is drawn and ranked: its mark on the point and what its name belongs to. */
-export interface TagSpec { x: number; y: number; kind: NameKind; mark: 'art' | 'icon' | 'ring' | 'none'; silent?: boolean; structure?: StructureKey }
 export function tagOf(m: MapMarker): TagSpec {
   const at = { x: m.x, y: m.y }
   if (m.layer === 'circle') return { ...at, kind: 'night', mark: 'ring' }

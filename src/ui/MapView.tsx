@@ -1,15 +1,15 @@
 import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
-import { splitStructure, type EarthId, type StructureKey } from '../domain/names'
+import type { EarthId } from '../domain/names'
 import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { useWide } from './useWide'
-import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, zoomAbout, type LabelRequest, type Rect } from './mapGeometry'
+import { ICON_BODY, isTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
 import './map.css'
-import { ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf, type TagSpec } from './mapMarks'
+import { ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
 import { measureName, type NameBox } from './mapNames'
 import type { MapContent, PinState } from './mapTypes'
 
@@ -36,19 +36,8 @@ const NUDGE = 24
 // Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
-// The smallest a night's name may shrink to (px) to fit inside its ring; past it, only the night's number shows there.
-const MIN_FONT = 8
 // Distance from a mark to its called-out name.
 const CALLOUT_GAP = 4
-// A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
-// name enters it.
-const RING_DISC = 0.4
-// How far a site's name tucks over the edge of its own sprite, as a share of the art: close enough to read as
-// its name, clear of the neighbours' art.
-const ART_TUCK = 0.17
-// Half a crest's drawn size, as a share of its icon box; an evergaol is drawn smaller (map.css).
-const ICON_BODY = 0.45
-const EVERGAOL_BODY = 0.39
 // The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
 const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
   open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
@@ -404,17 +393,11 @@ export function MapView(props: MapContent & {
     const icon = markSize('icon', s)
     const orb = orbSize(s, spacing)
     const ring = markSize('ring', s)
-    const square = (c: { x: number; y: number }, r: number) => ({ x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r })
-    // What a structure's art covers: its sprite and its element badge, not its whole square box.
-    const artOf = (c: { x: number; y: number }, structure: StructureKey) => {
-      const { kind, element } = splitStructure(structure)
-      return artFootprint(c, art, ART_ASPECT[kind] ?? 1, element !== null)
-    }
     // Pins with a name are placed as marks with a label (the tags); the rest only block: their art, an orb's glow,
     // or the player's marker (crest-sized).
     const pinRects = props.pins.filter((p) => !(p.name && p.structure)).flatMap((p) => {
       const c = toScreen(p.x, p.y)
-      if (p.structure) return artOf(c, p.structure)
+      if (p.structure) return structureFootprint(c, art, p.structure)
       return [square(c, p.state === 'spawn' ? icon / 2 : orb / 2)]
     })
     const boxes = labelBoxes.get()
@@ -422,37 +405,7 @@ export function MapView(props: MapContent & {
     // The castle, whose guard's name is its own: the box round its crests.
     const castle = tags.flatMap((t, i) => (t.kind === 'castle' && t.mark === 'icon' ? [square(points[i], icon * ICON_BODY)] : []))
       .reduce<Rect | undefined>((u, r) => (u ? { x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) } : r), undefined)
-    const requests: LabelRequest[] = tags.map((t, i) => {
-      const point = points[i]
-      const label = t.silent ? { w: 0, h: 0 } : boxes[i] ?? { w: 0, h: 0 }
-      const rank = labelRank(t.kind)
-      // A night's name sits centred just above its ring, else below it, across it or beside it, wherever it covers no
-      // other mark's art; no other name may enter the ring's disc: inside it, a site's name would read as the night's.
-      if (t.mark === 'ring') {
-        const disc = square(point, ring * RING_DISC)
-        return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2, wrap: boxes[i]?.wrap,
-          minScale: MIN_FONT / (boxes[i]?.font ?? MIN_FONT), digit: boxes[i]?.digit }
-      }
-      // A name alone sits just beside its point, on whichever side is clear of the marks around it. On a phone the
-      // castle guard's point lies right on top of the castle's crests, drawn at their floor size, so every spot round
-      // the point runs into them: there its spots go round the crests instead, which read as its own.
-      if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2, box: t.kind === 'castle' && !wide ? castle : undefined }
-      // A site's name hugs its sprite, over the top or bottom edge of the art, but never over its own element badge.
-      if (t.mark === 'art') {
-        const body = artOf(point, t.structure!)
-        const [sprite, ...badge] = body
-        const box = body.reduce((u, r) => ({ x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) }))
-        const tuck = art * ART_TUCK
-        const heart = { ...sprite, y0: sprite.y0 + tuck, y1: sprite.y1 - tuck }
-        const own = [...(heart.y1 > heart.y0 ? [heart] : []), ...badge]
-        return { point, label, rank, keep: false, mark: 0, box, body, own, gap: -tuck }
-      }
-      const r = icon * (t.kind === 'evergaol' ? EVERGAOL_BODY : ICON_BODY)
-      // A crest's name on a phone may also go on two narrow lines straight under it.
-      const crest = t.kind === 'boss' || t.kind === 'castle'
-      const wrap = crest && !wide ? boxes[i]?.wrap : undefined
-      return { point, label, rank, keep: false, mark: r, box: square(point, r), gap: 1, wrap }
-    })
+    const requests = tags.map((t, i) => labelRequest(t, points[i], boxes[i], { art, icon, ring }, wide, castle))
     // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
     // so no label is sliced by the sheet or drawn under the pill's controls.
     const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }

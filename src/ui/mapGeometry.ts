@@ -1,3 +1,6 @@
+import { splitStructure, type StructureKey } from '../domain/names'
+import type { NameBox } from './mapNames'
+
 // Map coordinates are image units: 0..1000 across the square map image on both axes.
 
 export type { Box } from '../domain/seed'
@@ -447,3 +450,65 @@ export const shortBossName = (name: string) => {
   return RING_NAMES[lead] ?? lead
 }
 const RING_NAMES: Record<string, string> = { 'Dancer of the Boreal Valley': 'Dancer' }
+
+// ---------- A map name's placement request ----------
+
+// The smallest a night's name may shrink to (px) to fit inside its ring; past it, only the night's number shows there.
+const MIN_FONT = 8
+// A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
+// name enters it.
+const RING_DISC = 0.4
+// How far a site's name tucks over the edge of its own sprite, as a share of the art: close enough to read as
+// its name, clear of the neighbours' art.
+const ART_TUCK = 0.17
+// Half a crest's drawn size, as a share of its icon box; an evergaol is drawn smaller (map.css).
+export const ICON_BODY = 0.45
+const EVERGAOL_BODY = 0.39
+
+/** How a tag is drawn and ranked: its mark on the point and what its name belongs to. */
+export interface TagSpec { x: number; y: number; kind: NameKind; mark: 'art' | 'icon' | 'ring' | 'none'; silent?: boolean; structure?: StructureKey }
+
+/** The square of half-size `r` about `c`. */
+export const square = (c: { x: number; y: number }, r: number): Rect => ({ x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r })
+
+/** What a structure's art covers, drawn `art` px square about `at`: its sprite and its element badge, not its whole box. */
+export function structureFootprint(at: { x: number; y: number }, art: number, structure: StructureKey): Rect[] {
+  const { kind, element } = splitStructure(structure)
+  return artFootprint(at, art, ART_ASPECT[kind] ?? 1, element !== null)
+}
+
+/**
+ * What placeLabels needs to place one tag's name: its point on screen, its measured name `box`, and the marks' sizes
+ * on screen now. `castle` is the box round the castle's crests, which its guard's name goes around on a phone.
+ */
+export function labelRequest(t: TagSpec, point: { x: number; y: number }, box: NameBox | undefined,
+  size: { art: number; icon: number; ring: number }, wide: boolean, castle: Rect | undefined): LabelRequest {
+  const label = t.silent ? { w: 0, h: 0 } : box ?? { w: 0, h: 0 }
+  const rank = labelRank(t.kind)
+  // A night's name sits centred just above its ring, else below it, across it or beside it, wherever it covers no
+  // other mark's art; no other name may enter the ring's disc: inside it, a site's name would read as the night's.
+  if (t.mark === 'ring') {
+    const disc = square(point, size.ring * RING_DISC)
+    return { point, label, rank, keep: true, ring: true, mark: 0, box: disc, body: [{ ...disc, round: true }], gap: 2, wrap: box?.wrap,
+      minScale: MIN_FONT / (box?.font ?? MIN_FONT), digit: box?.digit }
+  }
+  // A name alone sits just beside its point, on whichever side is clear of the marks around it. On a phone the
+  // castle guard's point lies right on top of the castle's crests, drawn at their floor size, so every spot round
+  // the point runs into them: there its spots go round the crests instead, which read as its own.
+  if (t.mark === 'none') return { point, label, rank, keep: false, mark: 0, gap: 2, box: t.kind === 'castle' && !wide ? castle : undefined }
+  // A site's name hugs its sprite, over the top or bottom edge of the art, but never over its own element badge.
+  if (t.mark === 'art') {
+    const body = structureFootprint(point, size.art, t.structure!)
+    const [sprite, ...badge] = body
+    const whole = body.reduce((u, r) => ({ x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) }))
+    const tuck = size.art * ART_TUCK
+    const heart = { ...sprite, y0: sprite.y0 + tuck, y1: sprite.y1 - tuck }
+    const own = [...(heart.y1 > heart.y0 ? [heart] : []), ...badge]
+    return { point, label, rank, keep: false, mark: 0, box: whole, body, own, gap: -tuck }
+  }
+  const r = size.icon * (t.kind === 'evergaol' ? EVERGAOL_BODY : ICON_BODY)
+  // A crest's name on a phone may also go on two narrow lines straight under it.
+  const crest = t.kind === 'boss' || t.kind === 'castle'
+  const wrap = crest && !wide ? box?.wrap : undefined
+  return { point, label, rank, keep: false, mark: r, box: square(point, r), gap: 1, wrap }
+}
