@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { MotionValue } from 'motion/react'
-import type { MapContent } from './MapView'
+import type { MapContent } from './mapTypes'
 import { resultMap, type Layer } from './resultMap'
 import { Sheet, type Detent } from './Sheet'
 import { collapseRepeats } from './collapseRepeats'

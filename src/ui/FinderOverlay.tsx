@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
-import type { MapContent, Pin } from './MapView'
+import type { MapContent, Pin } from './mapTypes'
 import { Sheet, type Detent } from './Sheet'
 import { Plate } from './Plate'
 import { Frame } from './Frame'

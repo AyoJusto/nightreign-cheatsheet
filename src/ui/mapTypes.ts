@@ -13,6 +13,7 @@ export interface Pin { slot: SlotId; x: number; y: number; state: PinState; stru
  */
 export interface MapMarker extends Omit<Marker, 'layer'> { layer: Marker['layer'] | 'castle' | 'caravan'; plain?: boolean }
 
+/** What the active mode (finder or result) shows on the map. */
 export interface MapContent {
   pins: Pin[]
   markers?: MapMarker[]

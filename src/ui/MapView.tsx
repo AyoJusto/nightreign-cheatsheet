@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
+import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
 import { splitStructure, type EarthId, type StructureKey } from '../domain/names'
@@ -7,11 +7,12 @@ import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { useWide } from './useWide'
-import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind, type Rect } from './mapGeometry'
+import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, zoomAbout, type LabelRequest, type Rect } from './mapGeometry'
 import './map.css'
-import type { MapContent, MapMarker, Pin, PinState } from './mapTypes'
+import { ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf, type TagSpec } from './mapMarks'
+import { measureName, type NameBox } from './mapNames'
+import type { MapContent, PinState } from './mapTypes'
 
-export type { MapContent, MapMarker, Pin, PinState }
 
 
 const MAX_ZOOM = 4
@@ -23,10 +24,8 @@ const ART_SIZE = 80
 const ORB_SIZE = 50
 const ORB_DISC = 0.5
 const ORB_BOX = ORB_SIZE / ORB_DISC
-const ICON_SIZE = 36
 // The player's marker is drawn crest-sized: its disc is 0.48 of its image (public/markers/player.webp).
 const PLAYER_BOX = Math.round(ICON_SIZE / 0.48)
-const RING_SIZE = 110
 // How far (CSS px on screen) a tap may land from a slot and still count as that slot: at least 32, or the
 // art's own half-width once it is drawn larger.
 const TAP_REACH = 32
@@ -34,7 +33,27 @@ const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 // With reduced motion, a map move shorter than this (px) just jumps, like the finger it follows; a longer one crossfades.
 const NUDGE = 24
 
-/** What the active mode (finder or result) shows on the map. */
+// Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
+const LABEL_EDGE = 8
+const LABEL_GAP = 9
+// The smallest a night's name may shrink to (px) to fit inside its ring; past it, only the night's number shows there.
+const MIN_FONT = 8
+// Distance from a mark to its called-out name.
+const CALLOUT_GAP = 4
+// A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
+// name enters it.
+const RING_DISC = 0.4
+// How far a site's name tucks over the edge of its own sprite, as a share of the art: close enough to read as
+// its name, clear of the neighbours' art.
+const ART_TUCK = 0.17
+// Half a crest's drawn size, as a share of its icon box; an evergaol is drawn smaller (map.css).
+const ICON_BODY = 0.45
+const EVERGAOL_BODY = 0.39
+// The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
+const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
+  open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
+  'spawn-option': '/markers/spawn-option.webp', spawn: '/markers/player.webp',
+}
 
 export function MapView(props: MapContent & {
   earth: EarthId
@@ -542,210 +561,4 @@ export function MapView(props: MapContent & {
       </motion.div>
     </div>
   )
-}
-
-// Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
-const LABEL_EDGE = 8
-const LABEL_GAP = 9
-// The smallest a night's name may shrink to (px) to fit inside its ring; past it, only the night's number shows there.
-const MIN_FONT = 8
-// Distance from a mark to its called-out name.
-const CALLOUT_GAP = 4
-// A night's ring's disc (its bright rim, not the soft glow beyond it), as a share of the ring's size: no other
-// name enters it.
-const RING_DISC = 0.4
-// How far a site's name tucks over the edge of its own sprite, as a share of the art: close enough to read as
-// its name, clear of the neighbours' art.
-const ART_TUCK = 0.17
-// Half a crest's drawn size, as a share of its icon box; an evergaol is drawn smaller (map.css).
-const ICON_BODY = 0.45
-const EVERGAOL_BODY = 0.39
-// The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
-const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
-  open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
-  'spawn-option': '/markers/spawn-option.webp', spawn: '/markers/player.webp',
-}
-
-/** How a tag is drawn and ranked: its mark on the point and what its name belongs to. */
-interface TagSpec { x: number; y: number; kind: NameKind; mark: 'art' | 'icon' | 'ring' | 'none'; silent?: boolean; structure?: StructureKey }
-function tagOf(m: MapMarker): TagSpec {
-  const at = { x: m.x, y: m.y }
-  if (m.layer === 'circle') return { ...at, kind: 'night', mark: 'ring' }
-  const mark = m.plain || !MARKER_ART[m.layer] ? 'none' : 'icon'
-  if (m.layer === 'castle') return { ...at, kind: 'castle', mark }
-  if (m.layer === 'boss' || m.layer === 'evergaol') return { ...at, kind: m.layer, mark }
-  // A chest's icon says all its name would: the name is left to screen readers.
-  if (m.layer === 'chest') return { ...at, kind: 'chest', mark, silent: true }
-  return { ...at, kind: 'other', mark }
-}
-const MARKER_ART: Partial<Record<MapMarker['layer'], string>> = {
-  boss: '/markers/field-boss.webp', castle: '/markers/field-boss.webp', evergaol: '/markers/evergaol.webp',
-  chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', caravan: '/markers/caravan.webp',
-  'rot-blessing': '/elements/rot.webp', // the layer chip's own icon (ResultOverlay), already precached
-}
-
-/** A marker's game icon, sized with the map; a plain name (the castle's guard) has none. */
-function MarkerIcon({ marker, scale }: { marker: MapMarker; scale: MotionValue<number> }) {
-  const src = marker.great ? '/markers/great-boss.webp' : MARKER_ART[marker.layer]
-  if (marker.plain || !src) return null
-  return (
-    <motion.span className="mark" style={{ scale }}>
-      {/* A chest has no visible name: the icon carries it. */}
-      <img className="marker-icon" src={src} width={ICON_SIZE} height={ICON_SIZE} alt={marker.layer === 'chest' ? marker.label : ''} draggable={false} />
-    </motion.span>
-  )
-}
-
-/** "1 · Tree Sentinel": the night in its ring's colour, then its boss as the game's map writes it. */
-function RingName({ marker }: { marker: MapMarker }) {
-  const boss = marker.label.replace(/^Night \d: /, '')
-  return (
-    <>
-      {/* Each word kept whole: a caption wraps only between words, never after a hyphen ("Demi-Human"). The rest
-          after the number hides when only the number fits inside the ring. */}
-      <span aria-hidden>
-        <span className={`ring-${marker.night}`}>{marker.night}</span>
-        <span className="ring-rest"> · {shortBossName(boss).split(' ').map((word, i) => <span key={i}>{i > 0 && ' '}<span className="ring-word">{word}</span></span>)}</span>
-      </span>
-      <span className="sr-only">{marker.label}</span>
-    </>
-  )
-}
-
-/**
- * A night's closing ring: a soft glow either side of a bright rim, in the night's colour (map.css). Gradients,
- * not a blur filter, so a ring costs nothing extra to repaint as the map zooms.
- */
-function Ring({ night }: { night: 1 | 2 }) {
-  const glow = `ring-glow-${night}`
-  const c = RING_SIZE / 2
-  return (
-    <svg className={`ring ring-${night}`} width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden>
-      <defs>
-        <radialGradient id={glow}>
-          <stop offset="0.45" stopColor="currentColor" stopOpacity="0" />
-          <stop offset="0.62" stopColor="currentColor" stopOpacity="0.6" />
-          <stop offset="0.76" stopColor="currentColor" stopOpacity="1" />
-          <stop offset="0.9" stopColor="currentColor" stopOpacity="0.5" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <circle cx={c} cy={c} r={c} fill={`url(#${glow})`} />
-      <circle cx={c} cy={c} r={c * 0.76} fill="none" stroke="currentColor" strokeOpacity="0.45" strokeWidth="16" />
-      <circle cx={c} cy={c} r={c * 0.76} fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="6" />
-      <circle cx={c} cy={c} r={c * 0.76} fill="none" stroke="#fff" strokeOpacity="0.7" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-/** A mark on the exact point, with its name beside it (or across it) where MapView's placement pass put it. */
-function Tag({ index, at, className, labels, onMeasure, pinScale, text, textKey, hidden, children }: {
-  index: number
-  at: { x: number; y: number }
-  className: string
-  labels: MotionValue<{ x: number; y: number; shown: boolean; wrapped?: boolean; scale?: number; numberOnly?: boolean }[]>
-  onMeasure: (index: number, box: NameBox) => void
-  pinScale: MotionValue<number>
-  text: ReactNode
-  textKey: string
-  /** The name is already spoken by something else (a site's pin). */
-  hidden?: boolean
-  children?: ReactNode
-}) {
-  const label = useRef<HTMLSpanElement>(null)
-  const spot = useTransform(labels, (all) => all[index] ?? { x: 0, y: 0, shown: false })
-  const labelX = useTransform(spot, (o) => o.x)
-  const labelY = useTransform(spot, (o) => o.y)
-  // A name with no free spot steps aside, leaving its mark; it comes back as zooming in makes room.
-  // A night's name always shows while its ring is in sight (placeLabels).
-  const labelOpacity = useTransform(spot, (o) => (o.shown ? 1 : 0))
-  // A night's name shrunk to fit inside its ring, from its top-left corner, where placement puts it.
-  const labelScale = useTransform(spot, (o) => o.scale ?? 1)
-  // A name placed on its two-line wrap takes that narrower width and may break, a night's name included (measureName
-  // keeps both widths).
-  useEffect(() => spot.on('change', (o) => {
-    const el = label.current
-    if (!el) return
-    // Only its number: the rest hides and the box is the number's own.
-    if (o.numberOnly) el.dataset.numberOnly = ''
-    else delete el.dataset.numberOnly
-    const width = o.numberOnly ? '' : o.wrapped ? el.dataset.wrap : el.dataset.w
-    if (width !== undefined && el.style.width !== width) el.style.width = width
-    el.style.whiteSpace = o.wrapped ? 'normal' : ''
-  }), [spot])
-  // Reported to MapView, which publishes every size at once after its placement pass has subscribed.
-  useLayoutEffect(() => {
-    const el = label.current
-    onMeasure(index, el ? measureName(el) : { w: 0, h: 0 })
-  }, [textKey, index])
-  return (
-    <motion.span className={`marker ${className}`} style={{ left: `${at.x / 10}%`, top: `${at.y / 10}%`, scale: pinScale }}>
-      {children}
-      {text !== null && (
-        <motion.span ref={label} className="map-name" data-tag={index} aria-hidden={hidden || undefined} style={{ x: labelX, y: labelY, opacity: labelOpacity, scale: labelScale, originX: 0, originY: 0 }}>{text}</motion.span>
-      )}
-    </motion.span>
-  )
-}
-
-/** A name's box as placed, and `wrap`, its box on two lines as narrow as its words allow, when that is narrower. */
-interface NameBox { w: number; h: number; wrap?: { w: number; h: number }; font?: number; digit?: { w: number; h: number } }
-
-/**
- * A name's size as placed. A name that wraps is as wide as its longest line, not its max-width: the box is shrunk
- * to that line (the same breaks still fit), so its neighbours may come as close as the words themselves. Both
- * widths are kept on the element for Tag, which shows whichever the placement chose.
- */
-function measureName(el: HTMLElement): NameBox {
-  el.style.width = ''
-  el.style.whiteSpace = ''
-  delete el.dataset.numberOnly
-  // On screen the name may be scaled with the map mid-gesture: back to its own px.
-  const scale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
-  const w = textWidth(el, scale)
-  if (w > 0 && w < el.offsetWidth) el.style.width = `${w}px`
-  const box = { w: el.offsetWidth, h: el.offsetHeight }
-  const base = el.style.width
-  const two = twoLines(el, scale)
-  el.style.width = base
-  el.style.whiteSpace = ''
-  const wrap = two && two.w < box.w ? two : undefined
-  el.dataset.w = base
-  el.dataset.wrap = wrap ? `${wrap.w}px` : base
-  // A night's name also keeps its font size and its number's box, in case it must shrink inside its ring.
-  const number = el.querySelector<HTMLElement>('.ring-1, .ring-2')
-  const ring = number ? { font: parseFloat(getComputedStyle(el).fontSize), digit: { w: number.offsetWidth, h: box.h } } : {}
-  return { ...box, ...(wrap && { wrap }), ...ring }
-}
-
-/** The width of the words themselves, in the name's own px. */
-function textWidth(el: HTMLElement, scale: number): number {
-  const range = document.createRange()
-  range.selectNodeContents(el)
-  return Math.ceil(range.getBoundingClientRect().width / scale)
-}
-
-/**
- * The name laid out by the browser on two lines as narrow as its words allow, as its box: the narrowest width that
- * still takes no more than two of its lines. Undefined for a single word.
- */
-function twoLines(el: HTMLElement, scale: number): { w: number; h: number } | undefined {
-  el.style.whiteSpace = 'nowrap'
-  el.style.width = ''
-  const one = { w: el.offsetWidth, h: el.offsetHeight }
-  el.style.whiteSpace = 'normal'
-  const fits = (width: number) => {
-    el.style.width = `${width}px`
-    return el.offsetHeight <= 2 * one.h + 1
-  }
-  let lo = Math.ceil(one.w / 2)
-  let hi = one.w
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2)
-    if (fits(mid)) hi = mid
-    else lo = mid + 1
-  }
-  fits(hi)
-  if (el.offsetHeight <= one.h + 1) return undefined
-  return { w: Math.min(hi, textWidth(el, scale)), h: el.offsetHeight }
 }
