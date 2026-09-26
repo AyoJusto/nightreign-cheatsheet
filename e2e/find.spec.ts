@@ -815,3 +815,32 @@ for (const seed of [targets[0], artorias]) {
     }
   })
 }
+
+// Deep of Night can hide the Nightlord: the finder scouts every Nightlord's seeds on the earth, the result names the
+// Nightlord, and its Back returns to the unknown finder, not to the named Nightlord's.
+test('an unknown Nightlord scouts every seed on the earth and the result names it', async ({ page }) => {
+  const target = targets[0]
+  let left = data.seeds.filter((s: any) => s.earth === target.earth && s.spawn === target.spawn)
+  const sightings = [`spawn@${target.spawn}`]
+  for (const [slot, key] of Object.entries<string | null>(target.slots)) {
+    if (left.length === 1) break
+    const next = left.filter((s: any) => s.slots[slot] === key)
+    if (next.length === left.length) continue
+    left = next
+    sightings.push(`${slot}@${key ?? 'none'}`)
+  }
+  expect(left.map((s: any) => s.id)).toEqual([target.id])
+
+  await page.goto('/')
+  await page.getByRole('button', { name: /^Unknown/ }).click()
+  await page.getByRole('button', { name: new RegExp(`^${earthName(target.earth)}`) }).click()
+  await expect(page).toHaveURL(new RegExp(`/find/unknown/${target.earth}$`))
+  await expect(page.getByRole('button', { name: /^Possible spawn point, / }).first()).toBeVisible()
+  await page.evaluate((s) => { history.replaceState(history.state, '', `?s=${s}`) }, sightings.join(','))
+  await page.reload()
+  await expect(page).toHaveURL(new RegExp(`/seed/${target.id}`))
+  await expect(page.locator('.result-sub')).toContainText(nightlordName(target.nightlord))
+
+  await page.getByRole('button', { name: 'Back' }).click()
+  await expect(page).toHaveURL(new RegExp(`/find/unknown/${target.earth}\\?s=`))
+})

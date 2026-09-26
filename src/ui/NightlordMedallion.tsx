@@ -4,7 +4,7 @@ import { Frame } from './Frame'
 import { useWide } from './useWide'
 import { catalog } from '../data/catalog'
 import './weakness.css'
-import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type DamageKey, type NightlordId, type Weakness } from '../domain/names'
+import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type DamageKey, type NightlordPick, type Weakness } from '../domain/names'
 
 /**
  * A screen area drawn over the map, in px: x from the left edge, and `bottom`/`top` measured up from the line
@@ -34,7 +34,8 @@ const cardMotion = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const
  * is hidden from screen readers.
  */
 export function NightlordMedallion({ nightlord, result, lift, rest, corner, moves }: {
-  nightlord: NightlordId
+  /** `unknown` (a Deep of Night run that hides it) shows the game's hidden-Nightlord portrait, with no card to open. */
+  nightlord: NightlordPick
   result: boolean
   /** Height covered at the bottom right now (strip or sheet); 0 on desktop. */
   lift: MotionValue<number>
@@ -46,7 +47,8 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
   moves: MotionValue<number>
 }) {
   const wide = useWide()
-  const collapsible = !(wide && result)
+  const unknown = nightlord === 'unknown'
+  const collapsible = !(wide && result) && !unknown
   const [open, setOpen] = useState(false)
   // Finder to result keeps this mounted (the map stays): the result starts with the card folded, whatever the finder had.
   const [wasResult, setWasResult] = useState(result)
@@ -55,9 +57,9 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
     setOpen(false)
   }
   useEffect(() => moves.on('change', () => setOpen(false)), [moves])
-  const shown = open || !collapsible
-  const weakness = catalog.nightlordWeakness(nightlord)
-  const label = [nightlordName(nightlord), weaknessPhrase(weakness)].filter(Boolean).join(': ')
+  const shown = !unknown && (open || !collapsible)
+  const weakness = unknown ? undefined : catalog.nightlordWeakness(nightlord)
+  const label = [nightlordName(nightlord), weakness ? weaknessPhrase(weakness) : 'named once the seed is found'].filter(Boolean).join(': ')
 
   // With reduced motion the card only fades; otherwise it also slides out from the medallion.
   const slide = useReducedMotion() ? 0 : -12
@@ -109,7 +111,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
         ? <button className="nl-medal" data-corner aria-label={label} aria-expanded={shown} onClick={() => setOpen((o) => !o)}>{art}</button>
         : <div className="nl-medal" data-corner role="img" aria-label={label}>{art}</div>}
       <AnimatePresence initial={false}>
-        {shown && (
+        {shown && weakness && (
           <motion.div
             key="card"
             className="nl-card"
@@ -135,10 +137,11 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
  * A Nightlord's medallion and weakness card on their own (Home, once a Nightlord is picked), as the map's corner
  * shows them. Its facts are its accessible name.
  */
-export function WeaknessCard({ nightlord }: { nightlord: NightlordId }) {
-  const weakness = catalog.nightlordWeakness(nightlord)
+export function WeaknessCard({ nightlord }: { nightlord: NightlordPick }) {
+  const weakness = nightlord === 'unknown' ? undefined : catalog.nightlordWeakness(nightlord)
+  const facts = weakness ? weaknessPhrase(weakness) : UNKNOWN_NOTE
   return (
-    <div className="nl-pick" role="img" aria-label={`${nightlordName(nightlord)}: ${weaknessPhrase(weakness)}`}>
+    <div className="nl-pick" role="img" aria-label={`${nightlordName(nightlord)}: ${facts}`}>
       {/* Named under its medallion: on a phone the panel rises over the grid's own picked medallion and its name. */}
       <span className="nl-pick-who">
         <span className="nl-medal"><MedallionArt nightlord={nightlord} /></span>
@@ -146,11 +149,13 @@ export function WeaknessCard({ nightlord }: { nightlord: NightlordId }) {
       </span>
       <div className="nl-card">
         <Frame />
-        <CardRows weakness={weakness} />
+        {weakness ? <CardRows weakness={weakness} /> : <p className="nl-note">{UNKNOWN_NOTE}</p>}
       </div>
     </div>
   )
 }
+
+const UNKNOWN_NOTE = 'Deep of Night can hide the Nightlord. Scout the map as usual: the seed you find names it.'
 
 function CardRows({ weakness }: { weakness: Weakness }) {
   const { weak, resist, status } = cardRows(weakness)
@@ -184,7 +189,7 @@ function CardRow({ label, keys, named }: { label: string; keys: DamageKey[]; nam
  * round the portrait and a dark groove inside it. The glow is the button's shadow (tokens.css). Only one
  * medallion is ever on screen, so the gradient and clip ids are fixed.
  */
-function MedallionArt({ nightlord }: { nightlord: NightlordId }) {
+function MedallionArt({ nightlord }: { nightlord: NightlordPick }) {
   return (
     <svg className="nl-art" viewBox="0 0 120 120" aria-hidden>
       <defs>

@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
-import { NIGHTLORDS, EARTHS, type EarthId, type NightlordId } from '../domain/names'
+import { NIGHTLORDS, EARTHS, type EarthId, type NightlordPick } from '../domain/names'
 import { catalog } from '../data/catalog'
 
 export type Route =
   | { name: 'home' }
-  | { name: 'find'; nightlord: NightlordId; earth: EarthId }
+  | { name: 'find'; nightlord: NightlordPick; earth: EarthId }
   | { name: 'seed'; id: string }
   | { name: 'about' }
 
@@ -13,7 +13,7 @@ export function parseRoute(pathname: string): Route {
   if (parts[0] === 'about') return { name: 'about' }
   if (parts[0] === 'seed' && parts[1] && catalog.seed(parts[1])) return { name: 'seed', id: parts[1] }
   if (parts[0] === 'find') {
-    const nightlord = NIGHTLORDS.find((n) => n.id === parts[1])?.id
+    const nightlord = parts[1] === 'unknown' ? 'unknown' : NIGHTLORDS.find((n) => n.id === parts[1])?.id
     const earth = EARTHS.find((e) => e.id === parts[2])?.id
     if (nightlord && earth && catalog.earthsFor(nightlord).includes(earth)) return { name: 'find', nightlord, earth }
   }

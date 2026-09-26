@@ -26,6 +26,9 @@ const files: Record<string, string> = {
 // unknown.svg, player.svg and caravan.svg in data/raw/assets/markers are drawn by hand, and the great boss crest is derived
 // from the field boss crest in import-seeds.ts. See data/raw/assets/SOURCES.md.
 const FEXTRALIFE = 'https://static0.fextralifeimages.com/file/eldenringnightreign'
+// The game's hidden-Nightlord portrait for Deep of Night, from the live Nightreign Seed Finder (same 165px portrait set as
+// the others); the wikis carry no copy. Fetched 2026-09-25.
+files['data/raw/assets/nightlords/unknown.webp'] = 'https://nightreign-seed-finder.com/Images/nightlordIcons/unknown_nightlord.webp'
 Object.assign(files, {
   'data/raw/assets/markers/field-boss.png': `${FEXTRALIFE}/2/2b/Field-boss-map-icon-nightreign-wiki-guide.png`,
   'data/raw/assets/markers/evergaol.png': `${FEXTRALIFE}/e/e2/Evergaol-map-icon-nightreign-wiki-guide.png`,

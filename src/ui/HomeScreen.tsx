@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useWide } from './useWide'
-import { NIGHTLORDS, earthName, type NightlordId } from '../domain/names'
+import { NIGHTLORDS, earthName, type NightlordPick } from '../domain/names'
 import { catalog } from '../data/catalog'
 import { Frame, Flourish } from './Frame'
 import { WeaknessCard } from './NightlordMedallion'
 
 const spring = { type: 'spring', visualDuration: 0.45, bounce: 0.15 } as const
 
-function Portrait({ id, name }: { id: NightlordId; name: string }) {
+// Last, the game's hidden Nightlord of Deep of Night: it scouts every Nightlord's seeds on the earth picked.
+const PICKS: readonly { id: NightlordPick; name: string }[] = [...NIGHTLORDS, { id: 'unknown', name: 'Unknown' }]
+
+function Portrait({ id, name }: { id: NightlordPick; name: string }) {
   const [failed, setFailed] = useState(false)
   if (failed) {
     return <div className="portrait monogram title" aria-hidden>{name.split(' ').map((w) => w[0]).join('')}</div>
@@ -18,13 +21,13 @@ function Portrait({ id, name }: { id: NightlordId; name: string }) {
 
 export function HomeScreen({ go }: { go: (path: string) => void }) {
   const wide = useWide()
-  const [picked, setPicked] = useState<NightlordId | null>(null)
+  const [picked, setPicked] = useState<NightlordPick | null>(null)
   return (
     <main className="home">
       <h1 className="home-title">Choose your Nightlord</h1>
       <Flourish className="home-flourish" />
       <ul className="nightlord-grid">
-        {NIGHTLORDS.map((n) => (
+        {PICKS.map((n) => (
           <li key={n.id}>
             {/* The gold ring marks the pick; the others' portraits dim, and their names drop to the secondary tone
                 (tokens.css), still easy to read. No scale, which would drop a name out of line with its row. */}

@@ -146,10 +146,12 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   // One sighting back, so the finder does not re-identify this seed and bounce straight here again.
   // A shared link has no sightings and goes home.
   const back = () => {
-    const q = new URLSearchParams(location.search).get('s')
+    const params = new URLSearchParams(location.search)
+    const q = params.get('s')
     if (q === null) return go('/', true)
     const rest = encodeSightings(decodeSightings(q).slice(0, -1))
-    go(`/find/${seed.nightlord}/${seed.earth}${rest ? `?${new URLSearchParams({ s: rest })}` : ''}`, true)
+    const nightlord = params.get('n') === 'unknown' ? 'unknown' : seed.nightlord
+    go(`/find/${nightlord}/${seed.earth}${rest ? `?${new URLSearchParams({ s: rest })}` : ''}`, true)
   }
   const toggle = (l: Layer) =>
     setOn((s) => {

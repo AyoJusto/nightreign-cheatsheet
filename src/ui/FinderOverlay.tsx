@@ -13,12 +13,12 @@ import { useSightings, encodeSightings } from './useSightings'
 import { useFinePointer, useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
-import { splitStructure, structureName, nightlordName, earthName, type EarthId, type NightlordId, type SlotId, type StructureKey } from '../domain/names'
+import { splitStructure, structureName, nightlordName, earthName, type EarthId, type NightlordPick, type SlotId, type StructureKey } from '../domain/names'
 import type { Seed } from '../domain/seed'
 import { Scouting, type Sighting } from '../domain/scouting'
 
 export function FinderOverlay(props: {
-  pool: readonly Seed[]; nightlord: NightlordId; earth: EarthId
+  pool: readonly Seed[]; nightlord: NightlordPick; earth: EarthId
   go: (path: string, back?: boolean) => void; bottomInset: MotionValue<number>; topInset: MotionValue<number>; restInset: MotionValue<number>
   setMap: (content: MapContent) => void
 }) {
@@ -51,7 +51,9 @@ export function FinderOverlay(props: {
       // Leave the finder entry one step back, so browser Back lands on a finder that is not already
       // solved (and so does not bounce straight back here), then push the result. The entry keeps its state,
       // which records where it was pushed from (router.ts).
-      const full = location.search
+      // The result names the Nightlord; `n` remembers it was unknown, so the result's Back returns to this finder.
+      const unknown = props.nightlord === 'unknown' ? `${location.search ? '&' : '?'}n=unknown` : ''
+      const full = location.search + unknown
       const back = new URL(location.href)
       const rest = scouting.sightings.slice(0, -1)
       if (rest.length) back.searchParams.set('s', encodeSightings(rest))
@@ -60,7 +62,7 @@ export function FinderOverlay(props: {
       props.go(`/seed/${seed.id}${full}`)
     }, 350)
     return () => clearTimeout(t)
-  }, [scouting, props.go])
+  }, [scouting, props.go, props.nightlord])
 
   // Also drops the hover preview: a sighting can remove the hovered pin, and a removed pin never reports leaving.
   const close = useCallback(() => { setFocus(null); setOpen(null); setHover(null); setTileName(null); setSelected(null); setDetent('peek') }, [])

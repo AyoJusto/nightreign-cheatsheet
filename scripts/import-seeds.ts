@@ -529,7 +529,8 @@ async function copyAssets() {
   }
   mkdirSync('public/nightlords', { recursive: true })
   for (const file of readdirSync('data/raw/assets/nightlords')) {
-    copyFileSync(`data/raw/assets/nightlords/${file}`, `public/nightlords/${toNightlord(file.replace('.webp', '') + '_')}.webp`)
+    const slug = file === 'unknown.webp' ? 'unknown' : toNightlord(file.replace('.webp', '') + '_')
+    copyFileSync(`data/raw/assets/nightlords/${file}`, `public/nightlords/${slug}.webp`)
   }
   // The game's damage and status icons, for the weakness card: square tiles, one size.
   rmSync('public/damage', { recursive: true, force: true })

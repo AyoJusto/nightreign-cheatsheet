@@ -79,3 +79,4 @@
 /* No damage weakness, or no data: in the secondary tone (the tertiary one is too faint for 13px text). */
 .weak-none { display: block; color: var(--bone-2); }
 .weak-item img { width: 20px; height: 20px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(201, 165, 92, 0.35); }
+.nl-note { margin: 0; max-width: 220px; font-size: 13px; line-height: 18px; color: var(--bone-2); }

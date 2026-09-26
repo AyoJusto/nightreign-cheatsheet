@@ -1,6 +1,12 @@
 export type NightlordId =
   | 'tricephalos' | 'gaping-jaw' | 'sentient-pest' | 'augur' | 'equilibrious-beast'
   | 'darkdrift-knight' | 'fissure-in-the-fog' | 'night-aspect' | 'balancers' | 'dreglord'
+/**
+ * What the user picked on Home: a Nightlord, or `unknown` for a Deep of Night run that hides it until the final
+ * battle. Every Nightlord has its own map seeds, so an unknown one scouts all of an earth's seeds, and the seed
+ * found names the Nightlord.
+ */
+export type NightlordPick = NightlordId | 'unknown'
 export type EarthId = 'default' | 'crater' | 'mountaintop' | 'rotted-woods' | 'noklateo' | 'great-hollow'
 export type ElementId =
   | 'fire' | 'holy' | 'magic' | 'lightning' | 'frostbite' | 'poison' | 'bleed' | 'blight' | 'madness' | 'sleep' | 'rot'
@@ -116,5 +122,5 @@ export function structureName(key: StructureKey): string {
 }
 
 export const mapFamily = (earth: EarthId) => (earth === 'great-hollow' ? 'great-hollow' : 'limveld') as 'limveld' | 'great-hollow'
-export const nightlordName = (id: NightlordId) => NIGHTLORDS.find((n) => n.id === id)!.name
+export const nightlordName = (id: NightlordPick) => (id === 'unknown' ? 'Unknown Nightlord' : NIGHTLORDS.find((n) => n.id === id)!.name)
 export const earthName = (id: EarthId) => EARTHS.find((e) => e.id === id)!.name

@@ -7,6 +7,7 @@ describe('routes', () => {
     expect(parseRoute('/find/tricephalos/crater')).toEqual({ name: 'find', nightlord: 'tricephalos', earth: 'crater' })
     expect(parseRoute('/seed/042')).toEqual({ name: 'seed', id: '042' })
     expect(parseRoute('/about')).toEqual({ name: 'about' })
+    expect(parseRoute('/find/unknown/great-hollow')).toEqual({ name: 'find', nightlord: 'unknown', earth: 'great-hollow' })
   })
   it('sends anything unknown home', () => {
     expect(parseRoute('/find/nobody/crater')).toEqual({ name: 'home' })
