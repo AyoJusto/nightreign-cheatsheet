@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 // Use the domain's own names so the test speaks the ubiquitous language, not a copy of it.
 import { structureName, nightlordName, earthName, weaknessPhrase, DAMAGE_NAMES, type DamageKey } from '../src/domain/names'
@@ -10,6 +10,15 @@ const targets = [
   data.seeds.find((s: any) => s.nightlord === 'tricephalos' && s.earth === 'default'),
   data.seeds.find((s: any) => s.nightlord === 'dreglord' && s.earth === 'great-hollow'),
 ]
+
+// A palette token (tokens.css) as the browser computes it, so a colour check follows the palette rather than a copy of it.
+const paletteColor = (page: Page, token: string) => page.evaluate((t) => {
+  const probe = document.body.appendChild(document.createElement('div'))
+  probe.style.backgroundColor = `var(${t})`
+  const color = getComputedStyle(probe).backgroundColor
+  probe.remove()
+  return color
+}, token)
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -346,8 +355,10 @@ test("the castle names its guard and at least one of its bosses at default zoom"
 // A night's name may shrink to its number alone inside its ring on a phone: a tap on the ring still names it in full.
 test("a tap on a night's ring calls out its full name", async ({ page }) => {
   await page.goto('/seed/1003')
-  const ring = (await page.locator('.ring-mark .ring-2').boundingBox())!
+  // Measure only once the map has settled and the web font has loaded, since either can still move the ring.
+  await page.evaluate(() => document.fonts.ready)
   await page.waitForTimeout(600)
+  const ring = (await page.locator('.ring-mark .ring-2').boundingBox())!
   await page.mouse.click(ring.x + ring.width / 2, ring.y + ring.height / 2)
   await expect(page.locator('.marker-callout .map-name')).toHaveText('Night 2: Tree Sentinel')
 })
@@ -362,7 +373,7 @@ test("a callout on a mark whose name shows hides that name while it is open, and
   const callout = page.locator('.marker-callout .map-name')
   await expect(callout).toHaveText("Night's Cavalry")
   await expect(own).toHaveCSS('opacity', '0')
-  await expect(callout).toHaveCSS('background-color', 'rgb(14, 22, 40)')
+  await expect(callout).toHaveCSS('background-color', await paletteColor(page, '--panel'))
   await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
   await expect(own).toHaveCSS('opacity', '1')
 })
@@ -460,8 +471,8 @@ test('the full result sheet shows a hairline under its header once content scrol
   expect((await hairline()).opacity).toBe(0)
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 40 })
   await expect.poll(async () => (await hairline()).opacity).toBe(1)
-  // The theme's bronze rule (--rule), one pixel.
-  expect(await hairline()).toMatchObject({ color: 'rgba(201, 165, 92, 0.22)', height: '1px' })
+  // The theme's rule (--rule), one pixel.
+  expect(await hairline()).toMatchObject({ color: await paletteColor(page, '--rule'), height: '1px' })
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 0 })
   await expect.poll(async () => (await hairline()).opacity).toBe(0)
 })

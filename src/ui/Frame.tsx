@@ -1,14 +1,13 @@
-// The game's menu frame: a thin bronze rule whose corners are capped by a chamfered bracket with a jewel.
+// The game's frame, as round its map: a thin pale rule, each corner cut by a short diagonal with a small diamond on it.
 // Decorative only, and laid over its parent (which must be positioned), so it never changes layout.
 // Colours come from the palette through the svg-* classes (tokens.css): SVG presentation attributes cannot read var().
 
 function Corner({ at }: { at: 'tl' | 'tr' | 'bl' | 'br' }) {
   return (
-    <svg className={`frame-corner frame-${at}`} width="18" height="18" viewBox="0 0 18 18" aria-hidden>
-      {/* The bracket sits on the rule (x/y = 1.5 with the svg 1px outside the box), cutting its corner. */}
-      <path d="M1.5 15V5.5L5.5 1.5H15" fill="none" className="svg-line" strokeWidth="1.5" />
-      <path d="M4.5 12V7L7 4.5H12" fill="none" className="svg-line-dark" strokeWidth="1" />
-      <path d="M7.5 5.2 9.8 7.5 7.5 9.8 5.2 7.5Z" className="svg-fill" />
+    <svg className={`frame-corner frame-${at}`} width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+      {/* The svg sits 1px outside the box, so x/y = 1.5 is the rule itself. */}
+      <path d="M11 1.5 1.5 11" className="svg-line" strokeWidth="1" />
+      <path d="M6.25 3.4 9.1 6.25 6.25 9.1 3.4 6.25Z" className="svg-line svg-panel" strokeWidth="1" />
     </svg>
   )
 }

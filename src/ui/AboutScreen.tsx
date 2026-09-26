@@ -24,7 +24,7 @@ export function AboutScreen({ go }: { go: (path: string, back?: boolean) => void
           map icons and the field boss, evergaol, treasure and merchant map markers come from the Fextralife Elden
           Ring Nightreign wiki, used here for a free fan project.
         </p>
-        <p>Titles are set in Cinzel by Natanael Gama, under the SIL Open Font License (fonts/OFL.txt).</p>
+        <p>Text is set in EB Garamond by Georg Duffner and Octavio Pardo, under the SIL Open Font License (fonts/OFL.txt).</p>
         <p>Not affiliated with FromSoftware or Bandai Namco. Game art belongs to its owners.</p>
       </div>
     </main>

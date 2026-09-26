@@ -24,7 +24,7 @@ The game's 14 icons, copied from the nightreign-cheatsheet repo (`public/icons/*
 
 ## Elsewhere
 
-- `public/fonts/cinzel-latin.woff2` is Cinzel from Google Fonts: https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2 (the latin subset of the variable font, weights 400 to 700).
-- `public/fonts/OFL.txt` is its licence: https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/OFL.txt
+- `public/fonts/eb-garamond-latin.woff2` is EB Garamond from Google Fonts: https://fonts.gstatic.com/s/ebgaramond/v33/SlGUmQSNjdsmc35JDF1K5GR1SDk.woff2 (the latin subset of the variable font, weights 400 to 600), the closest free match to the game's Garamond.
+- `public/fonts/OFL.txt` is its licence: https://raw.githubusercontent.com/google/fonts/main/ofl/ebgaramond/OFL.txt
 - `nightlords/unknown.webp` is the game's hidden-Nightlord portrait (Deep of Night), from https://nightreign-seed-finder.com/Images/nightlordIcons/unknown_nightlord.webp. Fextralife, wiki.gg and Fandom carry no copy.
 - `maps/`, `icons/`, `elements/`, `nightlords/`: see `scripts/fetch-raw.ts`.

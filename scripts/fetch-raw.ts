@@ -34,9 +34,9 @@ Object.assign(files, {
   'data/raw/assets/markers/evergaol.png': `${FEXTRALIFE}/e/e2/Evergaol-map-icon-nightreign-wiki-guide.png`,
   'data/raw/assets/markers/chest.png': `${FEXTRALIFE}/d/df/Buried-treature-map-icon-nightreign-wiki-guide.png`,
   'data/raw/assets/markers/merchant.png': `${FEXTRALIFE}/3/35/Merchants-and-smithing-tables-map-icon-nightreign-wiki-guide.png`,
-  // Cinzel from Google Fonts: the latin subset of the variable font (every weight 400-700 in one file), and its licence.
-  'public/fonts/cinzel-latin.woff2': 'https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2',
-  'public/fonts/OFL.txt': 'https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/OFL.txt',
+  // EB Garamond from Google Fonts: the latin subset of the variable font (every weight 400-600 in one file), and its licence.
+  'public/fonts/eb-garamond-latin.woff2': 'https://fonts.gstatic.com/s/ebgaramond/v33/SlGUmQSNjdsmc35JDF1K5GR1SDk.woff2',
+  'public/fonts/OFL.txt': 'https://raw.githubusercontent.com/google/fonts/main/ofl/ebgaramond/OFL.txt',
 })
 // data/raw/assets/damage and data/raw/weaknesses are copied from the nightreign-cheatsheet repo, not fetched:
 // see data/raw/weaknesses/SOURCE.md.

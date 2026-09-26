@@ -24,13 +24,13 @@
 }
 /* A Church at the spawn point: the player marker rides on the art's lower-left corner. */
 .spawn-badge { position: absolute; left: -16px; bottom: -16px; width: 56px; height: 56px; }
-/* The site whose sheet is open: a bone reticle with a gold glow around the orb's disc, or around the art's box,
-   so it stands out from the gold orbs themselves. */
+/* The site whose sheet is open: a pale reticle in the game's blue focus halo around the orb's disc, or around the
+   art's box, so it stands out from the gold orbs themselves. */
 .pin-selected .pin-orb::after,
 .pin-selected .structure-icon::before,
 .pin-selected .icon-empty::before {
   content: ''; position: absolute; border: 4px solid var(--text); border-radius: 50%;
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px rgba(0, 0, 0, 0.6), 0 0 16px 2px color-mix(in srgb, var(--accent) 80%, transparent);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px rgba(0, 0, 0, 0.6), 0 0 16px 2px var(--halo);
 }
 .pin-selected .pin-orb::after { inset: 20px; }
 .pin-selected .structure-icon::before,
@@ -43,7 +43,7 @@
    Only the art is faded, not the pin, so the ring stays at full strength. The ring is ::before, so it paints
    first and the element badge sits on top of it; the badge is dimmed with a filter, not opacity, so it stays
    solid and the ring can't show through it. The selected rule above comes later in specificity order: a
-   selected certain pin shows gold. */
+   selected certain pin shows the reticle. */
 .pin .structure-art { transition: opacity 0.35s ease-out; }
 .pin-certain .structure-art { opacity: 0.5; filter: grayscale(0.9); }
 .pin-certain:not(.pin-selected) .structure-icon::before { content: ''; position: absolute; inset: -6px; border: 3px dashed var(--text-2); border-radius: 50%; }
@@ -66,7 +66,7 @@
    dotted with heavy discs. */
 .marker-evergaol .marker-icon { width: 28px; height: 28px; opacity: 0.75; }
 
-/* A name as the game's map writes it: bone text straight on the map, with a stacked dark glow and no box. On a
+/* A name as the game's map writes it: pale text straight on the map, with a stacked dark glow and no box. On a
    phone, 11px (the floor), a long name in two balanced lines: MapView shrinks the box to its longest line. */
 .map-name {
   position: absolute; top: 0; left: 0; width: max-content; max-width: 82px; text-wrap: balance;
@@ -75,19 +75,19 @@
 }
 @media (min-width: 900px) { .map-name { font-size: 13px; line-height: 15px; max-width: 124px; } }
 /* A night's boss by its ring, in the game's face, on one line (never broken mid-name); the night's number in the
-   ring's colour. The same bone and stacked dark glow as the other names, a weight heavier for Cinzel's thin strokes. */
-.marker-circle .map-name { font-family: var(--font-display); font-weight: 600; max-width: none; white-space: nowrap; letter-spacing: 0.02em; }
+   ring's colour. The same pale text and stacked dark glow as the other names, a weight heavier for the serif's thin strokes. */
+.marker-circle .map-name { font-family: var(--font-display); font-weight: 500; max-width: none; white-space: nowrap; }
 /* A night's name wraps only between words, never after a hyphen; with only its number inside its ring, the rest hides. */
 .ring-word { white-space: nowrap; }
 .map-name[data-number-only] .ring-rest { display: none; }
-/* The number in the system face: Cinzel's 1 reads as an I. */
-.marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-family: var(--font); font-weight: 800; font-size: 1.2em; }
+/* The number a size up, in lining figures (EB Garamond's default figures are old-style). */
+.marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-weight: 600; font-size: 1.2em; font-variant-numeric: lining-nums; }
 /* A name alone (the castle's guard) sits on its point on one line, clear of the marks below it; on a phone it wraps
    like every other name, as one line it is too long to fit anywhere round the castle. */
 @media (min-width: 900px) { .marker-plain .map-name { max-width: none; white-space: nowrap; } }
 /* The castle's guard, in the game's face, over the castle. */
-.marker-castle.marker-plain .map-name { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.02em; }
-/* A name called out by a tap on its mark: the same bone text, on an opaque dark plate with a bronze hairline, above
+.marker-castle.marker-plain .map-name { font-family: var(--font-display); font-weight: 500; }
+/* A name called out by a tap on its mark: the same pale text, on an opaque dark plate with a pale hairline, above
    every other mark and name, so nothing it covers shows through. */
 .marker.marker-callout { z-index: 4; }
 .marker-callout .map-name {

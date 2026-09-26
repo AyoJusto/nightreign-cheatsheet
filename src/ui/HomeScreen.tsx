@@ -29,10 +29,10 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
       <ul className="nightlord-grid">
         {PICKS.map((n) => (
           <li key={n.id}>
-            {/* The gold ring marks the pick; the others' portraits dim, and their names drop to the secondary tone
+            {/* A pale outline in a blue halo marks the pick; the others' portraits dim, and their names drop to the secondary tone
                 (tokens.css), still easy to read. No scale, which would drop a name out of line with its row. */}
             <button className="nightlord" aria-pressed={picked === n.id} data-dim={(picked && picked !== n.id) || undefined} onClick={() => setPicked(n.id)}>
-              {/* The portrait sits in a bronze ring plate, the game's medallion. */}
+              {/* The portrait sits in a frosted stone ring, the game's medallion. */}
               <span className="medallion"><Portrait id={n.id} name={n.name} /></span>
               <span className="nightlord-name">{n.name}</span>
             </button>

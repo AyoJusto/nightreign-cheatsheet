@@ -25,7 +25,7 @@ const cardMotion = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const
 
 /**
  * The Nightlord in the bottom-left corner, as the game shows it: its portrait in a stone medallion with a
- * bronze ring and a blue glow, and beside it a card of what it is weak to and resists. The corner belongs to
+ * blue-lit ring and a blue glow, and beside it a card of what it is weak to and resists. The corner belongs to
  * the screen, not the map: on phone it rides on the strip or the collapsed sheet, and tucks away as soon as a
  * sheet rises past that, so it never covers the map left above an open sheet (a night's ring, or the sites
  * around the one being answered). Desktop keeps the card open on a result. On phone, and in the finder, the card
@@ -185,7 +185,7 @@ function CardRow({ label, keys, named }: { label: string; keys: DamageKey[]; nam
 }
 
 /**
- * The portrait in the game's medallion, drawn: a pale frosted stone disc with an engraved rim, a bronze ring
+ * The portrait in the game's medallion, drawn: a pale frosted stone disc with an engraved rim, a blue-lit ring
  * round the portrait and a dark groove inside it. The glow is the button's shadow (tokens.css). Only one
  * medallion is ever on screen, so the gradient and clip ids are fixed.
  */
@@ -198,10 +198,10 @@ function MedallionArt({ nightlord }: { nightlord: NightlordPick }) {
           <stop offset="0.55" style={{ stopColor: 'var(--stone-2)' }} />
           <stop offset="1" style={{ stopColor: 'var(--stone-3)' }} />
         </radialGradient>
-        <linearGradient id="nl-bronze" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style={{ stopColor: 'var(--accent-light)' }} />
-          <stop offset="0.5" style={{ stopColor: 'var(--accent)' }} />
-          <stop offset="1" style={{ stopColor: 'var(--accent-dark)' }} />
+        <linearGradient id="nl-ring" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--halo)' }} />
+          <stop offset="0.5" style={{ stopColor: 'var(--stone-2)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--halo-deep)' }} />
         </linearGradient>
         {/* Frost: the portrait's edge pales into the stone, as the game's medallion does. */}
         <radialGradient id="nl-frost" cx="50%" cy="50%" r="50%">
@@ -215,7 +215,7 @@ function MedallionArt({ nightlord }: { nightlord: NightlordPick }) {
       <circle cx="60" cy="60" r="57" fill="none" style={{ stroke: 'var(--stone-1)' }} strokeOpacity="0.45" strokeWidth="0.7" />
       <circle cx="60" cy="60" r="54.4" fill="none" style={{ stroke: 'var(--stone-3)' }} strokeOpacity="0.5" strokeWidth="3.6" strokeDasharray="0.8 2.2" />
       <circle cx="60" cy="60" r="51.8" fill="none" style={{ stroke: 'var(--stone-1)' }} strokeOpacity="0.35" strokeWidth="0.7" />
-      <circle cx="60" cy="60" r="49.4" style={{ fill: 'var(--panel)' }} stroke="url(#nl-bronze)" strokeWidth="2.2" />
+      <circle cx="60" cy="60" r="49.4" style={{ fill: 'var(--panel)' }} stroke="url(#nl-ring)" strokeWidth="2.2" />
       <image href={`/nightlords/${nightlord}.webp`} x="10" y="10" width="100" height="100" clipPath="url(#nl-clip)" preserveAspectRatio="xMidYMid slice" />
       <circle cx="60" cy="60" r="48" fill="url(#nl-frost)" />
       <circle cx="60" cy="60" r="48.2" fill="none" style={{ stroke: 'var(--bg)' }} strokeOpacity="0.8" strokeWidth="1" />

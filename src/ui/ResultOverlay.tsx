@@ -236,7 +236,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   )
 }
 
-// A row label's number in the system face ("Night 1"): Cinzel draws a 1 like a Roman I.
+// A row label's number ("Night 1") in lining, tabular figures, as the seed number is.
 function RowLabel({ label }: { label: string }) {
   const [, words, digits] = label.match(/^(.*?)(\d+)$/) ?? [label, label, '']
   return <>{words}{digits && <span className="num">{digits}</span>}</>

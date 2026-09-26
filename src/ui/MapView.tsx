@@ -380,8 +380,8 @@ export function MapView(props: MapContent & {
   const labelSizes = useRef<NameBox[]>([])
   const measured = (i: number, box: NameBox) => { labelSizes.current[i] = box }
   const wide = useWide()
-  // Night names are in Cinzel, which may arrive after the first measure (font-display: swap): measure every
-  // name again whenever a font finishes loading (fonts.ready alone can resolve before Cinzel is even requested).
+  // Night names are in EB Garamond, which may arrive after the first measure (font-display: swap): measure every
+  // name again whenever a font finishes loading (fonts.ready alone can resolve before the font is even requested).
   // Read straight from the DOM, so a font arriving mid-gesture costs no re-render of the pins.
   useEffect(() => {
     const set = document.fonts
