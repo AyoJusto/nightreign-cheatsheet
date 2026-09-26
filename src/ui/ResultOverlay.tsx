@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { MotionValue } from 'motion/react'
-import type { MapContent, MapMarker, Pin } from './MapView'
+import type { MapContent } from './MapView'
+import { resultMap, type Layer } from './resultMap'
 import { Sheet, type Detent } from './Sheet'
 import { collapseRepeats } from './collapseRepeats'
 import { Plate } from './Plate'
@@ -11,10 +12,9 @@ import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
 import { resultBackPath } from './router'
 import { catalog } from '../data/catalog'
-import { DAMAGE_NAMES, earthName, nightlordName, splitStructure, structureName, type DamageKey, type Weakness } from '../domain/names'
-import type { MarkerLayer, Seed } from '../domain/seed'
+import { DAMAGE_NAMES, earthName, nightlordName, type DamageKey, type Weakness } from '../domain/names'
+import type { Seed } from '../domain/seed'
 
-type Layer = 'structures' | 'spawn' | MarkerLayer
 const LAYER_NAMES: Record<Layer, string> = {
   structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
   chest: 'Chests', merchant: 'Merchant', 'rot-blessing': 'Rot Blessing',
@@ -72,50 +72,8 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const available: Layer[] = ['structures', 'spawn', ...MARKER_LAYERS.filter((l) => markers.some((m) => m.layer === l))]
   // Everything shows at first, as on the game's map; names give way to each other by priority (MapView).
   const [on, setOn] = useState<Set<Layer>>(() => new Set(available))
-  // The castle's guard written over the castle, with its rooftop (great crest) and basement (field crest)
-  // bosses where the game draws them; the Bosses layer shows them with the field bosses.
-  const castle = useMemo<MapMarker[]>(() => {
-    const at = catalog.castleOf(seed.earth)
-    if (!at || !seed.castle) return []
-    const { crew, rooftop, basement } = seed.castle
-    return [
-      { layer: 'castle', ...at.crew, label: crew, plain: true },
-      ...(rooftop ? [{ layer: 'castle' as const, ...at.rooftop, label: rooftop, great: true }] : []),
-      ...(basement ? [{ layer: 'castle' as const, ...at.basement, label: basement }] : []),
-    ]
-  }, [seed])
-  // Caravans stand on open ground where nothing is built: a small cart, drawn in the game icons' style, and a name.
-  const caravans = useMemo<MapMarker[]>(() => {
-    const coords = catalog.slotsOf(seed.earth)
-    return Object.entries(seed.inside)
-      .filter(([slot]) => !seed.slots[slot] && coords[slot])
-      .map(([slot, label]) => ({ layer: 'caravan', ...coords[slot], label }))
-  }, [seed])
-
-  const pins = useMemo<Pin[]>(() => {
-    const coords = catalog.slotsOf(seed.earth)
-    const list: Pin[] = []
-    // A Church stands at the spawn point in 65 seeds: with both layers on, the spawn pin carries its art.
-    const atSpawn = on.has('structures') ? seed.slots[seed.spawn] : null
-    if (on.has('spawn')) {
-      list.push({ slot: seed.spawn, ...coords[seed.spawn], state: 'spawn', structure: atSpawn, label: atSpawn ? `Spawn point, ${structureName(atSpawn)}` : 'Spawn point' })
-    }
-    if (on.has('structures')) {
-      for (const [slot, key] of Object.entries(seed.slots)) {
-        if (!key || (slot === seed.spawn && on.has('spawn'))) continue
-        // What is inside is written on the map under the art, and spoken as part of the pin's name.
-        const name = seed.inside[slot]
-        list.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: name ? `${structureName(key)}, ${name}` : structureName(key), name: name && mapName(key, name) })
-      }
-    }
-    return list
-  }, [seed, on])
-  const shownMarkers = useMemo<MapMarker[]>(() => [
-    ...markers.filter((m) => on.has(m.layer)),
-    ...(on.has('boss') ? castle : []),
-    ...(on.has('structures') ? caravans : []),
-  ], [markers, castle, caravans, on])
-  useLayoutEffect(() => setMap({ pins, markers: shownMarkers }), [pins, shownMarkers, setMap])
+  const content = useMemo(() => resultMap(seed, on), [seed, on])
+  useLayoutEffect(() => setMap(content), [content, setMap])
 
   // One timer for the one toast: a new toast restarts it, so the old timer cannot cut the new one short.
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -232,10 +190,6 @@ function RowLabel({ label }: { label: string }) {
   const [, words, digits] = label.match(/^(.*?)(\d+)$/) ?? [label, label, '']
   return <>{words}{digits && <span className="num">{digits}</span>}</>
 }
-
-// A rise's puzzle clue ("Above Door") means nothing alone on the map: it carries the site it belongs to.
-const HINT_SITES = new Set(['sorcerers-rise', 'ruined-rise'])
-const mapName = (key: string, name: string) => (HINT_SITES.has(splitStructure(key).kind) ? `Rise · ${name}` : name)
 
 // With a label it is a run card row (dt/dd); without, an item in a list of names.
 // `count` is display only (e.g. two identical field bosses -> "Name ×2").

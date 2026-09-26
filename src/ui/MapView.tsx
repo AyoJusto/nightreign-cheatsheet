@@ -1,8 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
 import { useGesture } from '@use-gesture/react'
-import { splitStructure, type EarthId, type SlotId, type StructureKey } from '../domain/names'
-import type { Marker } from '../domain/seed'
+import { splitStructure, type EarthId, type StructureKey } from '../domain/names'
 import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
@@ -10,15 +9,10 @@ import { crossfade } from './crossfade'
 import { useWide } from './useWide'
 import { ART_ASPECT, artFootprint, isTrackpadScroll, labelRank, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, shortBossName, zoomAbout, type LabelRequest, type NameKind, type Rect } from './mapGeometry'
 import './map.css'
+import type { MapContent, MapMarker, Pin, PinState } from './mapTypes'
 
-export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
-/** `name`: what is inside the site ("Guardian Golem"), written on the map under its art when there is room. */
-export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string; name?: string }
-/**
- * A marker as the map draws it. Beyond the seed's own layers: the castle's bosses (a crest each) and its guard
- * (a name alone), and caravans, which stand on open ground where nothing is built (a cart, drawn for the app).
- */
-export interface MapMarker extends Omit<Marker, 'layer'> { layer: Marker['layer'] | 'castle' | 'caravan'; plain?: boolean }
+export type { MapContent, MapMarker, Pin, PinState }
+
 
 const MAX_ZOOM = 4
 // Marks are laid out at these sizes (px) and scaled to markSize's on-screen size for the map's current width,
@@ -41,19 +35,6 @@ const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 const NUDGE = 24
 
 /** What the active mode (finder or result) shows on the map. */
-export interface MapContent {
-  pins: Pin[]
-  markers?: MapMarker[]
-  dim?: boolean
-  selected?: SlotId | null
-  /** Omitted when pins do nothing (the result map): they are then images with a name, not buttons. */
-  onPin?: (slot: SlotId, state: PinState) => void
-  onBackground?: () => void
-  /** The pins the current step asks for: a tap in reach of one goes to it, even if another pin is nearer. */
-  preferred?: (pin: Pin) => boolean
-  /** A mouse pointer entered a pin (or left it, with null). Touch never hovers, so it never fires there. */
-  onHover?: (pin: Pin | null) => void
-}
 
 export function MapView(props: MapContent & {
   earth: EarthId
