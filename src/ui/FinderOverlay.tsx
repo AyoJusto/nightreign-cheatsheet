@@ -9,7 +9,8 @@ import { StructureIcon } from './StructureIcon'
 import { StructureButtons, StructureStrip } from './StructureStrip'
 import { groupByKind } from './structureGroups'
 import { Icon } from './Icon'
-import { useSightings, encodeSightings } from './useSightings'
+import { useSightings } from './useSightings'
+import { findPath, seedPath } from './router'
 import { useFinePointer, useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
@@ -51,18 +52,11 @@ export function FinderOverlay(props: {
       // Leave the finder entry one step back, so browser Back lands on a finder that is not already
       // solved (and so does not bounce straight back here), then push the result. The entry keeps its state,
       // which records where it was pushed from (router.ts).
-      // The result names the Nightlord; `n` remembers it was unknown, so the result's Back returns to this finder.
-      const unknown = props.nightlord === 'unknown' ? `${location.search ? '&' : '?'}n=unknown` : ''
-      const full = location.search + unknown
-      const back = new URL(location.href)
-      const rest = scouting.sightings.slice(0, -1)
-      if (rest.length) back.searchParams.set('s', encodeSightings(rest))
-      else back.searchParams.delete('s')
-      history.replaceState(history.state, '', back)
-      props.go(`/seed/${seed.id}${full}`)
+      history.replaceState(history.state, '', findPath(props.nightlord, props.earth, scouting.sightings.slice(0, -1)))
+      props.go(seedPath(seed.id, scouting.sightings, props.nightlord === 'unknown'))
     }, 350)
     return () => clearTimeout(t)
-  }, [scouting, props.go, props.nightlord])
+  }, [scouting, props.go, props.nightlord, props.earth])
 
   // Also drops the hover preview: a sighting can remove the hovered pin, and a removed pin never reports leaving.
   const close = useCallback(() => { setFocus(null); setOpen(null); setHover(null); setTileName(null); setSelected(null); setDetent('peek') }, [])

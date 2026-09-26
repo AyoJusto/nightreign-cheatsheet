@@ -1,25 +1,7 @@
 import { useMemo, useState, useCallback } from 'react'
-import { Scouting, type Sighting } from '../domain/scouting'
+import { Scouting } from '../domain/scouting'
 import type { Seed } from '../domain/seed'
-
-const SLOT = /^\d{1,3}$/
-const KEY = /^[a-z-]+(:[a-z]+)?$/
-
-export const encodeSightings = (list: readonly Sighting[]) =>
-  list
-    .map((s) => (s.type === 'spawn' ? `spawn@${s.slot}` : s.type === 'nothing' ? `${s.slot}@none` : `${s.slot}@${s.structure}`))
-    .join(',')
-
-export function decodeSightings(q: string | null): Sighting[] {
-  const out: Sighting[] = []
-  for (const part of (q ?? '').split(',')) {
-    const [a, b] = part.split('@')
-    if (a === 'spawn' && SLOT.test(b ?? '')) out.push({ type: 'spawn', slot: b })
-    else if (SLOT.test(a ?? '') && b === 'none') out.push({ type: 'nothing', slot: a })
-    else if (SLOT.test(a ?? '') && KEY.test(b ?? '')) out.push({ type: 'structure', slot: a, structure: b })
-  }
-  return out
-}
+import { decodeSightings, sightingsQuery } from './router'
 
 /** The current scouting and every earlier one, newest last, so Undo can walk back through any change. */
 export interface Timeline { now: Scouting; past: readonly Scouting[] }
@@ -43,10 +25,7 @@ export function useSightings(pool: readonly Seed[]): { scouting: Scouting; updat
   }, [pool])
   const [timeline, setTimeline] = useState(initial)
   const show = useCallback((t: Timeline) => {
-    const url = new URL(location.href)
-    if (t.now.sightings.length) url.searchParams.set('s', encodeSightings(t.now.sightings))
-    else url.searchParams.delete('s')
-    history.replaceState(history.state, '', url)
+    history.replaceState(history.state, '', location.pathname + sightingsQuery(t.now.sightings))
     setTimeline(t)
   }, [])
   const update = useCallback((next: Scouting) => show(record(timeline, next)), [timeline, show])

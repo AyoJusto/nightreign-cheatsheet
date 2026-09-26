@@ -9,7 +9,7 @@ import { Icon } from './Icon'
 import { useWide } from './useWide'
 import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
-import { decodeSightings, encodeSightings } from './useSightings'
+import { resultBackPath } from './router'
 import { catalog } from '../data/catalog'
 import { DAMAGE_NAMES, earthName, nightlordName, splitStructure, structureName, type DamageKey, type Weakness } from '../domain/names'
 import type { MarkerLayer, Seed } from '../domain/seed'
@@ -143,16 +143,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       flash('Could not copy the link')
     }
   }
-  // One sighting back, so the finder does not re-identify this seed and bounce straight here again.
-  // A shared link has no sightings and goes home.
-  const back = () => {
-    const params = new URLSearchParams(location.search)
-    const q = params.get('s')
-    if (q === null) return go('/', true)
-    const rest = encodeSightings(decodeSightings(q).slice(0, -1))
-    const nightlord = params.get('n') === 'unknown' ? 'unknown' : seed.nightlord
-    go(`/find/${nightlord}/${seed.earth}${rest ? `?${new URLSearchParams({ s: rest })}` : ''}`, true)
-  }
+  const back = () => go(resultBackPath(location.search, seed), true)
   const toggle = (l: Layer) =>
     setOn((s) => {
       const next = new Set(s)
