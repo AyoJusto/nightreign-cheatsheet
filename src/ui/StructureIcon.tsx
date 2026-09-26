@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BADGE } from './mapGeometry'
 import { ELEMENT_CODES, splitStructure, structureName, type ElementId, type StructureKey } from '../domain/names'
 
 /**
@@ -15,8 +16,11 @@ export function ElementEmblem({ element, className = 'element-emblem', size }: {
     onError={() => setFailed(element)} draggable={false} aria-hidden />
 }
 
-/** The emblem badge's size on art `size` px wide: the game's own ratio, 0.4. */
-export const emblemSize = (size: number) => Math.round(size * 0.4)
+// The badge's box, where the game puts it on the art (BADGE), as percentages so it follows the art's size.
+const badgeAt = {
+  left: `${(0.5 + BADGE.x - BADGE.size / 2) * 100}%`,
+  top: `${(0.5 + BADGE.y - BADGE.size / 2) * 100}%`,
+}
 
 /**
  * The kind's plain art, with the element's emblem as a badge in the corner (where the game puts it), so every
@@ -34,7 +38,7 @@ export function StructureIcon({ structure, size = 36 }: { structure: StructureKe
       ) : (
         <img key={kind} className="structure-art" src={`/structures/${kind}.webp`} alt="" width={size} height={size} onError={() => setFailed(structure)} draggable={false} />
       )}
-      {element && <ElementEmblem element={element} className="element-badge" size={emblemSize(size)} />}
+      {element && <span className="element-badge-at" style={badgeAt}><ElementEmblem element={element} className="element-badge" size={Math.round(size * BADGE.size)} /></span>}
     </span>
   )
 }

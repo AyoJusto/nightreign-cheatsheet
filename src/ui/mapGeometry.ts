@@ -416,17 +416,26 @@ export const ART_ASPECT: Record<string, number> = {
 }
 
 /**
+ * The element emblem on a structure's art, as fractions of the art's square box: `size` across, its centre `x` right
+ * and `y` down of the box's centre. Measured off the game's own elemental icons (data/raw/assets/icons, e.g.
+ * ruins_fire vs ruins): the emblem is about 60px on their 300px canvas, always at the same spot, over the lower right
+ * of a sprite about 225px wide, which our trimmed art stretches to about 0.93 of the box.
+ */
+export const BADGE = { size: 0.25, x: 0.27, y: 0.14 }
+
+/**
  * What a structure's art really covers on screen, drawn `size` px square about `at`: its sprite (`aspect` is height
- * over width, fitted inside the square), and the element badge in the square's lower-right corner, 0.4 of its size.
+ * over width, fitted inside the square), and the element badge where the game puts it (BADGE).
  */
 export function artFootprint(at: { x: number; y: number }, size: number, aspect: number, badge: boolean): Rect[] {
   const w = size * Math.min(1, 1 / aspect)
   const h = size * Math.min(1, aspect)
   const sprite = { x0: at.x - w / 2, y0: at.y - h / 2, x1: at.x + w / 2, y1: at.y + h / 2 }
   if (!badge) return [sprite]
-  const corner = size / 2
-  const b = size * 0.4
-  return [sprite, { x0: at.x + corner - b, y0: at.y + corner - b, x1: at.x + corner, y1: at.y + corner }]
+  const cx = at.x + size * BADGE.x
+  const cy = at.y + size * BADGE.y
+  const half = (size * BADGE.size) / 2
+  return [sprite, { x0: cx - half, y0: cy - half, x1: cx + half, y1: cy + half }]
 }
 
 /**

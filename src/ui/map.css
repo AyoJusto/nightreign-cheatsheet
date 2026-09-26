@@ -48,8 +48,6 @@
 .pin-certain .structure-art { opacity: 0.5; filter: grayscale(0.9); }
 .pin-certain:not(.pin-selected) .structure-icon::before { content: ''; position: absolute; inset: -6px; border: 3px dashed var(--bone-2); border-radius: 50%; }
 .pin-certain .element-badge { filter: brightness(0.75); }
-/* On the map the badge is 0.4 of the art (StructureIcon), tucked into the art's corner. */
-.pin .element-badge { right: 0; bottom: 0; }
 
 /* A zero-size anchor on the point: the mark centres on it, MapView places the name beside it, clear of marks. */
 .marker { position: absolute; z-index: 2; width: 0; height: 0; pointer-events: none; }

@@ -199,13 +199,13 @@ button { font: inherit; letter-spacing: inherit; color: inherit; background: non
    structure icon there, so the row never reads as blank. */
 .icon-empty { position: relative; display: block; box-sizing: border-box; border: 1.5px dashed var(--bone-2); border-radius: 50%; }
 /* The game's element emblem, a small square picture with the game's slightly rounded corners. A thin dark
-   rim lifts it off the art and the map; set in the art's corner, where the game puts it, at 0.4 of the
-   art's box, the game's own ratio. */
+   rim lifts it off the art and the map; on the art's lower right at a quarter of its box, where and as big as
+   the game draws it (BADGE, mapGeometry). */
 .element-emblem, .element-badge {
   display: block; box-sizing: border-box; object-fit: cover; border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5);
 }
-.element-badge { position: absolute; right: -3px; bottom: -3px; }
+.element-badge-at { position: absolute; }
 /* An emblem that failed to load: the element's two-letter code on a dark chip, the emblem's size and place. */
 .element-code {
   display: grid; place-items: center; padding: 0 2px; background: var(--panel); color: var(--bone);

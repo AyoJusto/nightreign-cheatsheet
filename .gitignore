@@ -30,3 +30,4 @@ docs/specs/
 # Playwright output
 playwright-report/
 test-results/
+.playwright-mcp/

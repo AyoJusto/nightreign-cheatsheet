@@ -633,11 +633,11 @@ describe('structure art footprints', () => {
       expect(ART_ASPECT[kind], kind).toBeCloseTo(height! / width!, 1)
     }
   })
-  it('sizes a low sprite by its width and a tall one by its height, with the badge in the box corner', () => {
+  it('sizes a low sprite by its width and a tall one by its height, with the badge where the game puts it', () => {
     // A township (0.44) and a sorcerer's rise (2.06), each drawn in an 80px box about (100, 100).
     expect(artFootprint({ x: 100, y: 100 }, 80, 0.44, true)).toEqual([
       { x0: 60, y0: 82.4, x1: 140, y1: 117.6 },
-      { x0: 108, y0: 108, x1: 140, y1: 140 },
+      { x0: 111.6, y0: 101.2, x1: 131.6, y1: 121.2 },
     ])
     const [rise] = artFootprint({ x: 100, y: 100 }, 80, 2.0, false)
     expect(rise).toEqual({ x0: 80, y0: 60, x1: 120, y1: 140 })
