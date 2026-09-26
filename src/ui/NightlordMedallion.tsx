@@ -194,31 +194,31 @@ function MedallionArt({ nightlord }: { nightlord: NightlordPick }) {
     <svg className="nl-art" viewBox="0 0 120 120" aria-hidden>
       <defs>
         <radialGradient id="nl-stone" cx="50%" cy="36%" r="64%">
-          <stop offset="0" stopColor="#dce6f6" />
-          <stop offset="0.55" stopColor="#8ca1c6" />
-          <stop offset="1" stopColor="#374b73" />
+          <stop offset="0" style={{ stopColor: 'var(--stone-1)' }} />
+          <stop offset="0.55" style={{ stopColor: 'var(--stone-2)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--stone-3)' }} />
         </radialGradient>
         <linearGradient id="nl-bronze" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f0d99c" />
-          <stop offset="0.5" stopColor="#c9a55c" />
-          <stop offset="1" stopColor="#7a5a2e" />
+          <stop offset="0" style={{ stopColor: 'var(--accent-light)' }} />
+          <stop offset="0.5" style={{ stopColor: 'var(--accent)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--accent-dark)' }} />
         </linearGradient>
         {/* Frost: the portrait's edge pales into the stone, as the game's medallion does. */}
         <radialGradient id="nl-frost" cx="50%" cy="50%" r="50%">
-          <stop offset="0.62" stopColor="#b4c8ea" stopOpacity="0" />
-          <stop offset="1" stopColor="#b4c8ea" stopOpacity="0.42" />
+          <stop offset="0.62" style={{ stopColor: 'var(--stone-1)' }} stopOpacity="0" />
+          <stop offset="1" style={{ stopColor: 'var(--stone-1)' }} stopOpacity="0.42" />
         </radialGradient>
         <clipPath id="nl-clip"><circle cx="60" cy="60" r="48" /></clipPath>
       </defs>
-      <circle cx="60" cy="60" r="59" fill="url(#nl-stone)" stroke="#1b2640" strokeWidth="1" />
+      <circle cx="60" cy="60" r="59" fill="url(#nl-stone)" style={{ stroke: 'var(--panel-2)' }} strokeWidth="1" />
       {/* The engraved rim: a band of fine carved ticks between two scored lines. */}
-      <circle cx="60" cy="60" r="57" fill="none" stroke="#f4f7fc" strokeOpacity="0.45" strokeWidth="0.7" />
-      <circle cx="60" cy="60" r="54.4" fill="none" stroke="#1f2c47" strokeOpacity="0.5" strokeWidth="3.6" strokeDasharray="0.8 2.2" />
-      <circle cx="60" cy="60" r="51.8" fill="none" stroke="#f4f7fc" strokeOpacity="0.35" strokeWidth="0.7" />
-      <circle cx="60" cy="60" r="49.4" fill="#0e1628" stroke="url(#nl-bronze)" strokeWidth="2.2" />
+      <circle cx="60" cy="60" r="57" fill="none" style={{ stroke: 'var(--stone-1)' }} strokeOpacity="0.45" strokeWidth="0.7" />
+      <circle cx="60" cy="60" r="54.4" fill="none" style={{ stroke: 'var(--stone-3)' }} strokeOpacity="0.5" strokeWidth="3.6" strokeDasharray="0.8 2.2" />
+      <circle cx="60" cy="60" r="51.8" fill="none" style={{ stroke: 'var(--stone-1)' }} strokeOpacity="0.35" strokeWidth="0.7" />
+      <circle cx="60" cy="60" r="49.4" style={{ fill: 'var(--panel)' }} stroke="url(#nl-bronze)" strokeWidth="2.2" />
       <image href={`/nightlords/${nightlord}.webp`} x="10" y="10" width="100" height="100" clipPath="url(#nl-clip)" preserveAspectRatio="xMidYMid slice" />
       <circle cx="60" cy="60" r="48" fill="url(#nl-frost)" />
-      <circle cx="60" cy="60" r="48.2" fill="none" stroke="#070b14" strokeOpacity="0.8" strokeWidth="1" />
+      <circle cx="60" cy="60" r="48.2" fill="none" style={{ stroke: 'var(--bg)' }} strokeOpacity="0.8" strokeWidth="1" />
     </svg>
   )
 }
