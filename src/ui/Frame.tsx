@@ -1,6 +1,6 @@
 // The game's frame, as round its map: a thin pale rule, each corner cut by a short diagonal with a small diamond on it.
 // Decorative only, and laid over its parent (which must be positioned), so it never changes layout.
-// Colours come from the palette through the svg-* classes (tokens.css): SVG presentation attributes cannot read var().
+// Colours come from the palette through the svg-* classes (styles/frame.css): SVG presentation attributes cannot read var().
 
 function Corner({ at }: { at: 'tl' | 'tr' | 'bl' | 'br' }) {
   return (

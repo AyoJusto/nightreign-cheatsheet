@@ -186,7 +186,7 @@ function CardRow({ label, keys, named }: { label: string; keys: DamageKey[]; nam
 
 /**
  * The portrait in the game's medallion, drawn: a pale frosted stone disc with an engraved rim, a blue-lit ring
- * round the portrait and a dark groove inside it. The glow is the button's shadow (tokens.css). Only one
+ * round the portrait and a dark groove inside it. The glow is the button's shadow (weakness.css). Only one
  * medallion is ever on screen, so the gradient and clip ids are fixed.
  */
 function MedallionArt({ nightlord }: { nightlord: NightlordPick }) {

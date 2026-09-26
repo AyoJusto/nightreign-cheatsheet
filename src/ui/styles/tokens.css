@@ -1,0 +1,64 @@
+/* EB Garamond (SIL OFL, public/fonts/OFL.txt), the closest free match to the game's Garamond: one variable latin
+   file carries every weight from 400 to 600. */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/eb-garamond-latin.woff2') format('woff2');
+}
+
+:root {
+  /* Desktop is min-width: 900px in every @media rule here and in useWide.ts: keep them in step. */
+  /* The palette. Every colour in the app derives from these (alpha shades by color-mix), SVG art included (the svg-* classes in frame.css),
+     so a new palette is a change here alone. The PWA manifest in vite.config.ts repeats --bg: JSON cannot read CSS. */
+  /* Sampled from the game's own menus (Game UI Database, 1080p captures; .playwright-mcp/ui-refs/SPEC.md): a cold,
+     dim night of navy blacks separated by small steps, pale grey hairlines, and one periwinkle blue. No gold. */
+  --bg: #070a12;
+  --panel: #0b0f1b;
+  --panel-2: #111727;
+  --panel-3: #1a2033; /* a row's selection band, and hover */
+  --edge: #2a3350;
+  /* The frames' lines: the map's pale grey frame and its corner diamonds, and the fainter rules. */
+  --accent: #8c8d87;
+  --accent-light: #c8ccd2;
+  --text: #c8ccd2;
+  --text-head: #bcc8ee; /* headings: a periwinkle white */
+  --text-2: #9ca0a6;
+  --text-3: #5b5e65;
+  /* The game's one colour: the night circle's periwinkle, its focus halo and its selection band. */
+  --halo: #84b2ff;
+  --halo-deep: #4b608b;
+  --select: #41568f;
+  /* The Nightlord's medallion, a frosted stone ring: its light rim, its band, and its inner shadow. */
+  --stone-1: #a3aabb;
+  --stone-2: #6f7a90;
+  --stone-3: #3a4458;
+  --night-1: #6fe39a;
+  --night-2: #84b2ff;
+  /* Hairlines between rows: faint slate. */
+  --rule: color-mix(in srgb, var(--edge) 70%, transparent);
+  /* A selected row: the game's periwinkle band, fading out to the right. */
+  --fill: linear-gradient(90deg, color-mix(in srgb, var(--select) 70%, transparent), color-mix(in srgb, var(--select) 15%, transparent));
+  /* A plate's rim: a faint pale hairline. The game lifts nothing with shadows; one soft one keeps plates off the map. */
+  --rim: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  --plate-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  /* Pressed or focused, as the game's focused tile: a 1px pale outline in a soft blue halo. */
+  --glow: inset 0 0 0 1px var(--accent-light), 0 0 6px 1px var(--halo-deep);
+  /* Translucent navy over a light blur (<= 3 blurred surfaces on screen: pill, strip or sheet at peek). */
+  --plate-bg: color-mix(in srgb, var(--panel) 80%, transparent);
+  --plate-blur: blur(12px) saturate(140%);
+  /* Film grain, drawn by an SVG filter in a data URI: no image file, tiles seamlessly. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .80 0 0 0 0 .84 0 0 0 0 .92 0 0 0 .3 -.11'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* A night-sky nebula: low-frequency turbulence tinted steel blue, stretched over the whole screen. */
+  --nebula: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600' preserveAspectRatio='none'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .007' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .12 0 0 0 0 .19 0 0 0 0 .34 0 0 1.2 0 -.5'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23n)'/%3E%3C/svg%3E");
+  --panel-texture: var(--grain), linear-gradient(180deg, var(--panel-2), var(--panel) 70%);
+  --gutter: 8px;
+  /* One serif for everything, as the game has. */
+  --font: 'EB Garamond', Garamond, 'Palatino Linotype', Georgia, serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  color-scheme: dark;
+}

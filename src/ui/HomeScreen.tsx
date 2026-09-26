@@ -30,7 +30,7 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
         {PICKS.map((n) => (
           <li key={n.id}>
             {/* A pale outline in a blue halo marks the pick; the others' portraits dim, and their names drop to the secondary tone
-                (tokens.css), still easy to read. No scale, which would drop a name out of line with its row. */}
+                (styles/home.css), still easy to read. No scale, which would drop a name out of line with its row. */}
             <button className="nightlord" aria-pressed={picked === n.id} data-dim={(picked && picked !== n.id) || undefined} onClick={() => setPicked(n.id)}>
               {/* The portrait sits in a frosted stone ring, the game's medallion. */}
               <span className="medallion"><Portrait id={n.id} name={n.name} /></span>

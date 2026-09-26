@@ -11,7 +11,7 @@ const targets = [
   data.seeds.find((s: any) => s.nightlord === 'dreglord' && s.earth === 'great-hollow'),
 ]
 
-// A palette token (tokens.css) as the browser computes it, so a colour check follows the palette rather than a copy of it.
+// A palette token (styles/tokens.css) as the browser computes it, so a colour check follows the palette rather than a copy of it.
 const paletteColor = (page: Page, token: string) => page.evaluate((t) => {
   const probe = document.body.appendChild(document.createElement('div'))
   probe.style.backgroundColor = `var(${t})`

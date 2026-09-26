@@ -1,0 +1,96 @@
+/* ---------- Floating controls ---------- */
+
+/* Phone: the pill and the strip span one column, 8px in from each edge (plus the notch's own inset in
+   landscape), so the two floating controls line up and never sit under the sensor housing. */
+.pill { position: fixed; z-index: 10; top: calc(var(--safe-top) + var(--gutter)); left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); display: flex; align-items: center; gap: 4px; padding: 4px; height: 52px; box-sizing: border-box; }
+/* Icon buttons: pale glyphs; hover and press light them with the plate's glow. */
+.pill button { flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
+/* Pointer hover only: a touch tap leaves :hover stuck on the tapped control. */
+@media (hover: hover) { .pill button:not(:disabled):hover { color: var(--text-head); box-shadow: var(--glow); } }
+.pill button:not(:disabled):active { color: var(--text-head); box-shadow: var(--glow); }
+.pill button:disabled { opacity: 0.3; cursor: default; }
+/* Equal edge columns (each at least two buttons wide) keep the title on the pill's true centre, like an iOS nav bar;
+   a title too long for the middle ends in an ellipsis rather than reach a button. */
+.pill-titled { display: grid; grid-template-columns: minmax(92px, 1fr) minmax(0, auto) minmax(92px, 1fr); }
+.pill-leading, .pill-trailing { display: flex; align-items: center; gap: 4px; }
+.pill-leading { grid-column: 1; justify-self: start; }
+.pill-trailing { grid-column: 3; justify-self: end; }
+.pill-text { grid-column: 2; min-width: 0; padding: 0 4px; text-align: center; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The pill's column; items sit centred in it, and a row too long for it scrolls. */
+.strip { position: fixed; z-index: 10; left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); bottom: calc(var(--safe-bottom) + var(--gutter)); display: flex; }
+/* The fade sits on the scrolling row, not the plate, so the plate itself keeps a crisp edge. */
+.strip-scroll {
+  --fade-left: 0px; --fade-right: 0px;
+  position: relative; flex: 1; min-width: 0; display: flex; gap: var(--gutter); padding: 6px; overflow-x: auto; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+}
+.strip-scroll::-webkit-scrollbar { display: none; }
+/* Centres a row that fits; unlike justify-content, auto margins still let an overflowing row scroll to its start. */
+.strip-scroll > :first-child { margin-left: auto; }
+.strip-scroll > :last-child { margin-right: auto; }
+.strip-scroll[data-more-left] { --fade-left: 28px; }
+.strip-scroll[data-more-right] { --fade-right: 28px; }
+.strip-item { position: relative; flex: 0 0 auto; width: 52px; height: 52px; display: grid; place-items: center; }
+.strip-item[aria-expanded='true'] { background: var(--fill); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); }
+.strip-item[aria-pressed='true'], .strip-variant[aria-pressed='true'] { background: var(--fill); box-shadow: var(--glow); }
+/* A kind that comes in elements: its elements' emblems in one quiet plate, centred on the art's base.
+   Three 14px emblems fit the 52px tile. */
+.element-codes {
+  position: absolute; left: 0; right: 0; bottom: 1px; width: fit-content; max-width: 100%; margin: 0 auto; display: flex; align-items: center; gap: 2px;
+  height: 18px; padding: 0 2px; box-sizing: border-box; border-radius: 3px; font-size: 11px; line-height: 14px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent); color: var(--text-2); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+.element-codes > span { padding: 0 2px; }
+/* A named variant: a navy plate with a pale rim, its element named. */
+.strip-variant {
+  position: relative; flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 14px 0 8px; box-sizing: border-box;
+  font-size: 14px; white-space: nowrap;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel)); box-shadow: var(--rim);
+}
+
+/* Result pill: layer toggles. Each is a 44px target around a smaller plate, so the row reads light.
+   Fades only the edges that have more to scroll to, same approach as the strip (StructureStrip.tsx).
+   The row stops 14px short of the pill's right edge, so the Frame's corner brackets never cross a chip;
+   a chip cut there fades out over 48px, which reads as "scroll for more" rather than a clipped word. */
+.chips { isolation: isolate;
+  --fade-left: 0px; --fade-right: 0px;
+  display: flex; flex: 1; min-width: 0; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-right: 14px; padding-right: 12px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+}
+.chips[data-more-left] { --fade-left: 28px; }
+.chips[data-more-right] { --fade-right: 48px; }
+.chips::-webkit-scrollbar { display: none; }
+/* The plate is ::before, inside the 44px target; the button itself stays clear, so a stuck touch :hover never adds a second one. */
+.pill .chip { position: relative; flex: 0 0 auto; width: auto; height: 44px; padding: 0 10px; font-size: 13px; color: var(--text-2); background: none; }
+.pill .chip::before { content: ''; position: absolute; inset: 6px 0; z-index: -1; background: linear-gradient(180deg, var(--panel-2), var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent); }
+/* As specific as the pill button hover above, so a chip keeps its one inner plate and never gets a second one. */
+@media (hover: hover) { .pill .chip:not(:disabled):hover { background: none; box-shadow: none; color: var(--text); } }
+.pill .chip:not(:disabled):active { box-shadow: none; }
+.pill .chip[aria-pressed='true'] { color: var(--text-head); }
+.pill .chip[aria-pressed='true']::before { background: linear-gradient(180deg, var(--panel-3), var(--panel-2)); box-shadow: var(--glow); }
+/* Phone: each chip is the layer's map mark over a short name, all one width (ResultOverlay's CHIP_STEP). The row
+   shows only whole chips and scrolls one chip at a time; a narrow fade on a side says there is more that way. */
+.pill .chip-tile {
+  width: 49px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  /* No tracking, at the plan's 11px floor: the longest name (Chests) keeps 4px from the tile's rim, and six
+     tiles still fit a 390px iPhone's pill. */
+  font-size: 11px; line-height: 12px; scroll-snap-align: start;
+}
+.pill .chip-tile::before { inset: 1px 0; }
+.chip-tile img { width: 22px; height: 18px; object-fit: contain; }
+/* The player's marker carries a wide halo in its image: drawn larger, so its disc matches the other marks. */
+.chip-tile img.chip-player { width: 36px; height: 36px; margin: -9px 0; }
+.pill .chip-tile[aria-pressed='false'] img, .pill .chip-tile[aria-pressed='false'] .chip-ring { opacity: 0.55; filter: grayscale(0.6); }
+/* The Rings chip's mark: a small night ring, green like night 1's. */
+.chip-ring { width: 14px; height: 14px; margin: 2px 0; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--night-1), 0 0 6px color-mix(in srgb, var(--night-1) 70%, transparent); }
+@media (max-width: 899px) {
+  .chips { scroll-snap-type: x mandatory; margin-right: 12px; padding-right: 0; }
+  .chips[data-more-left] { --fade-left: 10px; }
+  .chips[data-more-right] { --fade-right: 10px; }
+}
+/* Centred, but never lets its own padding reach past the notch: a max-width built from the same side
+   gutter (plus the safe inset) the other floating controls use. Solid, not blurred: the pill and sheet own the blur. */
+.toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 12px 20px; font-size: 15px; white-space: nowrap; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter) - var(--safe-left) - var(--safe-right)); }
+.toast.plate { background: var(--panel-texture); -webkit-backdrop-filter: none; backdrop-filter: none; }
