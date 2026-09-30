@@ -93,7 +93,8 @@ export function NightBadge({ n }: { n: 1 | 2 }) {
  * are in; a night boss is one encounter inside it. So expeditions sit raised on
  * the page with a serif name and a gold rule, and these sink into it: darker
  * than the ground, no outer border, name in the grotesque, and the night
- * carried by a coloured left edge instead of a pill.
+ * carried by the coloured N1/N2 label instead of a pill. No coloured left edge
+ * either: a rounded card with an accent stripe is the stock AI "fingernail".
  *
  * The pill is gone on purpose. On an expedition card it means "the boss you
  * searched is on night 1 there"; here it would mean "this boss is night 1".
@@ -112,9 +113,7 @@ export function NightBossCard({
       <button
         type="button"
         onClick={() => onSelect(`boss/${boss.slug}`)}
-        className={`flex h-full w-full flex-col gap-2 rounded-xl border-l-[3px] bg-ink-800/80 py-3 pl-3.5 pr-3 text-left shadow-[inset_0_1px_0_rgb(0_0_0/0.35)] transition-colors hover:bg-ink-700/80 focus:outline-none focus:ring-1 focus:ring-gold-dim/60 ${
-          n === 1 ? "border-l-gold-dim/70" : "border-l-magic/60"
-        }`}
+        className="flex h-full w-full flex-col gap-2 rounded-xl bg-ink-800/80 px-3.5 py-3 text-left shadow-[inset_0_1px_0_rgb(0_0_0/0.35)] transition-colors hover:bg-ink-700/80 focus:outline-none focus:ring-1 focus:ring-gold-dim/60"
       >
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="min-w-0 text-[15px] font-medium leading-tight text-bone">{boss.name}</h3>
