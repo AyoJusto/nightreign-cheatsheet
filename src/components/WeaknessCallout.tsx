@@ -21,7 +21,7 @@ export function WeaknessCallout({ e }: { e: Expedition }) {
   const alsoDamage = listed.kind === "status" ? e.weaknesses : [];
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-gold-dim/40 bg-gradient-to-b from-ink-600 to-ink-700">
+    <section className="overflow-hidden rounded-2xl border border-gold-dim/40 bg-ink-700">
       <div className="p-5 sm:p-6">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.18em] text-gold">
           Weak to
