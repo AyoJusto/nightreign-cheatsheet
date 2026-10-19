@@ -1,11 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MotionConfig } from 'motion/react'
-// Every stylesheet but the map's and the weakness card's (imported by their components, after these), in cascade
-// order: later files may rely on winning ties with earlier ones.
-import './styles/tokens.css'
+import './styles/theme.css'
 import './styles/base.css'
-import './styles/frame.css'
 import './styles/home.css'
 import './styles/map-screen.css'
 import './styles/sheet.css'

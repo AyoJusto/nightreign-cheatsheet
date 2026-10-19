@@ -3,7 +3,6 @@ import { AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './mapTypes'
 import { Sheet, type Detent } from './Sheet'
 import { Plate } from './Plate'
-import { Frame } from './Frame'
 import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
 import { StructureButtons, StructureStrip } from './StructureStrip'
@@ -217,7 +216,6 @@ export function FinderOverlay(props: {
       )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
-          <Frame />
           <div className="side-scroll">
             <h2 className="side-title"><span className="side-nightlord">{nightlordName(props.nightlord)}</span><span className="side-earth">{earthName(props.earth)}</span></h2>
             <p className="side-count"><Count value={count} phrase={`${count} possible`} /><span aria-hidden> possible</span></p>

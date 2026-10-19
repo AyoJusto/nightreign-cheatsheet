@@ -1,29 +1,15 @@
-/* ---------- Map ---------- */
-
-/* clip, not hidden: a hidden overflow can still be scrolled by focus or scrollIntoView, which would shift taps. */
-.map-frame { position: fixed; inset: 0; overflow: clip; touch-action: none; background: var(--bg); container-type: size; }
-/* A square as wide as the frame's longer side, centred: at scale 1 it covers the frame. MapView zooms below 1 only to fit the playable area. */
+.map-frame { position: fixed; inset: 0; overflow: clip; touch-action: none; background: var(--color-ground); container-type: size; }
 .map-layer { --side: max(100cqw, 100cqh); position: absolute; width: var(--side); height: var(--side); left: calc(50% - var(--side) / 2); top: calc(50% - var(--side) / 2); transform-origin: center; }
 .map-image { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
-.map-scrim { position: absolute; inset: 0; background: var(--bg); pointer-events: none; }
+.map-scrim { position: absolute; inset: 0; background: var(--color-ground); pointer-events: none; }
 
 .structure-icon { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
-/* The art carries its own soft shadow, baked in by the import (withShadow): no filter to redraw as the map moves. */
 .structure-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.icon-glyph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 10px; background: var(--panel-2); font-size: 12px; }
-/* "Nothing here": an empty dashed ring where the art would be, at the same size and visual weight as a
-   structure icon there, so the row never reads as blank. */
-.icon-empty { position: relative; display: block; box-sizing: border-box; border: 1.5px dashed var(--text-2); border-radius: 50%; }
-/* The game's element emblem, a small square picture with the game's slightly rounded corners. A thin dark
-   rim lifts it off the art and the map; on the art's lower right at a quarter of its box, where and as big as
-   the game draws it (BADGE, mapGeometry). */
+.icon-glyph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 10px; background: var(--color-surface-2); font-size: 12px; }
+.icon-empty { position: relative; display: block; box-sizing: border-box; border: 1.5px dashed var(--color-label-2); border-radius: 50%; }
 .element-emblem, .element-badge {
   display: block; box-sizing: border-box; object-fit: cover; border-radius: 3px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.75), 0 1px 2px rgb(0 0 0 / 0.5);
 }
 .element-badge-at { position: absolute; }
-/* An emblem that failed to load: the element's two-letter code on a dark chip, the emblem's size and place. */
-.element-code {
-  display: grid; place-items: center; padding: 0 2px; background: var(--panel); color: var(--text);
-  font-size: 11px; line-height: 1;
-}
+.element-code { display: grid; place-items: center; padding: 0 2px; background: var(--color-surface); color: var(--color-label); font-size: 11px; line-height: 1; }

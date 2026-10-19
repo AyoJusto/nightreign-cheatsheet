@@ -2,6 +2,7 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import tailwindcss from '@tailwindcss/vite'
 
 export const BASE = '/nightreign-cheatsheet/'
 
@@ -35,6 +36,7 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   plugins: [
     react(),
+    tailwindcss(),
     contentSecurityPolicy,
     VitePWA({
       registerType: 'autoUpdate',

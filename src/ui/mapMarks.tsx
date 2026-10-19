@@ -45,7 +45,7 @@ export function RingName({ marker }: { marker: MapMarker }) {
       {/* Each word kept whole: a caption wraps only between words, never after a hyphen ("Demi-Human"). The rest
           after the number hides when only the number fits inside the ring. */}
       <span aria-hidden>
-        <span className={`ring-${marker.night}`}>{marker.night}</span>
+        <span className={`night-${marker.night}`}>{marker.night}</span>
         <span className="ring-rest"> · {shortBossName(boss).split(' ').map((word, i) => <span key={i}>{i > 0 && ' '}<span className="ring-word">{word}</span></span>)}</span>
       </span>
       <span className="sr-only">{marker.label}</span>
@@ -61,7 +61,7 @@ export function Ring({ night }: { night: 1 | 2 }) {
   const glow = `ring-glow-${night}`
   const c = RING_SIZE / 2
   return (
-    <svg className={`ring ring-${night}`} width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden>
+    <svg className={`night-ring night-${night}`} width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden>
       <defs>
         <radialGradient id={glow}>
           <stop offset="0.45" stopColor="currentColor" stopOpacity="0" />
