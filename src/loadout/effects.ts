@@ -41,35 +41,6 @@ export const GROUPS: { id: EffectGroup; label: string; count: number }[] = (['re
   (id) => ({ id, label: GROUP_LABEL[id], count: effectsIn(id).length }),
 )
 
-export interface Filter {
-  key: string
-  label: string
-  count: number
-  kind: 'cat' | 'pool'
-}
-
-function countBy<K>(keysOf: (e: Effect) => K[], list: Effect[]): [K, number][] {
-  const counts = new Map<K, number>()
-  for (const e of list) for (const key of keysOf(e)) counts.set(key, (counts.get(key) ?? 0) + 1)
-  return [...counts].sort((a, b) => b[1] - a[1])
-}
-
-export function filtersFor(group: EffectGroup): Filter[] {
-  const list = effectsIn(group)
-  const categories = countBy((e) => e.cats, list)
-  const pools = countBy((e) => (e.pool === 'base' ? [] : [e.pool]), list)
-  return [
-    ...categories.map(([label, count]) => ({ key: `cat:${label}`, label, count, kind: 'cat' as const })),
-    ...pools.map(([pool, count]) => ({ key: `pool:${pool}`, label: POOL_TAG[pool]!, count, kind: 'pool' as const })),
-  ]
-}
-
-export function applyFilter(list: Effect[], key: string | null): Effect[] {
-  if (!key) return list
-  const value = key.slice(key.indexOf(':') + 1)
-  return key.startsWith('pool:') ? list.filter((e) => e.pool === value) : list.filter((e) => e.cats.includes(value))
-}
-
 export function byCategory(list: Effect[]): { cat: string; items: Effect[] }[] {
   const groups = new Map<string, Effect[]>()
   for (const e of list) {
