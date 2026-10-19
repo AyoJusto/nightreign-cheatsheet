@@ -12,7 +12,7 @@ test('opens About from home and returns', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: 'About' }).click()
   await expect(page).toHaveURL(/\/about$/)
   await expect(page.getByRole('heading', { name: 'About' })).toBeVisible()
-  await expect(page.getByText('Bonfire Buddy helps you work out your Nightreign seed mid-run and see its full layout.')).toBeVisible()
+  await expect(page.getByText('Find your Nightreign seed mid-run, see its whole map, and look up what every boss on it is weak to.')).toBeVisible()
   await capture('About')
 
   await page.getByRole('button', { name: 'Back' }).click()

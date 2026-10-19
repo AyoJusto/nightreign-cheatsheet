@@ -10,7 +10,7 @@ import { useWide } from './useWide'
 import { ICON_BODY, isTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
 import './map.css'
 import { EventGlow, ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
-import { measureName, type NameBox } from './mapNames'
+import type { NameBox } from './mapNames'
 import type { MapContent, PinState } from './mapTypes'
 
 
@@ -369,22 +369,6 @@ export function MapView(props: MapContent & {
   const labelSizes = useRef<NameBox[]>([])
   const measured = (i: number, box: NameBox) => { labelSizes.current[i] = box }
   const wide = useWide()
-  // Night names are in EB Garamond, which may arrive after the first measure (font-display: swap): measure every
-  // name again whenever a font finishes loading (fonts.ready alone can resolve before the font is even requested).
-  // Read straight from the DOM, so a font arriving mid-gesture costs no re-render of the pins.
-  useEffect(() => {
-    const set = document.fonts
-    if (!set) return
-    const remeasure = () => {
-      frame.current?.querySelectorAll<HTMLElement>('[data-tag]').forEach((el) => {
-        labelSizes.current[Number(el.dataset.tag)] = measureName(el)
-      })
-      labelBoxes.set(labelBoxes.get().map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 }))
-    }
-    set.addEventListener('loadingdone', remeasure)
-    set.ready.then(remeasure)
-    return () => set.removeEventListener('loadingdone', remeasure)
-  }, [labelBoxes])
   const labels = useTransform(() => {
     const { w, h } = size.get()
     const s = side()

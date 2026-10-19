@@ -107,10 +107,6 @@ describe('game art for the new look', () => {
   it('has a map thumbnail for every earth, each within 25 KB', () => {
     for (const earth of EARTHS) expect(size(`maps/thumb/${earth.id}.webp`), earth.id).toBeLessThanOrEqual(25_000)
   })
-  it('self-hosts EB Garamond within 60 KB, with its licence', () => {
-    expect(size('fonts/eb-garamond-latin.woff2')).toBeLessThan(60_000)
-    expect(readFileSync('public/fonts/OFL.txt', 'utf8')).toMatch(/SIL Open Font License/)
-  })
 })
 
 describe('islands', () => {

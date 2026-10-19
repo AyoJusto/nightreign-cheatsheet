@@ -25,7 +25,7 @@ export function measureName(el: HTMLElement): NameBox {
   el.dataset.w = base
   el.dataset.wrap = wrap ? `${wrap.w}px` : base
   // A night's name also keeps its font size and its number's box, in case it must shrink inside its ring.
-  const number = el.querySelector<HTMLElement>('.ring-1, .ring-2')
+  const number = el.querySelector<HTMLElement>('.night-1, .night-2')
   const ring = number ? { font: parseFloat(getComputedStyle(el).fontSize), digit: { w: number.offsetWidth, h: box.h } } : {}
   return { ...box, ...(wrap && { wrap }), ...ring }
 }

@@ -5,7 +5,6 @@ import { resultMap, type Layer } from './resultMap'
 import { Sheet, type Detent } from './Sheet'
 import { collapseRepeats } from './collapseRepeats'
 import { Plate } from './Plate'
-import { Frame } from './Frame'
 import { Icon } from './Icon'
 import { useWide } from './useWide'
 import './weakness.css'
@@ -174,7 +173,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
         </div>
       </Plate>
       {wide ? (
-        <aside className="side-panel" aria-label="Seed details"><Frame /><div className="side-scroll">{title}{runCard}{lists}</div></aside>
+        <aside className="side-panel" aria-label="Seed details"><div className="side-scroll">{title}{runCard}{lists}</div></aside>
       ) : (
         <Sheet detent={detent} onDetent={setDetent} height={bottomInset} rest={restInset} top={topInset} label="Seed details" header={title} more={lists}>
           {runCard}

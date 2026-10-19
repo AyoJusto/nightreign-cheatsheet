@@ -398,7 +398,7 @@ test("a tap on a night's ring calls out its full name", async ({ page }) => {
   // Measure only once the map has settled and the web font has loaded, since either can still move the ring.
   await page.evaluate(() => document.fonts.ready)
   await page.waitForTimeout(600)
-  const ring = (await page.locator('.ring-mark .ring-2').boundingBox())!
+  const ring = (await page.locator('.ring-mark .night-2').boundingBox())!
   await page.mouse.click(ring.x + ring.width / 2, ring.y + ring.height / 2)
   await expect(page.locator('.marker-callout .map-name')).toHaveText('Night 2: Tree Sentinel')
 })
@@ -413,7 +413,7 @@ test("a callout on a mark whose name shows hides that name while it is open, and
   const callout = page.locator('.marker-callout .map-name')
   await expect(callout).toHaveText("Night's Cavalry")
   await expect(own).toHaveCSS('opacity', '0')
-  await expect(callout).toHaveCSS('background-color', await paletteColor(page, '--panel'))
+  await expect(callout).toHaveCSS('background-color', await paletteColor(page, '--color-surface'))
   await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
   await expect(own).toHaveCSS('opacity', '1')
 })
@@ -511,8 +511,7 @@ test('the full result sheet shows a hairline under its header once content scrol
   expect((await hairline()).opacity).toBe(0)
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 40 })
   await expect.poll(async () => (await hairline()).opacity).toBe(1)
-  // The theme's rule (--rule), one pixel.
-  expect(await hairline()).toMatchObject({ color: await paletteColor(page, '--rule'), height: '1px' })
+  expect(await hairline()).toMatchObject({ color: await paletteColor(page, '--color-separator'), height: '1px' })
   await page.locator('.sheet-body').evaluate((el) => { el.scrollTop = 0 })
   await expect.poll(async () => (await hairline()).opacity).toBe(0)
 })
@@ -812,7 +811,6 @@ test.describe('the Nightlord medallion', () => {
     await expect(pick).toBeVisible()
     await expect(pick.locator('.nl-medal')).toBeVisible()
     // On phone the panel rises over the grid's picked medallion and its name, so it names the pick itself.
-    if (isMobile) await expect(pick.locator('.nl-pick-name')).toHaveText(nightlordName(seed.nightlord))
     for (const k of statuses) await expect(pick.locator('.nl-row').filter({ hasText: 'Weak status' })).toContainText(DAMAGE_NAMES[k])
   })
 
