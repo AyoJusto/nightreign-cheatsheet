@@ -1,9 +1,8 @@
 import { useCallback } from 'react'
 import type { MotionValue } from 'motion/react'
 
-/** Callback ref that keeps `target` at `measure(el)` whenever the element resizes. */
 export function useMeasure(target: MotionValue<number>, measure: (el: HTMLElement) => number) {
-  // measure is read once per element; callers pass pure functions of the element.
+  // `measure` is left out of the deps: callers pass pure functions of the element.
   return useCallback((el: HTMLElement | null) => {
     if (!el) return
     const update = () => target.set(measure(el))

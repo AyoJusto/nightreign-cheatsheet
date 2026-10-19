@@ -2,8 +2,7 @@ import { splitStructure, type StructureKey } from '../domain/names'
 
 export interface KindGroup { kind: string; variants: StructureKey[] }
 
-/** One group per structure kind, holding its element variants. Sorted by key, so kinds keep their
- * place between sightings and the plain variant (`ruins`) leads its elements (`ruins:bleed`). */
+/** Sorted by key, so kinds keep their place between sightings and `ruins` leads `ruins:bleed`. */
 export function groupByKind(keys: readonly StructureKey[]): KindGroup[] {
   const groups = new Map<string, StructureKey[]>()
   for (const key of [...keys].sort()) {

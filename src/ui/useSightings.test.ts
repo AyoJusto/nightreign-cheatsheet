@@ -5,10 +5,9 @@ import { catalog } from '../data/catalog'
 
 const pool = catalog.seedsFor('tricephalos', 'default')
 const target = pool[0]
-// A site where two different things are possible, so a sighting there can be changed.
-const slot = Object.keys(target.slots).find((s) => Scouting.start(pool).possibilitiesAt(s).length >= 2)!
-const [a, b] = Scouting.start(pool).possibilitiesAt(slot).map(({ option }) =>
-  option === 'nothing' ? { type: 'nothing' as const, slot } : { type: 'structure' as const, slot, structure: option })
+const slotWithTwoOptions = Object.keys(target.slots).find((s) => Scouting.start(pool).possibilitiesAt(s).length >= 2)!
+const [a, b] = Scouting.start(pool).possibilitiesAt(slotWithTwoOptions).map(({ option }) =>
+  option === 'nothing' ? { type: 'nothing' as const, slot: slotWithTwoOptions } : { type: 'structure' as const, slot: slotWithTwoOptions, structure: option })
 
 describe('Undo walks back through every change', () => {
   it('restores the previous value after a change', () => {
@@ -23,8 +22,8 @@ describe('Undo walks back through every change', () => {
   it('restores every sighting after a reset', () => {
     let t: Timeline = { now: Scouting.start(pool), past: [] }
     t = record(t, t.now.sight({ type: 'spawn', slot: target.spawn }))
-    const key = target.slots[slot]
-    t = record(t, t.now.sight(key ? { type: 'structure', slot, structure: key } : { type: 'nothing', slot }))
+    const key = target.slots[slotWithTwoOptions]
+    t = record(t, t.now.sight(key ? { type: 'structure', slot: slotWithTwoOptions, structure: key } : { type: 'nothing', slot: slotWithTwoOptions }))
     const before = t.now.sightings
     t = record(t, Scouting.start(pool))
     t = stepBack(t)

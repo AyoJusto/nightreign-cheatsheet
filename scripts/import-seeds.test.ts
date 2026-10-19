@@ -44,11 +44,7 @@ describe('import translation', () => {
     it('leaves genuinely different names apart', () => {
       expect(normalizeBossName('Tree Sentinel')).not.toBe(normalizeBossName('Tree Sentinels'))
     })
-    // The regression this catches: the source spelled one boss two ways, and both spellings shipped.
-    // Great Hollow "stack" markers join several bosses in one label ("A, B, C"), so each label is
-    // split on ", " first: otherwise a spelling that only ever appears inside a joined label (as
-    // this one did) would never collide with its lone-boss spelling elsewhere.
-    it('gives every distinct boss, castle and marker name in the shipped data its own key', () => {
+    it('gives every boss name in the shipped data one spelling, including names inside joined Great Hollow labels', () => {
       const seeds = JSON.parse(readFileSync('src/data/seeds.json', 'utf8'))
       const names = new Set<string>()
       const addAll = (label: string) => { for (const name of label.split(', ')) names.add(name) }
@@ -60,7 +56,7 @@ describe('import translation', () => {
         for (const m of s.markers) if (m.layer === 'boss' || m.layer === 'evergaol') addAll(m.label)
         for (const label of Object.values<string>(s.inside)) addAll(label)
       }
-      expect(names.has('Guardian Golem'), "the inside labels are part of the check").toBe(true)
+      expect(names.has('Guardian Golem'), 'the inside labels are part of the check').toBe(true)
       const byKey = new Map<string, string>()
       for (const name of names) {
         const key = normalizeBossName(name)
@@ -111,8 +107,7 @@ describe('import translation', () => {
 describe('map background keying', () => {
   const OCEAN = [73, 119, 153] as const
   const LAND = [120, 100, 60] as const
-  // 11x11: an ocean border two pixels deep, land inside, and a 3x3 "lake" of ocean colour at the centre.
-  const island = () => {
+  const elevenPixelIslandWithLake = () => {
     const size = 11
     const rgba = new Uint8Array(size * size * 4)
     for (let y = 0; y < size; y++) {
@@ -127,13 +122,12 @@ describe('map background keying', () => {
   const alphaAt = (rgba: Uint8Array, size: number, x: number, y: number) => rgba[(y * size + x) * 4 + 3]
 
   it("finds the island's box in map units, from the keyed map's opaque pixels", () => {
-    const { rgba, size } = island()
+    const { rgba, size } = elevenPixelIslandWithLake()
     const out = keyBackground(rgba, size, size, oceanCoverage(OCEAN), { feather: 0, streak: 3 })
-    // Land runs from pixel 2 to 8 of 11: 2/11 to 9/11 of the map.
     expect(islandBox(out, size, size)).toEqual({ x0: 182, y0: 182, x1: 818, y1: 818 })
   })
   it('clears the ocean reached from the edges and keeps an enclosed lake of the same colour', () => {
-    const { rgba, size } = island()
+    const { rgba, size } = elevenPixelIslandWithLake()
     const out = keyBackground(rgba, size, size, oceanCoverage(OCEAN), { feather: 0, streak: 3 })
     expect(alphaAt(out, size, 0, 0)).toBe(0)
     expect(alphaAt(out, size, 1, 5)).toBe(0)
@@ -143,7 +137,7 @@ describe('map background keying', () => {
   })
 
   it('feathers the coastline inward without touching the lake', () => {
-    const { rgba, size } = island()
+    const { rgba, size } = elevenPixelIslandWithLake()
     const out = keyBackground(rgba, size, size, oceanCoverage(OCEAN), { feather: 1, streak: 3 })
     expect(alphaAt(out, size, 0, 0)).toBe(0)
     const coast = alphaAt(out, size, 2, 5)

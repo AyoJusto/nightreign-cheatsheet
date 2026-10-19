@@ -6,16 +6,13 @@ import type { KindGroup } from './structureGroups'
 import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
 
 const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
+const MAX_EMBLEMS = 3
+const NEIGHBOUR_SLIVER = 32
 
-/**
- * One button per kind. A kind with several variants expands into one chip per element, named: in place in the
- * phone's scrolling row, or, with `variantsBelow` (the desktop grid), in a full-width row beneath the tiles, so
- * no tile moves and the grid keeps its rhythm.
- */
+/** With `variantsBelow`, an open kind's chips go in a row beneath the tiles, so no tile moves. */
 export function StructureButtons({ groups, open, focus, onKind, onVariant, onName, variantsBelow }: {
   groups: KindGroup[]; open: string | null; focus: StructureKey | null
   onKind: (kind: string) => void; onVariant: (structure: StructureKey) => void
-  /** Desktop: the name of the art-only tile under the mouse or keyboard focus, or null when it leaves. */
   onName?: (name: string | null) => void
   variantsBelow?: boolean
 }) {
@@ -37,7 +34,6 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
     if (variants.length === 1) {
       const [only] = variants
       const { element } = splitStructure(only)
-      // An elemental kind with one variant names its element, like the expanded chips do.
       return [
         <motion.button key={kind} layout className={element ? 'strip-variant' : 'strip-item'} data-kind={kind}
           {...naming(structureName(only))} aria-label={`Find ${structureName(only)}`}
@@ -50,14 +46,12 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
     const expanded = open === kind
     const elements = variants.flatMap((v) => splitStructure(v).element ?? [])
     const typeNames = variants.map((v) => { const { element } = splitStructure(v); return element ? ELEMENT_NAMES[element] : 'no element' })
-    // Three emblems fit the tile; past that, one emblem and how many more, so the chip never outgrows the art.
-    const shown = elements.length > 3 ? elements.slice(0, 1) : elements
+    const shown = elements.length > MAX_EMBLEMS ? elements.slice(0, 1) : elements
     return [
       <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(`${kindName(kind)}: ${typeNames.join(', ')}`)}
         aria-label={`${kindName(kind)}, ${variants.length} types: ${typeNames.join(', ')}`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />
-        {/* "Comes in elements", shown by the same emblems the map's badges use; the button's name lists them. */}
         {elements.length > 0 && (
           <span className="element-codes" aria-hidden>
             {shown.map((element) => <ElementEmblem key={element} element={element} size={14} />)}
@@ -77,14 +71,12 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
   ]
 }
 
-/** The phone's bottom strip: a framed plate whose row scrolls, with edge fades wherever more is hidden. */
 export function StructureStrip({ plateRef, open, hidden, children }: {
   plateRef: Ref<HTMLDivElement>; open: string | null; hidden: boolean; children: ReactNode
 }) {
   const scroller = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
-  // Fades only on the sides that have more to scroll to, so a row that fits shows none.
-  const fade = useCallback(() => {
+  const markHiddenEdges = useCallback(() => {
     const el = scroller.current
     if (!el) return
     el.toggleAttribute('data-more-left', el.scrollLeft > 1)
@@ -92,21 +84,20 @@ export function StructureStrip({ plateRef, open, hidden, children }: {
   }, [])
   useEffect(() => {
     const el = scroller.current!
-    const observer = new ResizeObserver(fade)
+    const observer = new ResizeObserver(markHiddenEdges)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [fade])
-  useEffect(fade)
-  // An expanded kind's chips open to its right, possibly off-screen: bring the kind near the start,
-  // clear of the left fade, with a sliver of its neighbour still showing there is more.
+  }, [markHiddenEdges])
+  useEffect(markHiddenEdges)
+  // An expanded kind's chips open to its right, possibly off-screen: bring the kind near the start.
   useEffect(() => {
     const el = scroller.current
     const item = open ? el?.querySelector<HTMLElement>(`[data-kind="${open}"]`) : null
-    if (el && item) el.scrollTo({ left: item.offsetLeft - 32, behavior: reduce ? 'auto' : 'smooth' })
+    if (el && item) el.scrollTo({ left: item.offsetLeft - NEIGHBOUR_SLIVER, behavior: reduce ? 'auto' : 'smooth' })
   }, [open, reduce])
   return (
     <Plate className={`strip${hidden ? ' hidden' : ''}`} ref={plateRef} role="toolbar" aria-label="Structures still possible">
-      <div ref={scroller} className="strip-scroll" onScroll={fade}>{children}</div>
+      <div ref={scroller} className="strip-scroll" onScroll={markHiddenEdges}>{children}</div>
     </Plate>
   )
 }

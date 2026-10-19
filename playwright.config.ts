@@ -2,8 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: 'e2e',
-  // false, not the reuse-locally idiom: a leftover preview from another run would make this suite pass on
-  // stale code (final review m6).
+  // A leftover preview from another run would make the suite pass on stale code.
   webServer: { command: 'npm run build && npm run preview', port: 4173, reuseExistingServer: false, timeout: 180_000 },
   use: { baseURL: 'http://localhost:4173/nightreign-cheatsheet/' },
   projects: [

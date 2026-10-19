@@ -10,10 +10,7 @@ export function Count({ value, phrase }: { value: number; phrase: string }) {
   useEffect(() => (reduce ? spring.jump(value) : spring.set(value)), [spring, value, reduce])
   return (
     <>
-      {/* The visible digits animate every frame, so a screen reader must never read them directly. */}
       <motion.span className="num" aria-hidden>{text}</motion.span>
-      {/* A separate, visually hidden span holds the settled value in its full phrase ("3 possible", not "3"):
-          the live region announces the final count once, not each in-flight spring frame. */}
       <span className="sr-only" aria-live="polite">{phrase}</span>
     </>
   )
