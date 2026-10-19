@@ -1,4 +1,6 @@
-import type { MapContent, MapMarker, Pin } from './mapTypes'
+import type { MapContent, MapMarker, MarkTap, Pin } from './mapTypes'
+import { bestiary } from '../bestiary/bestiary'
+import type { Enemy } from '../bestiary/enemy'
 import type { MarkerLayer, Seed } from '../domain/seed'
 import { splitStructure, structureName } from '../domain/names'
 import { catalog } from '../data/catalog'
@@ -54,4 +56,15 @@ function caravans(seed: Seed): MapMarker[] {
   return Object.entries(seed.inside)
     .filter(([slot]) => !seed.slots[slot] && coords[slot])
     .map(([slot, label]) => ({ layer: 'caravan', ...coords[slot], label }))
+}
+
+const NIGHT_LABEL = /^Night \d: /
+
+/** The enemy a tapped name stands for. A list of possible bosses, a rise's clue or a caravan stands for none. */
+export function enemyOfMark(tap: Pick<MarkTap, 'marker' | 'site'>): Enemy | undefined {
+  const label = tap.marker?.label ?? tap.site ?? ''
+  if (label.includes(', ') || label.startsWith('Rise · ')) return undefined
+  if (tap.marker?.layer === 'circle') return bestiary.nightBoss(label.replace(NIGHT_LABEL, ''))
+  if (tap.marker && !['boss', 'evergaol', 'castle'].includes(tap.marker.layer)) return undefined
+  return bestiary.named(label)
 }

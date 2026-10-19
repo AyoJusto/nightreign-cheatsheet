@@ -11,7 +11,7 @@ import { ICON_BODY, isTrackpadScroll, labelRequest, markSize, minSpacing, neares
 import './map.css'
 import { EventGlow, ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
 import type { NameBox } from './mapNames'
-import type { MapContent, PinState } from './mapTypes'
+import type { MapContent, MarkTap, PinState } from './mapTypes'
 
 
 
@@ -100,9 +100,8 @@ export function MapView(props: MapContent & {
     const { min, max } = bounds(axis)
     return rubberband(v, min, max, axis === 'x' ? size.get().w : size.get().h)
   }
-  // If the selected pin would sit under the sheet (or the medallion above it), pan it up into the visible area.
   const reveal = (s = scale.get()): number | undefined => {
-    const pin = props.pins.find((p) => p.slot === props.selected)
+    const pin = props.pins.find((p) => p.slot === props.selected) ?? props.focusPoint
     if (!pin) return undefined
     const { w, h } = size.get()
     const pinY = h / 2 + y.get() + (pin.y / 1000 - 0.5) * side(s)
@@ -286,7 +285,7 @@ export function MapView(props: MapContent & {
   // Keep the selected pin above the sheet as it rises, and reveal a newly selected pin.
   // Re-subscribing on selected/pins changes means the listener never reads stale props.
   useEffect(() => {
-    if (props.selected) touched.current = true
+    if (props.selected || props.focusPoint) touched.current = true
     if (reveal() !== undefined) moveTo(() => { const target = reveal(); return target === undefined ? [] : [[y, target]] })
     const onInset = () => {
       if (!active.current.drag && !active.current.pinch) settle()
@@ -306,7 +305,7 @@ export function MapView(props: MapContent & {
       props.bottomInset.on('change', onInset),
     ]
     return () => offs.forEach((off) => off())
-  }, [props.topInset, props.restInset, props.bottomInset, props.corner, props.selected, props.pins])
+  }, [props.topInset, props.restInset, props.bottomInset, props.corner, props.selected, props.focusPoint, props.pins])
 
   // A tap on a named mark shows its name in a callout, and another tap on it, or anywhere else, hides it.
   // Otherwise a tap goes to the nearest slot within reach, preferring the step's own pins, not to whichever hit area is on top.
@@ -318,7 +317,9 @@ export function MapView(props: MapContent & {
       y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
     }
     const tapped = nearestTag(point, s)
-    setCallout(tapped === null || tapped === calloutAt ? null : { tags, at: tapped })
+    const calling = tapped !== null && tapped !== calloutAt
+    setCallout(calling ? { tags, at: tapped } : null)
+    props.onMark?.(calling ? { ...markAt(tapped), clientX, clientY } : null)
     if (tapped !== null) return
     const reach = Math.max(TAP_REACH, markSize('art', s) / 2)
     const pin = nearestPin(props.pins, point, (reach / s) * 1000, props.preferred)
@@ -350,8 +351,13 @@ export function MapView(props: MapContent & {
   // The mark whose name a tap called out, by its index in `tags`; a change of tags (a layer turned off) drops it.
   const [callout, setCallout] = useState<{ tags: TagSpec[]; at: number } | null>(null)
   const calloutAt = callout?.tags === tags ? callout.at : null
+  useEffect(() => setCallout(null), [props.dismissals])
   // Its text: a site's name, or a marker's own (a night's in full; a chest's icon says all its name would).
   const nameOf = (i: number) => (i < markerCount ? props.markers![i].label : namedPins[i - markerCount].name!)
+  const markAt = (i: number): Omit<MarkTap, 'clientX' | 'clientY'> =>
+    i < markerCount
+      ? { marker: props.markers![i], x: props.markers![i].x, y: props.markers![i].y }
+      : { site: namedPins[i - markerCount].name!, x: namedPins[i - markerCount].x, y: namedPins[i - markerCount].y }
   // The named mark nearest a tap, within reach of what it draws (a site's art, else a 44px target), or null.
   const nearestTag = (point: { x: number; y: number }, s: number): number | null => {
     const art = markSize('art', s) / 2
