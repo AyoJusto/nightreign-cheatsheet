@@ -7,7 +7,7 @@ export function TopBar({ onBack, children, trailing, className = '', ref }: {
   onBack: () => void; children?: ReactNode; trailing?: ReactNode; className?: string; ref?: Ref<HTMLDivElement>
 }) {
   const back = <button className="pill-back" aria-label="Back" onClick={onBack}><Icon name="back" /></button>
-  if (!children) {
+  if (children === undefined) {
     return (
       <>
         <Plate className="pill pill-solo" ref={ref}>{back}</Plate>
