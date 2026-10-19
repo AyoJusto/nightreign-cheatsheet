@@ -1,12 +1,25 @@
 import { useRoute } from './router'
-import { HomeScreen } from './HomeScreen'
+import { HomeScreen, BossesPage } from './HomeScreen'
+import { NightlordPicker } from './NightlordPicker'
 import { MapScreen } from './MapScreen'
 import { AboutScreen } from './AboutScreen'
+import { EnemyPage } from './EnemyPage'
+import { NightlordPage, NightlordsPage } from './NightlordPages'
+import { BuildsPage, EffectsPage } from './LoadoutPages'
 
 export function App() {
   const [route, go] = useRoute()
-  if (route.name === 'home') return <HomeScreen go={go} />
-  if (route.name === 'about') return <AboutScreen go={go} />
-  // Same component for finder and result, so the map stays mounted across the transition.
-  return <MapScreen route={route} go={go} />
+  switch (route.name) {
+    case 'home': return <HomeScreen />
+    case 'pick': return <NightlordPicker go={go} />
+    case 'about': return <AboutScreen go={go} />
+    case 'nightlords': return <NightlordsPage go={go} />
+    case 'nightlord': return <NightlordPage key={route.id} id={route.id} go={go} />
+    case 'bosses': return <BossesPage go={go} />
+    case 'enemy': return <EnemyPage key={route.id} id={route.id} go={go} />
+    case 'effects': return <EffectsPage key={route.group} group={route.group} go={go} />
+    case 'builds': return <BuildsPage key={route.character ?? ''} character={route.character} go={go} />
+    case 'find':
+    case 'seed': return <MapScreen route={route} go={go} />
+  }
 }

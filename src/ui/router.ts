@@ -1,14 +1,26 @@
 import { useEffect, useState, useCallback } from 'react'
-import { NIGHTLORDS, EARTHS, type EarthId, type NightlordPick } from '../domain/names'
+import { NIGHTLORDS, EARTHS, type EarthId, type NightlordId, type NightlordPick } from '../domain/names'
+import { bestiary } from '../bestiary/bestiary'
 import type { Sighting } from '../domain/scouting'
 import type { Seed } from '../domain/seed'
 import { catalog } from '../data/catalog'
 
+export type EffectGroup = 'relics' | 'weapons'
+
 export type Route =
   | { name: 'home' }
+  | { name: 'pick' }
   | { name: 'find'; nightlord: NightlordPick; earth: EarthId }
   | { name: 'seed'; id: string }
+  | { name: 'nightlords' }
+  | { name: 'nightlord'; id: NightlordId }
+  | { name: 'bosses' }
+  | { name: 'enemy'; id: string }
+  | { name: 'effects'; group: EffectGroup }
+  | { name: 'builds'; character: string | null }
   | { name: 'about' }
+
+export const PICK_PATH = '/find'
 
 const SLOT = /^\d{1,3}$/
 const KEY = /^[a-z-]+(:[a-z]+)?$/
@@ -48,16 +60,25 @@ export function seedPath(id: string, sightings: readonly Sighting[], unknown: bo
 export function resultBackPath(search: string, seed: Pick<Seed, 'nightlord' | 'earth'>) {
   const params = new URLSearchParams(search)
   const q = params.get('s')
-  if (q === null) return '/'
+  if (q === null) return PICK_PATH
   const nightlord = params.get('n') === 'unknown' ? 'unknown' : seed.nightlord
   return findPath(nightlord, seed.earth, decodeSightings(q).slice(0, -1))
 }
 
 export function parseRoute(pathname: string): Route {
   const parts = pathname.split('/').filter(Boolean)
-  if (parts[0] === 'about') return { name: 'about' }
-  if (parts[0] === 'seed' && parts[1] && catalog.seed(parts[1])) return { name: 'seed', id: parts[1] }
-  if (parts[0] === 'find') {
+  const [first, second] = parts
+  const nightlord = NIGHTLORDS.find((n) => n.id === (first === 'nightlord' ? second : first))
+  if (nightlord && (first === 'nightlord' || parts.length === 1)) return { name: 'nightlord', id: nightlord.id }
+  if (first === 'about') return { name: 'about' }
+  if (first === 'nightlords') return { name: 'nightlords' }
+  if (first === 'bosses') return { name: 'bosses' }
+  if ((first === 'enemy' || first === 'boss') && second && bestiary.enemy(second)) return { name: 'enemy', id: second }
+  if (first === 'effects' && (second === 'relics' || second === 'weapons')) return { name: 'effects', group: second }
+  if (first === 'builds') return { name: 'builds', character: second ?? null }
+  if (first === 'seed' && second && catalog.seed(second)) return { name: 'seed', id: second }
+  if (first === 'find' && parts.length === 1) return { name: 'pick' }
+  if (first === 'find') {
     const nightlord = parts[1] === 'unknown' ? 'unknown' : NIGHTLORDS.find((n) => n.id === parts[1])?.id
     const earth = EARTHS.find((e) => e.id === parts[2])?.id
     if (nightlord && earth && catalog.earthsFor(nightlord).includes(earth)) return { name: 'find', nightlord, earth }
@@ -85,17 +106,24 @@ export function useRoute(): [Route, (path: string, back?: boolean) => void] {
   const [route, setRoute] = useState(() => parseRoute(currentPathname()))
   useEffect(() => {
     const follow = () => setRoute(parseRoute(currentPathname()))
+    const arrive = () => {
+      follow()
+      scrollTo(0, 0)
+    }
     addEventListener('popstate', follow)
-    addEventListener('hashchange', follow)
+    addEventListener('hashchange', arrive)
     return () => {
       removeEventListener('popstate', follow)
-      removeEventListener('hashchange', follow)
+      removeEventListener('hashchange', arrive)
     }
   }, [])
   const go = useCallback((path: string, back = false) => {
     if (back && (history.state as Entry)?.from === path) return history.back()
     if (back) replacePath(path)
-    else history.pushState({ from: appPath() } satisfies Entry, '', `#${path}`)
+    else {
+      history.pushState({ from: appPath() } satisfies Entry, '', `#${path}`)
+      scrollTo(0, 0)
+    }
     setRoute(parseRoute(path.split('?')[0]))
   }, [])
   return [route, go]

@@ -8,7 +8,24 @@ describe('routes', () => {
     expect(parseRoute('/about')).toEqual({ name: 'about' })
     expect(parseRoute('/find/unknown/great-hollow')).toEqual({ name: 'find', nightlord: 'unknown', earth: 'great-hollow' })
   })
+  it('parses the reference pages', () => {
+    expect(parseRoute('/')).toEqual({ name: 'home' })
+    expect(parseRoute('/find')).toEqual({ name: 'pick' })
+    expect(parseRoute('/nightlords')).toEqual({ name: 'nightlords' })
+    expect(parseRoute('/nightlord/augur')).toEqual({ name: 'nightlord', id: 'augur' })
+    expect(parseRoute('/bosses')).toEqual({ name: 'bosses' })
+    expect(parseRoute('/enemy/golden-hippopotamus')).toEqual({ name: 'enemy', id: 'golden-hippopotamus' })
+    expect(parseRoute('/effects/weapons')).toEqual({ name: 'effects', group: 'weapons' })
+    expect(parseRoute('/builds')).toEqual({ name: 'builds', character: null })
+    expect(parseRoute('/builds/wylder')).toEqual({ name: 'builds', character: 'wylder' })
+  })
+  it("keeps the old cheat sheet's links working", () => {
+    expect(parseRoute('/tricephalos')).toEqual({ name: 'nightlord', id: 'tricephalos' })
+    expect(parseRoute('/boss/ancient-dragon')).toEqual({ name: 'enemy', id: 'ancient-dragon' })
+    expect(parseRoute('/effects/relics')).toEqual({ name: 'effects', group: 'relics' })
+  })
   it('sends anything unknown home', () => {
+    expect(parseRoute('/enemy/nobody')).toEqual({ name: 'home' })
     expect(parseRoute('/find/nobody/crater')).toEqual({ name: 'home' })
     expect(parseRoute('/seed/nope')).toEqual({ name: 'home' })
     expect(parseRoute('/wat')).toEqual({ name: 'home' })
@@ -48,8 +65,8 @@ describe('paths between finder and result', () => {
     const search = seedPath('000', s, true).split('?')[1]
     expect(resultBackPath(`?${search}`, seed)).toBe(findPath('unknown', 'default', s.slice(0, -1)))
   })
-  it('sends a shared link home', () => {
+  it('sends a shared link to the Nightlord picker', () => {
     expect(seedPath('000', [], false)).toBe('/seed/000')
-    expect(resultBackPath('', seed)).toBe('/')
+    expect(resultBackPath('', seed)).toBe('/find')
   })
 })

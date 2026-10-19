@@ -28,7 +28,7 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 for (const target of targets) {
   test(`finds seed ${target.id} from home`, async ({ page }) => {
-    await page.goto('./')
+    await page.goto('#/find')
     await page.getByRole('button', { name: new RegExp(`^${nightlordName(target.nightlord)}`) }).click()
     await page.getByRole('button', { name: new RegExp(`^${earthName(target.earth)}`) }).click()
     await expect(page).toHaveURL(new RegExp(`/find/${target.nightlord}/${target.earth}`))
@@ -58,7 +58,7 @@ test('reconstructs seed 228 from the recorded Darkdrift Knight Crater sightings'
   }
   const optionName = (slot: string) => `${structureName(recordedTarget.slots[slot])}, leaves`
 
-  await page.goto('./')
+  await page.goto('#/find')
 
   await test.step('Select Darkdrift Knight', async () => {
     await page.getByRole('button', { name: nightlordName(recordedTarget.nightlord) }).click()
@@ -622,7 +622,7 @@ test('in-app Back from a result steps back through history', async ({ page }) =>
   const rest = sightings.slice(0, -1).join(',')
   const finder = new RegExp(`/find/${target.nightlord}/${target.earth}\\?s=`)
 
-  await page.goto('./')
+  await page.goto('#/find')
   await page.getByRole('button', { name: new RegExp(`^${nightlordName(target.nightlord)}`) }).click()
   await page.getByRole('button', { name: new RegExp(`^${earthName(target.earth)}`) }).click()
   await expect(page).toHaveURL(new RegExp(`/find/${target.nightlord}/${target.earth}$`))
@@ -642,9 +642,8 @@ test('in-app Back from a result steps back through history', async ({ page }) =>
   await page.goBack()
   await expect(page).toHaveURL(finder)
 
-  // The finder's own Back lands on the home it came from, the same entry browser Back would.
   await page.getByRole('button', { name: 'Back' }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/#\/find$/)
   expect(await page.evaluate(() => history.length)).toBe(length)
   await page.goForward()
   await expect(page).toHaveURL(finder)
@@ -679,7 +678,7 @@ test.describe('a Church at the spawn point', () => {
 // Offline after the first visit: the service worker serves the app, the map and the structure art (final m8).
 test('works offline once the service worker has installed', async ({ page, context, browserName, isMobile }) => {
   test.skip(browserName !== 'chromium' || isMobile, 'one engine is enough to prove the precache')
-  await page.goto('./')
+  await page.goto('#/find')
   await page.waitForFunction(() => navigator.serviceWorker?.controller !== null)
   await context.setOffline(true)
   const loaded = (selector: string) =>
@@ -807,7 +806,7 @@ test.describe('the Nightlord medallion', () => {
     if (isMobile) await page.locator('.nl-medal').click()
     const row = page.locator('.nl-card .nl-row').filter({ hasText: 'Weak status' })
     for (const k of statuses) await expect(row).toContainText(DAMAGE_NAMES[k])
-    await page.goto('./')
+    await page.goto('#/find')
     await page.getByRole('button', { name: nightlordName(seed.nightlord) }).click()
     const pick = page.getByRole('img', { name: phrase, exact: true })
     await expect(pick).toBeVisible()
@@ -818,7 +817,7 @@ test.describe('the Nightlord medallion', () => {
 
   // The card's accessible name says what its rows show: a status Balancers is listed weak to is spoken as its weak status.
   test("Balancers' card speaks Sleep as its weak status, as its rows show it", async ({ page }) => {
-    await page.goto('./')
+    await page.goto('#/find')
     await page.getByRole('button', { name: 'Balancers' }).click()
     const pick = page.getByRole('img', { name: 'Balancers: weak to Strike; resists Holy; weak status Sleep', exact: true })
     await expect(pick).toBeVisible()
@@ -883,7 +882,7 @@ test('an unknown Nightlord scouts every seed on the earth and the result names i
   }
   expect(left.map((s: any) => s.id)).toEqual([target.id])
 
-  await page.goto('./')
+  await page.goto('#/find')
   await page.getByRole('button', { name: /^Unknown/ }).click()
   await page.getByRole('button', { name: new RegExp(`^${earthName(target.earth)}`) }).click()
   await expect(page).toHaveURL(new RegExp(`/find/unknown/${target.earth}$`))
