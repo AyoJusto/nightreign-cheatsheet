@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useDeferredValue, useState, type ReactNode } from 'react'
 import { bestiary } from '../bestiary/bestiary'
 import type { Enemy } from '../bestiary/enemy'
 import { searchEffects } from '../loadout/effects'
@@ -26,7 +26,8 @@ export const findEnemies = (query: string) => {
 
 export function BossesPage({ go }: { go: Go }) {
   const [query, setQuery] = useState('')
-  const shown = query.trim() ? findEnemies(query).filter((e) => !e.href.includes('nightlord')).map((e) => e.enemy) : bestiary.all
+  const settledQuery = useDeferredValue(query)
+  const shown = settledQuery.trim() ? findEnemies(settledQuery).filter((e) => !e.href.includes('nightlord')).map((e) => e.enemy) : bestiary.all
   return (
     <Page title="Bosses" go={go}>
       <SearchField label="Filter bosses" placeholder="Name" value={query} onChange={setQuery} />
@@ -44,32 +45,56 @@ const LINKS: [string, string][] = [
   ['Builds', '#/builds'],
 ]
 
-export function HomeScreen() {
-  const [query, setQuery] = useState('')
-  const searching = query.trim().length > 0
+const FIRST_RESULTS = 20
+
+function Capped<T>({ items, render }: { items: T[]; render: (item: T) => ReactNode }) {
+  const [all, setAll] = useState(false)
+  const shown = all ? items : items.slice(0, FIRST_RESULTS)
+  return (
+    <>
+      <Group>{shown.map(render)}</Group>
+      {shown.length < items.length && (
+        <button type="button" onClick={() => setAll(true)} className="mx-4 mt-2 min-h-11 text-[15px] font-semibold text-label">
+          Show all {items.length}
+        </button>
+      )}
+    </>
+  )
+}
+
+const Results = memo(function Results({ query }: { query: string }) {
   const enemies = findEnemies(query)
   const effects = searchEffects(query)
+  return (
+    <div>
+      {enemies.length > 0 && (
+        <Section title="Bosses">
+          <Capped items={enemies} render={({ enemy, href }) => <EnemyRow key={href} enemy={enemy} href={href} nightlord={href.startsWith('#/nightlord/')} />} />
+        </Section>
+      )}
+      {(['relics', 'weapons'] as const).map((group) => {
+        const found = effects.filter((e) => e.group === group)
+        return found.length ? (
+          <Section key={group} title={GROUP_TITLES[group]}>
+            <Capped items={found} render={(e) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} />} />
+          </Section>
+        ) : null
+      })}
+      {!enemies.length && !effects.length && <p className="mx-1 text-label-2">Nothing matches.</p>}
+    </div>
+  )
+})
+
+export function HomeScreen() {
+  const [query, setQuery] = useState('')
+  const settledQuery = useDeferredValue(query)
+  const searching = query.trim().length > 0
   return (
     <main className="home-screen mx-auto box-border flex min-h-dvh max-w-3xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+40px)] pb-[calc(var(--safe-bottom)+24px)]">
       <h1 className="mx-1 my-0 text-[34px] font-bold">Nightreign</h1>
       <SearchField label="Search bosses and relic effects" placeholder="Bosses, relic effects" value={query} onChange={setQuery} />
       {searching ? (
-        <div>
-          {enemies.length > 0 && (
-            <Section title="Bosses">
-              <Group>{enemies.map(({ enemy, href }) => <EnemyRow key={href} enemy={enemy} href={href} nightlord={href.startsWith('#/nightlord/')} />)}</Group>
-            </Section>
-          )}
-          {(['relics', 'weapons'] as const).map((group) => {
-            const found = effects.filter((e) => e.group === group)
-            return found.length ? (
-              <Section key={group} title={GROUP_TITLES[group]}>
-                <Group>{found.map((e) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} />)}</Group>
-              </Section>
-            ) : null
-          })}
-          {!enemies.length && !effects.length && <p className="mx-1 text-label-2">Nothing matches.</p>}
-        </div>
+        <Results key={settledQuery} query={settledQuery} />
       ) : (
         <>
           <a href={`#${PICK_PATH}`}

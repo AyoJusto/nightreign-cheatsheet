@@ -149,3 +149,27 @@ describe('the Night 1 boss as a sighting', () => {
     expect(named).toHaveLength(339)
   })
 })
+
+describe('spawning at a site that can also hold a structure', () => {
+  const pool = catalog.seedsFor('tricephalos', 'default')
+  const withChurchAtSpawn = pool.find((s) => s.slots[s.spawn] !== null)!
+  const slot = withChurchAtSpawn.spawn
+
+  it('offers spawning there beside each structure some seed builds there, with the seeds each leaves', () => {
+    const choices = Scouting.start(pool).spawnChoicesAt(slot)
+    const besideIt = choices.find((c) => c.structure === withChurchAtSpawn.slots[slot])!
+    expect(besideIt.remaining).toBe(pool.filter((s) => s.spawn === slot && s.slots[slot] === besideIt.structure).length)
+    expect(choices.reduce((n, c) => n + c.remaining, 0)).toBe(pool.filter((s) => s.spawn === slot).length)
+  })
+
+  it('records the spawn and what stands beside it, leaving exactly the count it offered', () => {
+    const scouting = Scouting.start(pool)
+    const choice = scouting.spawnChoicesAt(slot).find((c) => c.structure !== null)!
+    expect(scouting.spawnedAt(slot, choice.structure).candidates()).toHaveLength(choice.remaining)
+  })
+
+  it('offers no spawn at a site once the player spawned somewhere else', () => {
+    const elsewhere = Scouting.start(pool).spawnOptions().find((o) => o.slot !== slot)!.slot
+    expect(Scouting.start(pool).sight({ type: 'spawn', slot: elsewhere }).spawnChoicesAt(slot)).toEqual([])
+  })
+})

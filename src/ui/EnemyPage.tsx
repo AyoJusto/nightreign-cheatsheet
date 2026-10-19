@@ -17,7 +17,7 @@ export function EnemyPage({ id, go }: { id: string; go: Go }) {
           <NumbersTable forms={enemy.forms} />
         </>
       ) : (
-        <p className="glass-flat m-0 rounded-card px-5 py-4 text-label-2">No numbers for this one yet.</p>
+        <p className="surface m-0 rounded-card px-5 py-4 text-label-2">No numbers for this one yet.</p>
       )}
       {runs.length > 0 && (
         <Section title="Expeditions">
