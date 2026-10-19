@@ -7,8 +7,7 @@ import { NIGHTLORDS, EARTHS, DAMAGE_NAMES, structureName } from '../domain/names
 const raw = readFileSync('src/data/seeds.json', 'utf8')
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
-// Text source only: a binary asset (an image, a font) never carries readable text, and reading one as
-// text risks a false CJK-range hit on bytes that just happen to land there. seeds.json is read above.
+// Binary assets are skipped: their bytes can land in the CJK range by chance.
 const TEXT_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html'])
 const walk = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -16,8 +15,8 @@ const walk = (dir: string): string[] =>
     if (entry.isDirectory()) return walk(full)
     return TEXT_EXT.has(extname(entry.name)) ? [full] : []
   })
-// seeds.json is read (and checked) separately as `raw`, by its posix-style path either way join gives it.
-const srcFiles = walk('src').filter((f) => f.split(/[\\/]/).join('/') !== 'src/data/seeds.json')
+const toPosixPath = (f: string) => f.split(/[\\/]/).join('/')
+const srcFilesBesidesSeeds = walk('src').filter((f) => toPosixPath(f) !== 'src/data/seeds.json')
 
 describe('seed data', () => {
   it('holds all 520 seeds', () => {
@@ -35,11 +34,12 @@ describe('seed data', () => {
       }
     }
   })
-  it("marks where an event stands, with its day, and nowhere for one that follows the players", () => {
+  it("marks where an event stands, with its day, and nowhere for a raid the source wrongly pins to a slot", () => {
     const events = (id: string) => catalog.all.find((s) => s.id === id)!.markers.filter((m) => m.layer === 'event')
     expect(events('242').map((m) => m.label)).toEqual(['Meteor Strike · Day 1'])
     expect(events('128').map((m) => m.label)).toEqual(['Mausoleum'])
-    expect(events('252')).toEqual([]) // an Augur Raid, which the source slips an '@event' slot onto
+    const augurRaidSeed = '252'
+    expect(events(augurRaidSeed)).toEqual([])
   })
   it('lets every seed be identified from its full layout and spawn', () => {
     const seen = new Map<string, string>()
@@ -52,7 +52,7 @@ describe('seed data', () => {
   it('never contains internal nightlord names or non-English text', () => {
     const sources: [string, string][] = [
       ['src/data/seeds.json', raw],
-      ...srcFiles.map((f): [string, string] => [f, readFileSync(f, 'utf8')]),
+      ...srcFilesBesidesSeeds.map((f): [string, string] => [f, readFileSync(f, 'utf8')]),
     ]
     for (const [file, text] of sources) {
       for (const name of aliases.internalNightlordNames) expect(text, `${file}: ${name}`).not.toMatch(new RegExp(`\\b${name}\\b`, 'i'))
@@ -118,16 +118,14 @@ describe('islands', () => {
 })
 
 describe('boss crests', () => {
-  it("marks the bosses the game draws with its red great crest, and only those", () => {
+  it('marks the bosses the game draws on seed 1003 with its red great crest, and only those', () => {
     const seed = catalog.all.find((s) => s.id === '1003')!
     const great = (name: string) => seed.markers.find((m) => m.layer === 'boss' && m.label === name)?.great === true
-    // Seed 1003 as the game draws it (docs/specs/screens/compare/ref-desktop-result.png).
     for (const name of ['Black Blade Kindred', 'Draconic Tree Sentinel', 'Ancestor Spirit', 'Magma Wyrm']) expect(great(name), name).toBe(true)
     for (const name of ['Royal Revenant', 'Ancient Hero of Zamor', 'Elder Lion', "Night's Cavalry"]) expect(great(name), name).toBe(false)
     expect(catalog.all.every((s) => s.markers.every((m) => m.great === undefined || m.layer === 'boss'))).toBe(true)
   })
-  it('places the field boss south-west of the lake on the seeds whose sheet spells that spot without "Far"', () => {
-    // The DLC sheet (seeds 1000 on) writes "Southwest of Lake" for the spot the base sheet calls "Far Southwest of Lake".
+  it('places the field boss south-west of the lake on DLC seeds, whose sheet drops the "Far" from "Far Southwest of Lake"', () => {
     const seed = catalog.all.find((s) => s.id === '1003')!
     expect(seed.markers).toContainEqual({ layer: 'boss', x: 309, y: 823, label: 'Grafted Scion' })
   })

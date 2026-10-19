@@ -1,19 +1,3 @@
-// The dataset. Edit this file directly when a patch changes the numbers.
-//
-// Two conventions that are easy to get backwards:
-//   negation  a percentage; NEGATIVE means the boss takes MORE damage
-//   status    a buildup threshold; LOWER procs faster, "Immune" never does
-//
-// `listed` is the weakness the game and the guides name, which is what the page
-// headlines. It is not always the lowest number: Adel negates every damage type
-// at 0 or better and its listed answer is Poison, and Harmonia has a -10 strike
-// that would otherwise outrank the Sleep 84 the fight is built around. Dreglord
-// is the only one no source lists, so its entry is marked derived.
-//
-// On multi-form fights the headline is scored against the WORST form — fire hits
-// Gnoster at -40 and Faurtis at -35, and you carry one weapon into that arena.
-//
-// src/search.test.ts asserts all of the above, so a bad hand-edit fails the tests.
 import type { Expedition } from "../types";
 
 export const EXPEDITIONS: Expedition[] = [

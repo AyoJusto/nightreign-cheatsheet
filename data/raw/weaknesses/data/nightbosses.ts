@@ -1,21 +1,3 @@
-// Night 1 and Night 2 bosses, transcribed from the Fextralife per-boss pages —
-// there is no upstream dataset for these, only the Nightlords.
-//
-// Same conventions as nightlords.ts: negation is a percentage where NEGATIVE
-// means the boss takes MORE damage, and status values are buildup thresholds
-// where LOWER procs faster.
-//
-// Every form a page gives numbers for is kept, labelled the way that page
-// labels it. Nothing derived lives here: the worst case a fight can put in
-// front of you, and the headline weakness that follows from it, are computed by
-// summarize() in src/summary.ts. Both used to be hand-merged into this file
-// alongside the forms, which is how Nameless King came to advertise a poison
-// proc against a phase that is poison-immune.
-//
-// Knight Artorias has no data: its Fextralife page is largely a copy of the
-// Heolstor page (72 mentions of Heolstor to 31 of Artorias, with negation
-// blocks identical to Heolstor's two phases), so importing it would have
-// silently attributed the wrong numbers.
 import type { NightBoss } from "../types";
 
 export const NIGHT_BOSSES: NightBoss[] = [

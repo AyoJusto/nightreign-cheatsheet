@@ -1,5 +1,3 @@
-// One-time anticorruption layer: source vocabulary stops here.
-// Run with `npm run import`. Never part of the build.
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
@@ -8,23 +6,15 @@ const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
 export const hasCjk = (s: string) => /[\u3000-\u9FFF\uFF00-\uFFEF]/.test(s)
 
-// Folds two spellings of the same fight to one key: case, "&" vs "and", and hyphen/space both
-// collapse away, so "Demihuman Queen & Swordmaster" and "Demi-Human Queen and Swordmaster" match.
 export const normalizeBossName = (name: string) =>
   name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]/g, '')
 
-// Great Hollow "stack" labels join several bosses in one string ("A, B, C"); a plain `resolve(label)`
-// never matches, since the alias map keys on one boss's name. Apply it to each name, then rejoin.
-// A no-op for a plain single-boss label, so every bossName() call site can go through this.
+// Great Hollow labels can stack several bosses in one string: "A, B, C".
 export const applyPerName = (label: string, resolve: (name: string) => string) =>
   label.split(', ').map(resolve).join(', ')
 
-/**
- * What is inside each site of one seed, by slot (the source's poiLabels: "Guardian Golem", "Spider Scorpions").
- * '@event' is the source's placeholder for the day's event, not a name, so it goes. Caravans stand on open
- * ground, so theirs is the one label kept on a slot with nothing built; any other label there (or on a slot the
- * map has no place for) is a source slip, skipped and reported rather than drawn floating over nothing.
- */
+const EVENT_PLACEHOLDER_LABEL = '@event'
+
 export function toInside(
   labels: Record<string, string> | undefined,
   slots: Record<string, string | null>,
@@ -33,10 +23,11 @@ export function toInside(
   const inside: Record<string, string> = {}
   const skipped: string[] = []
   for (const [slot, label] of Object.entries(labels ?? {})) {
-    if (label === '@event') continue
+    if (label === EVENT_PLACEHOLDER_LABEL) continue
     if (hasCjk(label)) throw new Error(`non-English inside label: ${label}`)
     const built = Boolean(slots[slot])
-    if (!built && !(slot in slots && label === 'Caravans')) { skipped.push(`${slot}: ${label}`); continue }
+    const caravansOnOpenGround = slot in slots && label === 'Caravans'
+    if (!built && !caravansOnOpenGround) { skipped.push(`${slot}: ${label}`); continue }
     inside[slot] = applyPerName(label, resolve)
   }
   return { inside, skipped }
@@ -54,18 +45,10 @@ export function toStructureKey(raw: string): string | null {
 }
 
 type Crop = { left: number; top: number; width: number; height: number }
-// The game's square element emblem baked into a variant's art (300x300, bottom right): the picture inside its
-// stone frame. Measured by diffing every variant against its plain kind art; all 21 share the layout, give
-// or take 2px, and this box sits inside the frame on every one of them.
+// Measured by diffing all 21 variant arts against their plain kind art; this box sits inside every emblem's frame.
 const VARIANT_EMBLEM: Crop = { left: 186, top: 155, width: 56, height: 56 }
-// A status icon (100x100) has a soft 4px transparent edge; the same picture sits inside it.
 const STATUS_EMBLEM: Crop = { left: 5, top: 5, width: 90, height: 90 }
 
-/**
- * Where each element's emblem comes from: the first variant art that carries it (`icons`, file names from
- * data/raw/assets/icons), or else the game's status icon of that name (`statuses`, from
- * data/raw/assets/elements). Rot is the one element no variant carries. Throws if any element has neither.
- */
 export function emblemSources(icons: string[], statuses: string[]): Record<string, { file: string; box: Crop }> {
   const sources: Record<string, { file: string; box: Crop }> = {}
   for (const file of [...icons].sort()) {
@@ -88,9 +71,7 @@ export function toNightlord(raw: string): string {
   return slug
 }
 
-// The events with a place on the map; a raid or a horde finds the players wherever they are, so an '@event' slot
-// on one of those seeds is a source slip.
-const STANDING_EVENTS = new Set(['Meteor Strike', 'Mausoleum', "Sorcerer's Rise"])
+const EVENTS_WITH_A_MAP_SPOT = new Set(['Meteor Strike', 'Mausoleum', "Sorcerer's Rise"])
 
 export function toEvent(raw: string, info: Record<string, string[]>) {
   if (!raw) return null
@@ -101,7 +82,8 @@ export function toEvent(raw: string, info: Record<string, string[]>) {
   return { name, day: match[2] ? (Number(match[2]) as 1 | 2) : null }
 }
 
-// Castle ids are snake_case ("ancient_hero_of_zamor"); "of" stays lowercase as in the boss roster.
+const MAX_CASTLE_BOSS_DRIFT = 3
+
 const titleCase = (id: string) =>
   id.split('_').map((w, i) => (i > 0 && w === 'of' ? w : w[0].toUpperCase() + w.slice(1))).join(' ')
 
@@ -111,16 +93,11 @@ function main() {
   const remote = observer.remote
   const problems: string[] = []
 
-  // The source spells a few bosses two ways ("Golden Hippo"); it ships its own canonical mapping.
-  const spelling: Record<string, string> = remote.bossIconTypes.nameAliases
-  const bossName = (name: string) => aliases.bossNameOverrides[name] ?? spelling[name] ?? name
-  // Names the source sheet wrongly lists as field bosses; the source's own renderer skips them.
+  const sourceCanonicalSpelling: Record<string, string> = remote.bossIconTypes.nameAliases
+  const bossName = (name: string) => aliases.bossNameOverrides[name] ?? sourceCanonicalSpelling[name] ?? name
   const notFieldBosses = new Set<string>(remote.bossIconTypes.notFieldBosses)
-  // Which crest the game draws for a boss: its red great crest, or the blue field one. The source rules Great
-  // Hollow's bosses all field, and marks only the Limveld roster; a name it does not know gets the field crest.
   const greatBosses = new Set(Object.entries<string>(remote.bossIconTypes.bosses).filter(([, type]) => type === 'great').map(([name]) => name))
 
-  // Cross-check: both sources must agree on every seed's identity and slots.
   if (artimuz.length !== observer.seeds.length) problems.push(`artimuz has ${artimuz.length} seeds, observer ${observer.seeds.length}`)
   const artimuzById = new Map(artimuz.map((s) => [s.seed_id, s]))
   for (const s of observer.seeds) {
@@ -137,20 +114,21 @@ function main() {
 
   const slotMap = (list: { id: string; x: number; y: number }[]) =>
     Object.fromEntries(list.map((c) => [c.id, { x: c.x, y: c.y }]))
-  // Where the Limveld castle's guard label and its two bosses sit. The source places the boss icons per earth,
-  // but they differ by at most a unit or two, so one point per role serves every Limveld earth (checked below).
-  // Noklateo swallows the castle and Great Hollow has none in this data, so neither ever reads it.
-  const castleBoss = (slot: string) => {
+  const castleBossOnEveryLimveldEarth = (slot: string) => {
     const points = Object.entries<any[]>(remote.bossPositions.positions)
       .flatMap(([mapType, list]) => list.filter((p) => p.slot === slot).map((p) => ({ mapType, x: p.x, y: p.y })))
     const normal = points.find((p) => p.mapType === 'Normal')
     if (!normal) throw new Error(`no ${slot} position on the Normal map`)
     for (const p of points) {
-      if (Math.hypot(p.x - normal.x, p.y - normal.y) > 3) problems.push(`${slot} on ${p.mapType} is far from Normal's`)
+      if (Math.hypot(p.x - normal.x, p.y - normal.y) > MAX_CASTLE_BOSS_DRIFT) problems.push(`${slot} on ${p.mapType} is far from Normal's`)
     }
     return { x: normal.x, y: normal.y }
   }
-  const castleAt = { crew: remote.castleCrew.position, rooftop: castleBoss('Castle Rooftop'), basement: castleBoss('Castle Basement') }
+  const castleAt = {
+    crew: remote.castleCrew.position,
+    rooftop: castleBossOnEveryLimveldEarth('Castle Rooftop'),
+    basement: castleBossOnEveryLimveldEarth('Castle Basement'),
+  }
   const maps = {
     limveld: { slots: slotMap(observer.coordinates.baseSlots), castle: castleAt },
     'great-hollow': { slots: slotMap(observer.coordinates.greatHollowSlots) },
@@ -178,12 +156,10 @@ function main() {
     for (const slip of labelled.skipped) console.warn(`seed ${id} inside label skipped, ${slip}`)
 
     const markers: any[] = []
-    // An event that stands somewhere (a Meteor Strike's crater, a Mausoleum) is an '@event' label on an empty
-    // slot; the game marks the spot with a red circle, and so does the map. Raids and the like have no spot.
     const event = toEvent(s.Event, observer.eventInfo)
     for (const [slot, label] of Object.entries(remote.poiLabels.seeds[id] ?? {})) {
-      if (label !== '@event') continue
-      if (!event || !STANDING_EVENTS.has(event.name)) { console.warn(`seed ${id} slot ${slot} is marked '@event', but its event (${event?.name ?? 'none'}) stands nowhere`); continue }
+      if (label !== EVENT_PLACEHOLDER_LABEL) continue
+      if (!event || !EVENTS_WITH_A_MAP_SPOT.has(event.name)) { console.warn(`seed ${id} slot ${slot} is marked '@event', but its event (${event?.name ?? 'none'}) stands nowhere`); continue }
       if (!map.slots[slot]) { problems.push(`seed ${id} event slot ${slot} has no coordinates`); continue }
       markers.push({ layer: 'event', ...map.slots[slot], label: event.day ? `${event.name} · Day ${event.day}` : event.name })
     }
@@ -196,7 +172,7 @@ function main() {
       if (pos) markers.push({ layer: 'circle', night, x: pos.x, y: pos.y, label: `Night ${night}: ${bossName(nc[`night${night}`].boss)}` })
       else problems.push(`seed ${id} night ${night} circle has no position`)
     }
-    // Keyed by the spot's name as bossPositions spells it (aliases.bossSlots: the two sheets spell one spot two ways).
+    // bossAssignments and bossPositions spell some spots differently; aliases.bossSlots maps one to the other.
     const fieldBosses = Object.fromEntries(Object.entries<string>(remote.bossAssignments.seeds[id] ?? {})
       .map(([slot, boss]) => [aliases.bossSlots[slot] ?? slot, boss]))
     for (const p of remote.bossPositions.positions[s.map_type] ?? []) {
@@ -248,7 +224,6 @@ function main() {
     }
   })
 
-  // The finder can only tell seeds apart by layout and spawn, so twins would be unidentifiable.
   const layouts = new Map<string, string>()
   for (const s of seeds) {
     const layout = JSON.stringify([s.nightlord, s.earth, s.spawn, s.slots])
@@ -280,7 +255,6 @@ function reportCoverage(seeds: any[]) {
   for (const layer of ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing']) {
     console.log(layer, count((s) => s.markers.some((m: any) => m.layer === layer)))
   }
-  // Missing icons do not fail the import; the UI falls back to a glyph. List them so it is a choice.
   const keys = new Set<string>(seeds.flatMap((s) => Object.values(s.slots).filter((k): k is string => k !== null)))
   const noIcon = [...keys].filter((key) => {
     const kind = key.split(':')[0]
@@ -289,26 +263,19 @@ function reportCoverage(seeds: any[]) {
   console.log('structure keys without any icon:', noIcon.length ? noIcon.sort().join(', ') : 'none')
 }
 
-/**
- * The art with a soft dark shadow just under it, baked into the image: the map moves these marks every frame,
- * and a CSS drop-shadow filter on each would be redrawn with them. The canvas grows a few px to hold it.
- */
+// Baked, not a CSS drop-shadow: the map moves these marks every frame and a filter would be redrawn with them.
 export async function withShadow(img: sharp.Sharp): Promise<sharp.Sharp> {
   const pad = { top: 2, bottom: 4, left: 3, right: 3 }
   const art = await img.ensureAlpha().extend({ ...pad, background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer()
   const { data, info } = await sharp(art).raw().toBuffer({ resolveWithObject: true })
-  // Black, with 85% of the art's own alpha, blurred and dropped 1.5px.
+  const shadowOpacity = 0.85
   const dark = Buffer.alloc(data.length)
-  for (let i = 0; i < data.length; i += 4) dark[i + 3] = Math.round(data[i + 3] * 0.85)
+  for (let i = 0; i < data.length; i += 4) dark[i + 3] = Math.round(data[i + 3] * shadowOpacity)
   const shadow = await sharp(dark, { raw: info }).blur(1.2).png().toBuffer()
   const canvas = { width: info.width, height: info.height, channels: 4 as const, background: { r: 0, g: 0, b: 0, alpha: 0 } }
   return sharp(await sharp({ create: canvas }).composite([{ input: shadow, top: 2, left: 0 }, { input: art, top: 0, left: 0 }]).png().toBuffer())
 }
 
-/**
- * The evergaol's dark stone disc with a faint violet glow round its rim, as the game lights a sealed evergaol, so
- * it no longer reads as an empty grey button. Baked in: the map pays for no filter as it moves.
- */
 async function evergaolWithGlow(): Promise<sharp.Sharp> {
   const art = await (await withShadow(sharp('data/raw/assets/markers/evergaol.png', { density: 144 }).trim())).png().toBuffer()
   const { width, height } = await sharp(art).metadata()
@@ -321,10 +288,6 @@ async function evergaolWithGlow(): Promise<sharp.Sharp> {
   return sharp(Buffer.from(ring)).composite([{ input: art, top: pad, left: pad }])
 }
 
-/**
- * The island's box on a keyed map, in map units (0-1000): the extent of its opaque pixels. The desktop map frames
- * this, the land as drawn, rather than the square image or only the sites on it.
- */
 export function islandBox(rgba: Uint8Array, width: number, height: number) {
   let x0 = width, y0 = height, x1 = -1, y1 = -1
   for (let y = 0; y < height; y++) {
@@ -340,26 +303,20 @@ export function islandBox(rgba: Uint8Array, width: number, height: number) {
   return { x0: unit(x0, width), y0: unit(y0, height), x1: unit(x1 + 1, width), y1: unit(y1 + 1, height) }
 }
 
-/** How much of a pixel is map (1) rather than background (0). */
 export type Coverage = (r: number, g: number, b: number, a: number) => number
 
-// A flat baked ocean: within HARD of its colour is ocean, beyond SOFT is land, between is the anti-aliased coast.
-export const oceanCoverage = ([or, og, ob]: readonly number[], hard = 24, soft = 72): Coverage => (r, g, b) => {
-  const d = Math.hypot(r - or, g - og, b - ob)
-  return Math.min(1, Math.max(0, (d - hard) / (soft - hard)))
-}
-// A translucent haze around the map (Great Hollow): faint is background, near opaque is map.
-export const hazeCoverage = (clear = 180, solid = 250): Coverage => (_r, _g, _b, a) =>
-  Math.min(1, Math.max(0, (a - clear) / (solid - clear)))
+const clampToUnit = (v: number) => Math.min(1, Math.max(0, v))
 
-/**
- * Makes the background that touches the image edges transparent, so the map sits on the app's black.
- * A flood fill from the edges, not a colour key: water enclosed by land keeps its colour. The fill
- * only climbs toward the map (or stays level), so it follows a coast's soft edge without leaking
- * through it into inland water. `feather` px of the coastline are then softened inward, never
- * outward, so no background colour shows as a fringe. Specks of map no taller than `streak` px,
- * with cleared background above and below, are cleared too (see below).
- */
+export const oceanCoverage = ([or, og, ob]: readonly number[], oceanWithin = 24, landBeyond = 72): Coverage => (r, g, b) => {
+  const distanceFromOcean = Math.hypot(r - or, g - og, b - ob)
+  return clampToUnit((distanceFromOcean - oceanWithin) / (landBeyond - oceanWithin))
+}
+export const hazeCoverage = (clearBelow = 180, solidAbove = 250): Coverage => (_r, _g, _b, a) =>
+  clampToUnit((a - clearBelow) / (solidAbove - clearBelow))
+
+const FLOOD_FILL_DOWNHILL_SLACK = 0.15
+
+// A flood fill from the edges rather than a colour key, so water enclosed by land keeps its colour.
 export function keyBackground(
   rgba: Uint8Array, width: number, height: number, coverage: Coverage,
   { feather = 2, streak = 12 }: { feather?: number; streak?: number } = {},
@@ -374,7 +331,7 @@ export function keyBackground(
   const visit = (p: number, from: number) => {
     if (seen[p]) return
     const c = at(p)
-    if (c >= 1 || c + 0.15 < from) return
+    if (c >= 1 || c + FLOOD_FILL_DOWNHILL_SLACK < from) return
     seen[p] = 1
     cover[p] = c
     queue[tail++] = p
@@ -390,8 +347,7 @@ export function keyBackground(
     if (p >= width) visit(p - width, c)
     if (p < n - width) visit(p + width, c)
   }
-  // The Limveld sources carry 1-3 px tall grey streaks in the ocean along the coast (a broken
-  // shadow band). A run that short, with cleared ocean above and below, is a streak, not land.
+  // The Limveld sources carry 1-3 px tall grey streaks in the ocean along the coast.
   const cleared = (p: number) => seen[p] === 1 && cover[p] === 0
   for (let x = 0; x < width; x++) {
     let start = -1
@@ -433,14 +389,12 @@ function boxBlur(src: Float32Array, width: number, height: number, r: number): F
   return pass(pass(src, true), false)
 }
 
-/** The game's damage and status icons (data/raw/assets/damage), keyed as the weakness data names them. */
 export const DAMAGE_ICONS = [
   'standard', 'slash', 'strike', 'pierce', 'magic', 'fire', 'lightning', 'holy',
   'bleed', 'frost', 'rot', 'poison', 'sleep', 'madness',
 ] as const
 
-// The Limveld maps' baked ocean colour.
-const OCEAN = [73, 119, 153]
+const LIMVELD_OCEAN_RGB = [73, 119, 153]
 
 async function copyAssets() {
   mkdirSync('public/maps', { recursive: true })
@@ -453,24 +407,20 @@ async function copyAssets() {
     const image = sharp(`data/raw/assets/maps/${file}`)
     const { width, height } = await image.metadata()
     if (width !== height) throw new Error(`${file} is ${width}x${height}; the 1000-unit coordinate space assumes a square map`)
-    // Great Hollow's source encodes far less cleanly than the others (878 KB at 2000px/q78, over the
-    // 500 KB budget); the slot grid is percentage-based, so a smaller image is a safe way to shrink it.
+    // Great Hollow's art encodes far less cleanly: 878 KB at 2000px/q78 against a 500 KB budget.
     const [size, quality] = earth === 'great-hollow' ? [1400, 70] : [2000, 78]
-    // The baked ocean (or Great Hollow's haze) becomes transparent, so the map sits on the app's black.
     const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-    const coverage = earth === 'great-hollow' ? hazeCoverage() : oceanCoverage(OCEAN)
+    const coverage = earth === 'great-hollow' ? hazeCoverage() : oceanCoverage(LIMVELD_OCEAN_RGB)
     const keyed = keyBackground(data, info.width, info.height, coverage)
     islands[earth] = islandBox(keyed, info.width, info.height)
     await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
       .resize(size, size).webp({ quality }).toFile(`public/maps/${earth}.webp`)
-    // Home's Shifting Earth cards: a small picture of the same keyed map (budget 25 KB each).
     mkdirSync('public/maps/thumb', { recursive: true })
     await sharp(keyed, { raw: { width: info.width, height: info.height, channels: 4 } })
       .resize(240, 240).webp({ quality: 70 }).toFile(`public/maps/thumb/${earth}.webp`)
   }
   writeFileSync('src/data/islands.json', `${JSON.stringify(islands, null, 2)}
 `)
-  // Emptied first, so art the app no longer uses (the old per-element variant art) does not linger.
   rmSync('public/structures', { recursive: true, force: true })
   mkdirSync('public/structures', { recursive: true })
   const icons = readdirSync('data/raw/assets/icons')
@@ -478,13 +428,11 @@ async function copyAssets() {
     const raw = file.replace(/\.webp$/, '')
     if (raw.endsWith('_spawn')) continue
     const key = toStructureKey(raw)!
-    // Plain kind art only: an elemental structure draws its kind's art with the element's emblem as a badge.
-    if (key.includes(':')) continue
-    // The art sits in wide transparent margins; trimmed, it fills the box it is drawn in.
+    const isElementalVariant = key.includes(':')
+    if (isElementalVariant) continue
     await withShadow(sharp(`data/raw/assets/icons/${file}`).trim()).then((img) => img.webp({ quality: 90 }).toFile(`public/structures/${key}.webp`))
   }
-  // No trim here: the crop sits inside the emblem's own frame, so there is no margin to trim, and a trim
-  // keyed on the corner colour would eat into dark emblems (bleed, blight).
+  // Not trimmed: a trim keyed on the corner colour would eat into dark emblems (bleed, blight).
   rmSync('public/elements', { recursive: true, force: true })
   mkdirSync('public/elements', { recursive: true })
   for (const [element, { file, box }] of Object.entries(emblemSources(icons, readdirSync('data/raw/assets/elements')))) {
@@ -495,29 +443,27 @@ async function copyAssets() {
     const slug = file === 'unknown.webp' ? 'unknown' : toNightlord(file.replace('.webp', '') + '_')
     copyFileSync(`data/raw/assets/nightlords/${file}`, `public/nightlords/${slug}.webp`)
   }
-  // The game's damage and status icons, for the weakness card: square tiles, one size.
   rmSync('public/damage', { recursive: true, force: true })
   mkdirSync('public/damage', { recursive: true })
   for (const key of DAMAGE_ICONS) {
     await sharp(`data/raw/assets/damage/${key}.png`).resize(64, 64).webp({ quality: 85 }).toFile(`public/damage/${key}.webp`)
   }
-  // Map markers: the wiki's game icons, trimmed so they fill the box they are drawn in, plus two drawn here
-  // (data/raw/assets/SOURCES.md). The great boss crest is the field boss crest turned red, as the game tints it.
   rmSync('public/markers', { recursive: true, force: true })
   mkdirSync('public/markers', { recursive: true })
-  const marker = (file: string) => sharp(`data/raw/assets/markers/${file}`, { density: 144 }).trim()
+  const trimmedMarker = (file: string) => sharp(`data/raw/assets/markers/${file}`, { density: 144 }).trim()
   for (const name of ['field-boss', 'chest', 'merchant']) {
-    await withShadow(marker(`${name}.png`)).then((img) => img.webp({ quality: 90 }).toFile(`public/markers/${name}.webp`))
+    await withShadow(trimmedMarker(`${name}.png`)).then((img) => img.webp({ quality: 90 }).toFile(`public/markers/${name}.webp`))
   }
-  await withShadow(marker('caravan.svg').resize(96, 96, { fit: 'inside' })).then((img) => img.webp({ quality: 90 }).toFile('public/markers/caravan.webp'))
+  await withShadow(trimmedMarker('caravan.svg').resize(96, 96, { fit: 'inside' })).then((img) => img.webp({ quality: 90 }).toFile('public/markers/caravan.webp'))
   await evergaolWithGlow().then((img) => img.webp({ quality: 90 }).toFile('public/markers/evergaol.webp'))
-  await withShadow(sharp(await marker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).png().toBuffer()))
+  const fieldBossCrestTurnedRed = await trimmedMarker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).png().toBuffer()
+  await withShadow(sharp(fieldBossCrestTurnedRed))
     .then((img) => img.webp({ quality: 90 }).toFile('public/markers/great-boss.webp'))
-  // The drawn glows fade out to the box's edge, and MapView sizes them by the box: not trimmed.
+  // Not trimmed: the glows fade out to the box's edge, and MapView sizes them by the box.
   const glow = (name: string) => sharp(`data/raw/assets/markers/${name}.svg`, { density: 144 }).resize(128, 128)
   for (const name of ['unknown', 'player']) await glow(name).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
-  // A possible spawn point is the unknown glow turned the game's spirit teal, baked here so the map pays for no CSS filter.
-  await glow('unknown').modulate({ hue: 85 }).webp({ quality: 90 }).toFile('public/markers/spawn-option.webp')
+  const spiritTealHueShift = 85
+  await glow('unknown').modulate({ hue: spiritTealHueShift }).webp({ quality: 90 }).toFile('public/markers/spawn-option.webp')
   console.log('assets copied')
 }
 

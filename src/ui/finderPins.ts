@@ -9,7 +9,6 @@ export function sightingLabel(s: Sighting): string {
   return s.type === 'structure' ? structureName(s.structure) : 'Nothing here'
 }
 
-/** The finder map's pins, one per slot still worth showing, each in its state for this step of the scouting. */
 export function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: number }>, focus: StructureKey | null): Pin[] {
   const pins: Pin[] = []
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
@@ -17,12 +16,9 @@ export function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number
   const certain = scouting.certainSlots()
   const focusSlots = new Set(focus ? scouting.structuresInPlay().find((p) => p.structure === focus)?.slots ?? [] : [])
 
-  // Focus mode asks one question, so only its candidates stay gold: the spawn options dim with the rest of the
-  // map (a spawn option that could hold the structure is a candidate), and a tap on one cancels, recording nothing.
   const spawnOptions = new Map(spawn ? [] : scouting.spawnOptions().map(({ slot, remaining }) => [slot, remaining]))
   if (spawn) {
     const here = sighted.get(spawn.slot)
-    // A Church recorded at the spawn point shows on the spawn pin, as the result map draws it.
     pins.push({
       slot: spawn.slot, ...coords[spawn.slot], state: 'spawn', structure: here?.type === 'structure' ? here.structure : null,
       label: here ? `Your spawn point, ${sightingLabel(here)}` : 'Your spawn point',
@@ -40,7 +36,7 @@ export function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number
     if (s) {
       pins.push({ slot, ...coords[slot], state: 'sighted', structure: s.type === 'structure' ? s.structure : null, label: `${sightingLabel(s)}, sighted` })
     } else if (focusSlots.has(slot)) {
-      // A certain slot can still be confirmed in focus mode, so it joins the candidates.
+      // Before `known`: a certain slot can still be confirmed in focus mode.
       pins.push({ slot, ...coords[slot], state: 'candidate', structure: known, label: `${structureName(focus!)} here?` })
     } else if (spawnOptions.has(slot)) {
       pins.push({ slot, ...coords[slot], state: 'dimmed', structure: null, label: `Possible spawn point, leaves ${spawnOptions.get(slot)}` })

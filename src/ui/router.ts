@@ -104,10 +104,7 @@ export const linkTo = (path: string) => `${location.href.split('#')[0]}#${path}`
 
 type Entry = { from: string } | null
 
-/**
- * `go(path, true)` is an in-app Back: it steps back through history when the previous entry is already `path`,
- * so the browser's own Back and Forward agree with it; a shared link opened directly has no such entry.
- */
+/** `go(path, true)` is an in-app Back: it pops history when the previous entry is `path`, so browser Back agrees. */
 export function useRoute(): [Route, (path: string, back?: boolean) => void] {
   const [route, setRoute] = useState(() => parseRoute(currentPathname()))
   useEffect(() => {
