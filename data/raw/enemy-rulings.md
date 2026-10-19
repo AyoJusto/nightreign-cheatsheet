@@ -1,6 +1,6 @@
 # Night boss rulings: cheat sheet vs game-data export
 
-Every form of the 35 night bosses in `legacy/src/data/nightbosses.ts` (40 seed spellings map onto them through `aliases.json`) was compared, all 14 numbers, with the row of `enemies/bosses.json` that matches the fight. That is the "Night Boss" variant where one exists, otherwise the entry's base row. The Leyndell Knight forms were compared with `enemies/npcs.json` because `bosses.json` has no row for them. Negation is shown as a percentage, where negative means the boss takes more damage.
+Every form of the 35 night bosses in `weaknesses/data/nightbosses.ts` (40 seed spellings map onto them through `aliases.json`) was compared, all 14 numbers, with the row of `enemies/bosses.json` that matches the fight. That is the "Night Boss" variant where one exists, otherwise the entry's base row. The Leyndell Knight forms were compared with `enemies/npcs.json` because `bosses.json` has no row for them. Negation is shown as a percentage, where negative means the boss takes more damage.
 
 The export is read from the game's own param tables, so it wins. The exception is when Fextralife agrees with the cheat sheet and the export row may not be the right enemy.
 
