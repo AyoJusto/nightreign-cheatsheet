@@ -55,9 +55,8 @@
   box-shadow: var(--glass-rim), var(--glass-shadow);
 }
 
-@utility glass-flat {
+/* The glass look without the live blur: pages sit on plain black, where blurring a long list costs the GPU on every repaint and shows nothing. */
+@utility surface {
   background: var(--glass-bg);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-rim);
 }

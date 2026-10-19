@@ -21,6 +21,8 @@ const paletteColor = (page: Page, token: string) => page.evaluate((t) => {
 
 const hashQuery = (url: string) => new URLSearchParams(new URL(url).hash.split('?')[1] ?? '')
 
+const spawnedHere = (page: Page) => page.locator('.options').getByRole('button', { name: /^You spawned here/ })
+
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 for (const target of targets) {
@@ -31,6 +33,9 @@ for (const target of targets) {
     await expect(page).toHaveURL(new RegExp(`/find/${target.nightlord}/${target.earth}`))
 
     await page.getByRole('button', { name: /^Possible spawn point, leaves / }).and(page.locator(`[data-slot="${target.spawn}"]`)).click()
+    const builtAtSpawn = target.slots[target.spawn]
+    const spawnRow = builtAtSpawn ? `You spawned here, ${structureName(builtAtSpawn)}, leaves` : 'You spawned here, leaves'
+    await page.locator('.options').getByRole('button', { name: new RegExp(`^${escapeRe(spawnRow)}`) }).click()
 
     for (const [slot, key] of Object.entries<string | null>(target.slots)) {
       if (/\/seed\//.test(page.url())) break
@@ -110,7 +115,8 @@ test('focusing or scrolling to an off-screen pin never scrolls the map frame, so
     if (x < 30 || y < 90 || x > viewport.width - 30 || y > viewport.height - 110) continue
     const slot = (await pin.getAttribute('data-slot'))!
     await page.mouse.click(x, y)
-    await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}$`))
+    await spawnedHere(page).first().click()
+    await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}`))
     return
   }
   throw new Error('no spawn option on screen')
@@ -252,9 +258,10 @@ test('the count is announced as a full phrase', async ({ page, isMobile }) => {
   await expect(live).toHaveText(isMobile ? /^Tap where you spawned, \d+ possible$/ : /^\d+ possible$/)
   // A remounted live region arrives pre-filled and may go unannounced.
   await live.evaluate((el) => { el.dataset.probe = 'kept' })
-  const spawn = page.getByRole('button', { name: /^Possible spawn point, leaves / }).first()
-  const leaves = (await spawn.getAttribute('aria-label'))!.match(/leaves (\d+)/)![1]
-  await spawn.click()
+  await page.getByRole('button', { name: /^Possible spawn point, leaves / }).first().click()
+  const row = spawnedHere(page).first()
+  const leaves = (await row.getAttribute('aria-label'))!.match(/leaves (\d+)/)![1]
+  await row.click()
   await expect(live).toHaveText(`${leaves} possible`)
   await expect(live).toHaveAttribute('data-probe', 'kept')
 })
@@ -434,10 +441,13 @@ for (const how of ['keyboard', 'pointer'] as const) {
     if (how === 'keyboard') {
       await option.focus()
       await page.keyboard.press('Enter')
+      await expect(spawnedHere(page).first()).toBeFocused()
+      await page.keyboard.press('Enter')
     } else {
       await option.click()
+      await spawnedHere(page).first().click()
     }
-    await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}$`))
+    await expect(page).toHaveURL(new RegExp(`s=spawn(%40|@)${slot}`))
     await expect(page.locator(`.pin-hit[data-slot="${slot}"]`)).toBeFocused()
     await expect(page.locator(`.pin-hit[data-slot="${slot}"]`)).toHaveAccessibleName('Your spawn point')
   })

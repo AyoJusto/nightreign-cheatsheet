@@ -67,6 +67,23 @@ export class Scouting {
     return [...counts].map(([option, remaining]) => ({ option, remaining })).sort(byRemainingThenOption)
   }
 
+  /** Each way the player could have spawned at this site: on open ground, or beside what some seed builds there. */
+  spawnChoicesAt(slot: SlotId): { structure: StructureKey | null; remaining: number }[] {
+    const spawn = this.sightings.find((s) => s.type === 'spawn')
+    if (spawn && spawn.slot !== slot) return []
+    const others = this.sightings.filter((s) => s.type !== 'spawn' && siteOf(s) !== slot)
+    const counts = new Map<StructureKey | null, number>()
+    for (const seed of this.filtered(others)) {
+      if (seed.spawn === slot) counts.set(seed.slots[slot] ?? null, (counts.get(seed.slots[slot] ?? null) ?? 0) + 1)
+    }
+    return [...counts].map(([structure, remaining]) => ({ structure, remaining })).sort((a, b) => b.remaining - a.remaining)
+  }
+
+  spawnedAt(slot: SlotId, structure: StructureKey | null): Scouting {
+    const spawned = this.retract(slot).sight({ type: 'spawn', slot })
+    return structure ? spawned.sight({ type: 'structure', slot, structure }) : spawned
+  }
+
   spawnOptions() {
     const counts = new Map<SlotId, number>()
     for (const seed of this.filtered(this.sightings.filter((s) => s.type !== 'spawn'))) {

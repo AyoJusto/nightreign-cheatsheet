@@ -34,8 +34,10 @@ const LABEL_GAP = 9
 const CALLOUT_GAP = 4
 const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
   open: 'markers/unknown.webp', candidate: 'markers/unknown.webp', dimmed: 'markers/unknown.webp',
-  'spawn-option': 'markers/spawn-option.webp', spawn: 'markers/player.webp',
+  spawn: 'markers/player.webp',
 }
+
+const drawsPlayer = (state: PinState) => state === 'spawn' || state === 'spawn-option'
 
 const isMouseHover = (e: PointerEvent) => e.pointerType === 'mouse' && !e.buttons
 
@@ -136,12 +138,12 @@ export function MapView(props: MapContent & {
   // use-gesture calls `from` at pointer-down, before any handler, so stopping here freezes the map under the finger.
   const grab = (gesture: 'drag' | 'pinch') => {
     active.current[gesture] = true
-    userMovedMap.current = true
     stopMotion()
     movesAwaitingFade.current = null
     fade.jump(1)
   }
   const moved = () => {
+    userMovedMap.current = true
     props.moves?.set(props.moves.get() + 1)
     setCallout(null)
   }
@@ -258,12 +260,13 @@ export function MapView(props: MapContent & {
 
   // Re-subscribes on selected/pins changes so the listeners never read stale props.
   useEffect(() => {
-    if (props.selected || props.focusPoint) userMovedMap.current = true
+    const revealing = Boolean(props.selected || props.focusPoint)
     if (reveal() !== undefined) moveTo(() => { const target = reveal(); return target === undefined ? [] : [[y, target]] })
+    else if (!revealing && !userMovedMap.current) fit()
     const onInset = () => {
       if (!active.current.drag && !active.current.pinch) settle()
     }
-    const onFrame = () => (userMovedMap.current ? onInset() : fit())
+    const onFrame = () => (userMovedMap.current || revealing ? onInset() : fit())
     let reach = props.corner?.get().reach
     const onCorner = (c: Corner) => {
       if (c.reach === reach) return
@@ -350,7 +353,7 @@ export function MapView(props: MapContent & {
     const pinRects = props.pins.filter((p) => !(p.name && p.structure)).flatMap((p) => {
       const c = toScreen(p.x, p.y)
       if (p.structure) return structureFootprint(c, art, p.structure)
-      return [square(c, p.state === 'spawn' ? icon / 2 : orb / 2)]
+      return [square(c, drawsPlayer(p.state) ? icon / 2 : orb / 2)]
     })
     const boxes = labelBoxes.get()
     const points = tags.map((t) => toScreen(t.x, t.y))
@@ -400,11 +403,11 @@ export function MapView(props: MapContent & {
               animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
               transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
             >
-              <motion.span className="pin-body" style={{ scale: drawsArt ? artScale : p.state === 'spawn' ? iconScale : orbScale }}>
+              <motion.span className="pin-body" style={{ scale: drawsArt ? artScale : drawsPlayer(p.state) ? iconScale : orbScale }}>
                 <motion.span className={drawsArt ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
                   {drawsArt
                     ? <StructureIcon structure={p.structure} size={ART_SIZE} />
-                    : p.state === 'spawn'
+                    : drawsPlayer(p.state)
                       ? <img className="orb" src={ORB_ART.spawn} width={PLAYER_BOX} height={PLAYER_BOX} data-disc={PLAYER_DISC} alt="" draggable={false} />
                       : <img className="orb" src={ORB_ART[p.state] ?? ORB_ART.open} width={ORB_BOX} height={ORB_BOX} data-disc={ORB_DISC} alt="" draggable={false} />}
                   {p.state === 'spawn' && p.structure && <img className="spawn-badge" src={ORB_ART.spawn} alt="" draggable={false} />}

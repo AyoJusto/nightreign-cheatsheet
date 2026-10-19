@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { applyFilter, byCategory, effectsIn, filtersFor, POOL_TAG, searchEffects, stackLabel, type StackTone } from '../loadout/effects'
 import { BUILDS, BY_CHARACTER, describe, groupSlots } from '../loadout/builds'
 import type { BuildLine, BuildSlot, Effect, EffectGroup } from '../loadout/loadout'
@@ -41,7 +41,8 @@ export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<string | null>(null)
   const filters = useMemo(() => filtersFor(group), [group])
-  const found = query.trim() ? searchEffects(query).filter((e) => e.group === group) : null
+  const settledQuery = useDeferredValue(query)
+  const found = settledQuery.trim() ? searchEffects(settledQuery).filter((e) => e.group === group) : null
   const list = applyFilter(found ?? effectsIn(group), filter)
   return (
     <Page title={GROUP_TITLES[group]} go={go}>
@@ -49,7 +50,7 @@ export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
       <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Category">
         {filters.map((f) => (
           <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(filter === f.key ? null : f.key)}
-            className="min-h-11 shrink-0 rounded-full px-3.5 text-[15px] whitespace-nowrap text-label-2 glass-flat aria-pressed:bg-fill-strong aria-pressed:text-label">
+            className="min-h-11 shrink-0 rounded-full px-3.5 text-[15px] whitespace-nowrap text-label-2 surface aria-pressed:bg-fill-strong aria-pressed:text-label">
             {f.label} <span className="tabular-nums">{f.count}</span>
           </button>
         ))}
@@ -118,7 +119,7 @@ export function BuildsPage({ character, go }: { character: string | null; go: Go
         <div className="flex flex-wrap gap-2" role="group" aria-label="Build">
           {builds.builds.map((b, i) => (
             <button key={b.name} type="button" aria-pressed={b === build} onClick={() => setPicked(i)}
-              className="min-h-11 rounded-full px-4 text-[15px] text-label-2 glass-flat aria-pressed:bg-fill-strong aria-pressed:font-semibold aria-pressed:text-label">
+              className="min-h-11 rounded-full px-4 text-[15px] text-label-2 surface aria-pressed:bg-fill-strong aria-pressed:font-semibold aria-pressed:text-label">
               {b.name}
             </button>
           ))}

@@ -91,14 +91,6 @@ export function FinderOverlay(props: {
   const pins = useMemo(() => buildPins(scouting, coords, focus), [scouting, coords, focus])
 
   const onPin = useCallback((slot: SlotId, state: Pin['state']) => {
-    if (state === 'spawn-option') {
-      // Desktop: focus goes to the new spawn pin, the same element since MapView keys dots by place.
-      if (wide) {
-        lastSelected.current = null
-        document.querySelector<HTMLElement>(`.pin-hit[data-slot="${slot}"]`)?.focus()
-      }
-      return apply(scouting.sight({ type: 'spawn', slot }))
-    }
     if (state === 'candidate' && focus) return apply(scouting.sight({ type: 'structure', slot, structure: focus }))
     const tappedSpawnWhileFocusing = focus && state === 'spawn'
     if (tappedSpawnWhileFocusing) return
@@ -123,7 +115,10 @@ export function FinderOverlay(props: {
   const nightOneHelps = nightOne !== undefined || nightOneOptions.length > 1
   const fightName = (id: string) => bestiary.enemy(id)?.name ?? id
   const openNightOne = () => { setFocus(null); setOpenKind(null); setSelected(NIGHT_ONE); setDetent('half') }
-  const options = atSpawn && possible.every((p) => p.option === 'nothing') ? [] : possible
+  const spawnChoices = selected && !pickingNightOne && !atSpawn ? scouting.spawnChoicesAt(selected) : []
+  const onlyEmptyGround = possible.every((p) => p.option === 'nothing')
+  const options = (atSpawn || spawnChoices.length > 0) && onlyEmptyGround ? [] : possible
+  const spawnLabel = (structure: StructureKey | null) => (structure ? `You spawned here, ${structureName(structure)}` : 'You spawned here')
   const recordedHere = sightedHere && (sightedHere.type === 'structure' ? sightedHere.structure : 'nothing')
   const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
   const nightOneChoices = (
@@ -154,6 +149,15 @@ export function FinderOverlay(props: {
       {atSpawn && (
         <li><button className="option option-clear" onClick={() => apply(scouting.retract('spawn'))}>Change spawn point</button></li>
       )}
+      {spawnChoices.map(({ structure, remaining }) => (
+        <li key={`spawn:${structure}`}>
+          <button className="option" aria-label={`${spawnLabel(structure)}, leaves ${remaining}`} onClick={() => apply(scouting.spawnedAt(selected, structure))}>
+            <SpawnGlyph structure={structure} />
+            <span className="option-name">{spawnLabel(structure)}</span>
+            <span className="num option-count"><Icon name="arrow" size={15} />{remaining}</span>
+          </button>
+        </li>
+      ))}
       {options.map(({ option, remaining }) => (
         <li key={option}>
           <button
@@ -293,5 +297,15 @@ export function FinderOverlay(props: {
         </AnimatePresence>
       )}
     </>
+  )
+}
+
+function SpawnGlyph({ structure }: { structure: StructureKey | null }) {
+  if (!structure) return <img className="spawn-glyph" src="markers/player.webp" width={40} height={40} alt="" draggable={false} />
+  return (
+    <span className="spawn-glyph-beside">
+      <StructureIcon structure={structure} size={40} />
+      <img src="markers/player.webp" width={24} height={24} alt="" draggable={false} />
+    </span>
   )
 }

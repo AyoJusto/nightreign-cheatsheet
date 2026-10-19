@@ -24,6 +24,7 @@ test('the close button and Escape put the card away', async ({ page }) => {
   await tapMarker(page, 'Golden Hippopotamus')
   await page.getByRole('button', { name: 'Close Golden Hippopotamus' }).click()
   await expect(page.getByRole('dialog', { name: 'Golden Hippopotamus' })).toHaveCount(0)
+  await page.waitForTimeout(700)
   await tapMarker(page, 'Golden Hippopotamus')
   await expect(page.getByRole('dialog', { name: 'Golden Hippopotamus' })).toBeVisible()
   await page.keyboard.press('Escape')

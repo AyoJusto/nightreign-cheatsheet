@@ -15,7 +15,6 @@ The wiki has no "?" unexplored-site orb, player marker, great boss crest or cara
 
 - `unknown.svg` (a soft gold flame-glow with a thin "?"), `player.svg` (a pale arrowhead on a dark disc in a faint bronze ring) and `caravan.svg` (a covered cart) were drawn for Bonfire Buddy.
 - `public/markers/great-boss.webp` is `field-boss.png` hue-shifted to red by the import.
-- `public/markers/spawn-option.webp` is `unknown.svg` hue-shifted to teal by the import, for a possible spawn point.
 - `public/markers/evergaol.webp` gets a faint violet rim glow from the import, for the sealed evergaol.
 
 ## damage/ (damage and status icons)

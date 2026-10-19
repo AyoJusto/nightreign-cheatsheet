@@ -41,7 +41,7 @@ export function Section({ title, children }: { title: string; children: ReactNod
 }
 
 export function Group({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <ul className={`glass-flat m-0 list-none overflow-hidden rounded-card p-0 ${className}`}>{children}</ul>
+  return <ul className={`surface m-0 list-none overflow-hidden rounded-card p-0 ${className}`}>{children}</ul>
 }
 
 export function LinkRow({ href, children, trailing }: { href: string; children: ReactNode; trailing?: ReactNode }) {

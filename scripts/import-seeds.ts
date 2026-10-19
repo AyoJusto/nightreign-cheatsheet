@@ -462,8 +462,6 @@ async function copyAssets() {
   // Not trimmed: the glows fade out to the box's edge, and MapView sizes them by the box.
   const glow = (name: string) => sharp(`data/raw/assets/markers/${name}.svg`, { density: 144 }).resize(128, 128)
   for (const name of ['unknown', 'player']) await glow(name).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
-  const spiritTealHueShift = 85
-  await glow('unknown').modulate({ hue: spiritTealHueShift }).webp({ quality: 90 }).toFile('public/markers/spawn-option.webp')
   console.log('assets copied')
 }
 

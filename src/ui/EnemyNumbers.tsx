@@ -20,7 +20,7 @@ export function WeakTo({ forms, named }: { forms: Form[]; named?: Affliction }) 
     return signed(oneForm ? oneForm.by : verdict.negation[k])
   }
   return (
-    <section aria-label="Weak to" className="glass-flat rounded-card px-5 py-4">
+    <section aria-label="Weak to" className="surface rounded-card px-5 py-4">
       <h2 className="m-0 mb-2.5 text-[13px] font-semibold tracking-wide text-label-2 uppercase">
         {oneForm?.label ? `Weak to · ${oneForm.label}` : 'Weak to'}
       </h2>
@@ -80,7 +80,7 @@ export function NumbersTable({ forms }: { forms: Form[] }) {
   return (
     <>
       <Section title="Damage negation · below zero takes more">
-        <div className="glass-flat overflow-x-auto rounded-card">
+        <div className="surface overflow-x-auto rounded-card">
           <table className="w-full border-collapse text-base">
             {head}
             <tbody>{DAMAGE_TYPES.map((t) => row(t, (f) => f.negation[t], (v) => v < 0))}</tbody>
@@ -88,7 +88,7 @@ export function NumbersTable({ forms }: { forms: Form[] }) {
         </div>
       </Section>
       <Section title="Status buildup · lower procs faster">
-        <div className="glass-flat overflow-x-auto rounded-card">
+        <div className="surface overflow-x-auto rounded-card">
           <table className="w-full border-collapse text-base">
             {head}
             <tbody>{STATUSES.map((s) => row(s, (f) => f.buildup[s], (v) => v === lowestBuildup))}</tbody>
