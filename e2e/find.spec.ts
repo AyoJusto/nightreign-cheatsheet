@@ -217,13 +217,13 @@ for (const reduced of [false, true]) {
     }))
     const at = (ms: number) => samples.find((s) => s.t >= ms)!
     const open = samples[0]
-    expect(at(100).top).not.toBeNull()
+    const leaving = samples.filter((s) => s.t > 0 && s.top !== null)
     if (reduced) {
-      expect(at(100).top, 'reduced motion fades without sliding').toBe(open.top)
-      expect(at(100).opacity!).toBeLessThan(open.opacity!)
+      expect(leaving.every((s) => s.top === open.top), 'reduced motion fades without sliding').toBe(true)
+      expect(leaving.some((s) => s.opacity! > 0 && s.opacity! < open.opacity!), 'seen part-faded').toBe(true)
     } else {
-      expect(at(100).top!).toBeGreaterThan(open.top! + 5)
-      expect(at(100).top!).toBeLessThan(page.viewportSize()!.height)
+      const midSlide = leaving.filter((s) => s.top! > open.top! + 5 && s.top! < page.viewportSize()!.height)
+      expect(midSlide.length, 'seen part-way down on several frames').toBeGreaterThanOrEqual(2)
     }
     expect(at(1300).top).toBeNull()
   })
@@ -344,17 +344,22 @@ test('a tap on a crest calls out its name, and a second tap or a pan hides it', 
     const r = (await crest.boundingBox())!
     await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
   }
+  const settle = () => page.waitForTimeout(800)
   await tap()
   await expect(callout).toHaveText('Black Blade Kindred')
   await expect(callout).toHaveCSS('opacity', '1')
+  await settle()
   await tap()
   await expect(callout).toHaveCount(0)
+  await settle()
   await tap()
   await expect(callout).toBeVisible()
+  await settle()
   const map = (await page.locator('.map-frame').boundingBox())!
-  await page.mouse.move(map.width / 2, map.height * 2 / 3)
+  const clearOfCardAndSheet = { x: map.width * 0.85, y: map.height * 0.25 }
+  await page.mouse.move(clearOfCardAndSheet.x, clearOfCardAndSheet.y)
   await page.mouse.down()
-  await page.mouse.move(map.width / 2 + 50, map.height * 2 / 3 + 40, { steps: 6 })
+  await page.mouse.move(clearOfCardAndSheet.x - 50, clearOfCardAndSheet.y + 40, { steps: 6 })
   await page.mouse.up()
   await expect(callout).toHaveCount(0)
 })
@@ -386,7 +391,9 @@ test("a callout on a mark whose name shows hides that name while it is open, and
   await expect(callout).toHaveText("Night's Cavalry")
   await expect(own).toHaveCSS('opacity', '0')
   await expect(callout).toHaveCSS('background-color', await paletteColor(page, '--color-surface'))
-  await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2)
+  await page.waitForTimeout(800)
+  const after = (await mark.locator('.marker-icon').boundingBox())!
+  await page.mouse.click(after.x + after.width / 2, after.y + after.height / 2)
   await expect(own).toHaveCSS('opacity', '1')
 })
 
