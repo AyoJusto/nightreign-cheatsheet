@@ -57,3 +57,5 @@
 .home-footer button { min-height: 44px; padding: 0 16px; color: var(--color-label-2); font-size: 15px; }
 @media (hover: hover) { .home-footer button:hover { color: var(--color-label); } }
 
+.earth-bar { touch-action: none; }
+.earth-bar-handle { display: block; width: 36px; height: 5px; margin: -4px auto 10px; border-radius: 3px; background: var(--color-label-3); }

@@ -65,3 +65,20 @@ test('the Nightlord picker leads back home', async ({ page }) => {
   await page.getByRole('button', { name: 'Back' }).click()
   await expect(page.getByRole('heading', { name: 'Nightreign' })).toBeVisible()
 })
+
+test('a swipe down puts the Shifting Earth panel away and clears the pick', async ({ page, isMobile }) => {
+  test.skip(isMobile, "Playwright's WebKit mouse does not drive Motion drags; Chromium at phone width does")
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('#/find')
+  await page.getByRole('button', { name: /^Tricephalos/ }).click()
+  const heading = page.getByRole('heading', { name: 'Shifting Earth' })
+  await expect(heading).toBeVisible()
+  await page.waitForTimeout(600)
+  const handle = (await page.locator('.earth-bar-handle').boundingBox())!
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 2)
+  await page.mouse.down()
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 160, { steps: 8 })
+  await page.mouse.up()
+  await expect(heading).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Tricephalos/ })).toHaveAttribute('aria-pressed', 'false')
+})

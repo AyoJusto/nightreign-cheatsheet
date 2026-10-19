@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import { useWide } from './useWide'
 import { NIGHTLORDS, earthName, type NightlordPick } from '../domain/names'
 import { catalog } from '../data/catalog'
 import { WeaknessCard } from './NightlordMedallion'
 import { TopBar } from './TopBar'
 import { goBack } from './router'
+
+const SWIPE_AWAY_DISTANCE = 60
+const SWIPE_AWAY_SPEED = 500
 
 const spring = { type: 'spring', visualDuration: 0.45, bounce: 0.15 } as const
 
@@ -46,7 +49,16 @@ export function NightlordPicker({ go }: { go: (path: string, back?: boolean) => 
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
             transition={spring}
+            {...(wide ? {} : {
+              drag: 'y' as const,
+              dragConstraints: { top: 0, bottom: 0 },
+              dragElastic: { top: 0, bottom: 0.7 },
+              onDragEnd: (_: unknown, info: PanInfo) => {
+                if (info.offset.y > SWIPE_AWAY_DISTANCE || info.velocity.y > SWIPE_AWAY_SPEED) setPicked(null)
+              },
+            })}
           >
+            {!wide && <span className="earth-bar-handle" aria-hidden />}
             <WeaknessCard nightlord={picked} />
             <h2 id="earth-heading" className="earth-heading">Shifting Earth</h2>
             <div className="earth-grid">
