@@ -1,0 +1,62 @@
+@layer theme, base, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "../..";
+
+@theme {
+  --color-*: initial;
+  --color-ground: #000000;
+  --color-surface: #1c1c1e;
+  --color-surface-2: #2c2c2e;
+  --color-surface-3: #3a3a3c;
+  --color-label: #ffffff;
+  --color-label-2: rgb(235 235 245 / 0.6);
+  --color-label-3: rgb(235 235 245 / 0.3);
+  --color-separator: rgb(84 84 88 / 0.65);
+  --color-fill: rgb(118 118 128 / 0.24);
+  --color-fill-strong: rgb(255 255 255 / 0.16);
+  --color-highlight: rgb(255 255 255 / 0.55);
+  --color-weak: #ffd60a;
+  --color-immune: #ff8a80;
+  --color-night-1: #30d158;
+  --color-night-2: #f2f2f7;
+  --color-event: #ff453a;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+
+  --radius-control: 22px;
+  --radius-card: 26px;
+  --radius-sheet: 34px;
+}
+
+:root {
+  --glass-bg: linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.02) 45%), rgb(36 36 38 / 0.55);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-rim: inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 0 0 0.5px rgb(255 255 255 / 0.16);
+  --glass-shadow: 0 10px 30px rgb(0 0 0 / 0.4);
+  --glass-solid: linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02) 30%), rgb(28 28 30 / 0.96);
+  --focus-ring: inset 0 0 0 1.5px rgb(255 255 255 / 0.85);
+  --gutter: 8px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  color-scheme: dark;
+}
+
+@utility glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-rim), var(--glass-shadow);
+}
+
+/* The glass look without the live blur: pages sit on plain black, where blurring a long list costs the GPU on every repaint and shows nothing. */
+@utility surface {
+  background: var(--glass-bg);
+  box-shadow: var(--glass-rim);
+}

@@ -1,0 +1,15 @@
+.map-frame { position: fixed; inset: 0; overflow: clip; touch-action: none; background: var(--color-ground); container-type: size; }
+.map-layer { --side: max(100cqw, 100cqh); position: absolute; width: var(--side); height: var(--side); left: calc(50% - var(--side) / 2); top: calc(50% - var(--side) / 2); transform-origin: center; }
+.map-image { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
+.map-scrim { position: absolute; inset: 0; background: var(--color-ground); pointer-events: none; }
+
+.structure-icon { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
+.structure-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.icon-glyph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 10px; background: var(--color-surface-2); font-size: 12px; }
+.icon-empty { position: relative; display: block; box-sizing: border-box; border: 1.5px dashed var(--color-label-2); border-radius: 50%; }
+.element-emblem, .element-badge {
+  display: block; box-sizing: border-box; object-fit: cover; border-radius: 3px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.75), 0 1px 2px rgb(0 0 0 / 0.5);
+}
+.element-badge-at { position: absolute; }
+.element-code { display: grid; place-items: center; padding: 0 2px; background: var(--color-surface); color: var(--color-label); font-size: 11px; line-height: 1; }

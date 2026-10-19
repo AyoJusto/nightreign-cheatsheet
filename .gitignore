@@ -1,31 +1,27 @@
-# dependencies and build output
 node_modules/
 dist/
+dist-ssr/
 *.tsbuildinfo
 .vite/
+*.local
 
-# python bytecode from tools/
-__pycache__/
-*.py[cod]
-
-# playwright and the audit screenshots it writes
-tools/shots/
 test-results/
 playwright-report/
 blob-report/
 .playwright-mcp/
+legacy/tools/shots/
 
-# logs and local env
 *.log
-npm-debug.log*
 .env
 .env.*
-*.local
 
-# editors and OS
 .vscode/
 .idea/
 *.swp
 .DS_Store
 Thumbs.db
 desktop.ini
+
+docs/specs/
+.superpowers/
+.qure/

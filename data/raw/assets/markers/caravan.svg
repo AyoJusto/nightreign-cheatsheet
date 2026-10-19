@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="104" viewBox="0 0 128 104">
+  <!-- Drawn for Bonfire Buddy (no game asset exists on the wiki): a merchant caravan, a covered cart, painted in
+       the muted browns and dark outline of the game's own map icons (the chest and merchant). -->
+  <defs>
+    <linearGradient id="cover" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9dcb8"/>
+      <stop offset="0.6" stop-color="#c8b58a"/>
+      <stop offset="1" stop-color="#8f7a52"/>
+    </linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a5d34"/>
+      <stop offset="1" stop-color="#4e321b"/>
+    </linearGradient>
+    <radialGradient id="ground" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#3b2a18" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#3b2a18" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="62" cy="92" rx="54" ry="9" fill="url(#ground)"/>
+  <g stroke="#23170c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <!-- the shaft, reaching forward -->
+    <path d="M96 70 L122 62" fill="none" stroke-width="4"/>
+    <!-- the canvas cover over its hoops -->
+    <path d="M18 60 C16 30 30 14 56 14 C84 14 100 28 100 60 Z" fill="url(#cover)"/>
+    <path d="M40 58 C38 34 44 20 56 16 M72 58 C74 34 70 22 62 16" fill="none" stroke="#7d6a45" stroke-width="2"/>
+    <!-- the bed -->
+    <path d="M12 58 H104 L100 74 H16 Z" fill="url(#wood)"/>
+    <path d="M18 66 H98" fill="none" stroke="#2e1e10" stroke-width="1.5"/>
+    <!-- wheels -->
+    <circle cx="34" cy="78" r="14" fill="#5a3a1f"/>
+    <circle cx="84" cy="78" r="14" fill="#5a3a1f"/>
+  </g>
+  <g stroke="#c9a978" stroke-width="1.6" stroke-linecap="round" opacity="0.8">
+    <path d="M34 67 V89 M23 78 H45 M26 70 L42 86 M42 70 L26 86"/>
+    <path d="M84 67 V89 M73 78 H95 M76 70 L92 86 M92 70 L76 86"/>
+  </g>
+  <circle cx="34" cy="78" r="3" fill="#23170c"/>
+  <circle cx="84" cy="78" r="3" fill="#23170c"/>
+</svg>
