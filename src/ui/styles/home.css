@@ -1,0 +1,100 @@
+/* ---------- Home ---------- */
+
+/* The night sky behind Home and About, fixed (a pseudo-element, since iOS ignores background-attachment: fixed).
+   Only there: on the map screens the map covers it, and a full-screen turbulence filter slowed their pan and zoom.
+   Never put a filter-textured full-screen layer under the pannable map: it caused WebKit repaint jank that broke the tap e2e. */
+.home::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    var(--grain),
+    radial-gradient(ellipse 70% 45% at 50% 0%, color-mix(in srgb, var(--halo) 10%, transparent), transparent 70%),
+    var(--nebula) center / 100% 100% no-repeat,
+    radial-gradient(ellipse 120% 80% at 50% 120%, var(--panel), transparent 70%),
+    var(--bg);
+}
+.home { max-width: 960px; margin: 0 auto; padding: calc(var(--safe-top) + 24px) 16px calc(var(--safe-bottom) + 16px); }
+/* The game's menu heading: centred, over a pale flourish. */
+.home-title {
+  font-size: 26px; line-height: 32px;
+  text-align: center; margin: 8px 0 6px; color: var(--text); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 24px color-mix(in srgb, var(--halo) 18%, transparent);
+}
+.home-flourish { margin: 0 auto 24px; }
+/* Three across on phone, so the whole roster fits in about a screen; a short last row centres under the title. */
+.nightlord-grid { --cols: 3; --gap: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 20px var(--gap); list-style: none; margin: 0; padding: 0; }
+.nightlord-grid > li { width: calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); }
+@media (min-width: 900px) {
+  .home { padding-top: calc(var(--safe-top) + 48px); }
+  .home-title { font-size: 36px; line-height: 44px; }
+  .home-flourish { margin-bottom: 40px; }
+  .nightlord-grid { --cols: 5; --gap: 32px; row-gap: 32px; }
+}
+.nightlord { width: 100%; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; border-radius: 16px; }
+.nightlord:focus-visible { outline: none; }
+/* The medallion: the portrait in a frosted stone ring (a pale rim, a dark groove), lifted off the
+   night by a shadow. Hover and focus light a soft blue glow; the pick gets the game's pale outline in a blue halo. */
+.medallion {
+  position: relative; display: block; width: 100%; aspect-ratio: 1; border-radius: 50%; box-sizing: border-box; padding: 5px;
+  background: radial-gradient(circle at 50% 30%, var(--stone-1), var(--stone-2) 45%, var(--stone-3));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 6px 18px rgba(0, 0, 0, 0.7);
+}
+.medallion::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bg) 85%, transparent), inset 0 0 18px color-mix(in srgb, var(--bg) 80%, transparent); pointer-events: none; }
+@media (hover: hover) { .nightlord:hover .medallion { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 26px 2px color-mix(in srgb, var(--halo) 40%, transparent); } }
+.nightlord:focus-visible .medallion { box-shadow: 0 0 0 2px var(--text), 0 0 26px 2px color-mix(in srgb, var(--halo) 45%, transparent); }
+.nightlord[aria-pressed='true'] .medallion {
+  box-shadow: 0 0 0 1px var(--accent-light), 0 0 18px 3px var(--halo-deep), 0 6px 18px rgba(0, 0, 0, 0.7);
+}
+.portrait { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--panel); }
+.monogram { display: grid; place-items: center; font-size: 34px; color: var(--text-2); }
+/* Nightlords are named in the game's own face. */
+.nightlord-name { font-size: 12px; line-height: 16px; color: color-mix(in srgb, var(--text) 85%, transparent); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9); }
+.nightlord[aria-pressed='true'] .nightlord-name { color: var(--text); }
+/* Once a Nightlord is picked, the others' portraits dim and their names drop to the secondary tone. */
+.nightlord .medallion, .nightlord .nightlord-name { transition: opacity 0.3s ease-out, color 0.3s ease-out; }
+.nightlord[data-dim] .medallion { opacity: 0.5; }
+.nightlord[data-dim] .nightlord-name { color: var(--text-2); }
+@media (prefers-reduced-motion: reduce) { .nightlord .medallion, .nightlord .nightlord-name { transition: none; } }
+@media (min-width: 900px) { .nightlord-name { font-size: 15px; } .medallion { width: 84%; } }
+/* Phone: an opaque sticky plate over the grid's bottom edge, with a band of the sky's dark below it so no name peeks
+   out underneath; the grid leaves room for its last row to scroll clear. Desktop: under the grid. */
+.earth-bar { position: sticky; z-index: 10; bottom: calc(var(--safe-bottom) + var(--gutter)); margin: 24px -8px 0; padding: 10px 10px 12px; }
+.earth-bar.plate { background: var(--panel-texture); -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (max-width: 899px) {
+  .home:has(.earth-bar)::after {
+    content: ''; position: fixed; z-index: 9; left: 0; right: 0; bottom: 0; height: calc(var(--safe-bottom) + var(--gutter)); pointer-events: none;
+    background: linear-gradient(color-mix(in srgb, var(--panel) 90%, transparent), var(--panel));
+  }
+}
+.home:has(.earth-bar) .nightlord-grid { padding-bottom: 24px; }
+.earths:not(.earth-bar) { max-width: 880px; margin: 36px auto 0; }
+.earth-heading { margin: 0 0 10px; font-size: 15px; line-height: 20px; color: var(--text-head); text-align: center; }
+/* All six at once: three across and two down on phone, one row on desktop. */
+.earth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (min-width: 900px) { .earth-grid { grid-template-columns: repeat(6, 1fr); gap: 12px; } .earth-heading { font-size: 17px; margin-bottom: 16px; } }
+/* A card: the earth's map in a dark well, its name, then its seed count. */
+.earth {
+  position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 6px 8px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel)); box-shadow: var(--rim), 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.earth-thumb { display: block; width: 100%; max-width: 64px; aspect-ratio: 1; height: auto; margin-bottom: 4px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8)); }
+@media (min-width: 900px) { .earth { padding: 10px 8px 12px; } .earth-thumb { max-width: 104px; margin-bottom: 8px; } }
+@media (hover: hover) { .earth:hover { box-shadow: var(--glow); } }
+.earth:active { box-shadow: var(--glow); }
+/* Two words wrap to two lines rather than truncate. */
+.earth-name { max-width: 100%; font-size: 12px; line-height: 15px; overflow-wrap: anywhere; margin-top: auto; }
+.earth-count { font-size: 12px; line-height: 16px; color: var(--text-2); }
+@media (min-width: 900px) { .earth-name { font-size: 14px; line-height: 18px; } .earth-count { font-size: 13px; } }
+.home-footer { margin-top: 32px; display: flex; justify-content: center; }
+.home-footer button { min-height: 44px; padding: 0 16px; color: var(--text-2); font-size: 15px; }
+@media (hover: hover) { .home-footer button:hover { color: var(--text-head); } }
+
+/* ---------- About ---------- */
+
+.about { max-width: 680px; }
+.about-panel { position: relative; margin-top: 8px; padding: 28px 22px 12px; background: var(--panel-texture); box-shadow: var(--plate-shadow); }
+.about p { color: var(--text-2); line-height: 1.5; margin: 0 0 16px; }
+.about h2 { font-size: 17px; line-height: 24px; color: var(--text-head); margin: 28px 0 8px; }
+.about-back { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; margin-left: -8px; padding: 0 12px 0 8px; font-size: 16px; }
+@media (hover: hover) { .about-back:hover { color: var(--text-head); } }
+.about .home-title { margin-top: 0; }
+@media (min-width: 900px) { .about-panel { padding: 36px 40px 20px; } }
