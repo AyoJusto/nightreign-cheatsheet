@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { AnimatePresence, useMotionValue, type MotionValue } from 'motion/react'
 import type { MapContent, Pin } from './mapTypes'
 import { Sheet, type Detent } from './Sheet'
-import { Plate } from './Plate'
+import { TopBar } from './TopBar'
 import { Count } from './Count'
 import { StructureIcon } from './StructureIcon'
 import { StructureButtons, StructureStrip } from './StructureStrip'
@@ -212,10 +212,12 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      <Plate className={`pill${wide ? ' pill-corner' : ' pill-titled'}`} ref={pillRef}>
-        <div className="pill-leading">
-          <button className="pill-back" aria-label="Back" onClick={() => props.go(PICK_PATH, true)}><Icon name="back" /></button>
-        </div>
+      <TopBar className={wide ? 'pill-corner' : 'pill-titled'} ref={pillRef} onBack={() => props.go(PICK_PATH, true)}
+        trailing={<>
+          <button aria-label="Undo" disabled={!undo} onClick={() => { undo?.(); close() }}><Icon name="undo" /></button>
+          <button aria-label="Reset" disabled={!scouting.sightings.length}
+            onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
+        </>}>
         {!wide && (
           <span className="pill-text">
             {/* Count keeps one slot in both states: remounted, a pre-filled live region may never be announced. */}
@@ -224,12 +226,7 @@ export function FinderOverlay(props: {
             {spawn && <span aria-hidden> possible</span>}
           </span>
         )}
-        <div className="pill-trailing">
-          <button aria-label="Undo" disabled={!undo} onClick={() => { undo?.(); close() }}><Icon name="undo" /></button>
-          <button aria-label="Reset" disabled={!scouting.sightings.length}
-            onClick={() => apply(Scouting.start(props.pool))}><Icon name="reset" /></button>
-        </div>
-      </Plate>
+      </TopBar>
       {!wide && (
         <StructureStrip plateRef={stripRef} open={openKind} hidden={!groups.length && !nightOneHelps}>{nightOneTile}{structureButtons}</StructureStrip>
       )}

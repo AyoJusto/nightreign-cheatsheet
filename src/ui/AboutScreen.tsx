@@ -1,14 +1,10 @@
-import { Icon } from './Icon'
-import { goBack } from './router'
+import { Page, type Go } from './Page'
 
-export function AboutScreen({ go }: { go: (path: string, back?: boolean) => void }) {
+export function AboutScreen({ go }: { go: Go }) {
   return (
-    <main className="home about">
-      <button className="about-back" onClick={() => goBack('/', go)}><Icon name="back" />Back</button>
-      <div className="about-panel">
-        <h1 className="home-title">About</h1>
+    <Page title="About" go={go}>
+      <div className="surface rounded-card px-5 py-1 text-[17px] leading-relaxed text-label-2">
         <p>Find your Nightreign seed mid-run, see its whole map, and look up what every boss on it is weak to.</p>
-        <h2>Data</h2>
         <p>
           Seed data was compiled by the Nightreign community. Thanks to Artimuz (nightreign-seed-finder.com),
           thefifthmatt (Nightreign Map Patterns) and the nightreign-seed-observer project.
@@ -23,6 +19,6 @@ export function AboutScreen({ go }: { go: (path: string, back?: boolean) => void
         </p>
         <p>Not affiliated with FromSoftware or Bandai Namco. Game art belongs to its owners.</p>
       </div>
-    </main>
+    </Page>
   )
 }

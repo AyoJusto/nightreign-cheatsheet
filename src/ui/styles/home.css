@@ -4,13 +4,11 @@
     radial-gradient(ellipse 90% 60% at 50% 0%, rgb(255 255 255 / 0.07), transparent 70%),
     var(--color-ground);
 }
-.home { max-width: 960px; margin: 0 auto; padding: calc(var(--safe-top) + 24px) 16px calc(var(--safe-bottom) + 16px); }
-.home-title { font-size: 28px; line-height: 34px; text-align: center; margin: 8px 0 24px; color: var(--color-label); }
+.home { max-width: 960px; margin: 0 auto; padding: calc(var(--safe-top) + 76px) 16px calc(var(--safe-bottom) + 16px); }
+.home-title { font-size: 32px; line-height: 1.2; text-align: left; margin: 0 4px 20px; color: var(--color-label); }
 .nightlord-grid { --cols: 3; --gap: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 20px var(--gap); list-style: none; margin: 0; padding: 0; }
 .nightlord-grid > li { width: calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); }
 @media (min-width: 900px) {
-  .home { padding-top: calc(var(--safe-top) + 48px); }
-  .home-title { font-size: 34px; line-height: 41px; margin-bottom: 40px; }
   .nightlord-grid { --cols: 5; --gap: 32px; row-gap: 32px; }
 }
 .nightlord { width: 100%; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; border-radius: 16px; }
@@ -59,11 +57,3 @@
 .home-footer button { min-height: 44px; padding: 0 16px; color: var(--color-label-2); font-size: 15px; }
 @media (hover: hover) { .home-footer button:hover { color: var(--color-label); } }
 
-.about { max-width: 680px; }
-.about-panel { position: relative; margin-top: 8px; padding: 24px 22px 8px; border-radius: var(--radius-card); background: var(--glass-solid); box-shadow: var(--glass-rim), var(--glass-shadow); }
-.about p { color: var(--color-label-2); line-height: 1.5; margin: 0 0 16px; }
-.about h2 { font-size: 17px; line-height: 24px; font-weight: 600; color: var(--color-label); margin: 28px 0 8px; }
-.about-back { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; margin-left: -8px; padding: 0 12px 0 8px; font-size: 17px; }
-@media (hover: hover) { .about-back:hover { color: var(--color-label-2); } }
-.about .home-title { margin-top: 0; }
-@media (min-width: 900px) { .about-panel { padding: 32px 40px 16px; } }

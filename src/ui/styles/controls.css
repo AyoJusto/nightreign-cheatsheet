@@ -67,3 +67,7 @@
 .toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: var(--radius-control); font-size: 15px; white-space: nowrap; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter) - var(--safe-left) - var(--safe-right)); }
 .toast.plate { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .chip-event { box-shadow: none; background: radial-gradient(circle, var(--color-event) 40%, transparent 72%); }
+.pill a { flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; color: var(--color-label); border-radius: 22px; }
+@media (hover: hover) { .pill a:hover { background: var(--color-fill); } }
+.pill > .pill-trailing { margin-left: auto; }
+.pill.pill-page { left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); transform: none; max-width: none; }
