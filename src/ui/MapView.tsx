@@ -9,7 +9,7 @@ import { crossfade } from './crossfade'
 import { useWide } from './useWide'
 import { ICON_BODY, isTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
 import './map.css'
-import { ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
+import { EventGlow, ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
 import { measureName, type NameBox } from './mapNames'
 import type { MapContent, PinState } from './mapTypes'
 
@@ -440,9 +440,9 @@ export function MapView(props: MapContent & {
         <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {/* Rings first: the sites on the ground they cover still show on top. Their names come after the pins. */}
-        {props.markers?.map((m, i) => m.layer === 'circle' && (
+        {props.markers?.map((m, i) => (m.layer === 'circle' || m.layer === 'event') && (
           <motion.span key={`r${i}`} className="marker ring-mark" style={{ left: `${m.x / 10}%`, top: `${m.y / 10}%`, scale: pinScale }}>
-            <motion.span className="mark" style={{ scale: ringScale }}><Ring night={m.night ?? 1} /></motion.span>
+            <motion.span className="mark" style={{ scale: ringScale }}>{m.layer === 'event' ? <EventGlow /> : <Ring night={m.night ?? 1} />}</motion.span>
           </motion.span>
         ))}
         {props.pins.map((p) => (

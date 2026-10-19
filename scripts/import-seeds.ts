@@ -92,6 +92,10 @@ export function toNightlord(raw: string): string {
   return slug
 }
 
+// The events with a place on the map; a raid or a horde finds the players wherever they are, so an '@event' slot
+// on one of those seeds is a source slip.
+const STANDING_EVENTS = new Set(['Meteor Strike', 'Mausoleum', "Sorcerer's Rise"])
+
 export function toEvent(raw: string, info: Record<string, string[]>) {
   if (!raw) return null
   const match = raw.match(/^(.*?)(?:Day([12]))?$/)!
@@ -221,6 +225,15 @@ function main() {
     for (const slip of labelled.skipped) console.warn(`seed ${id} inside label skipped, ${slip}`)
 
     const markers: any[] = []
+    // An event that stands somewhere (a Meteor Strike's crater, a Mausoleum) is an '@event' label on an empty
+    // slot; the game marks the spot with a red circle, and so does the map. Raids and the like have no spot.
+    const event = toEvent(s.Event, observer.eventInfo)
+    for (const [slot, label] of Object.entries(remote.poiLabels.seeds[id] ?? {})) {
+      if (label !== '@event') continue
+      if (!event || !STANDING_EVENTS.has(event.name)) { console.warn(`seed ${id} slot ${slot} is marked '@event', but its event (${event?.name ?? 'none'}) stands nowhere`); continue }
+      if (!map.slots[slot]) { problems.push(`seed ${id} event slot ${slot} has no coordinates`); continue }
+      markers.push({ layer: 'event', ...map.slots[slot], label: event.day ? `${event.name} · Day ${event.day}` : event.name })
+    }
     const nc = remote.nightCircles.seeds[id]
     for (const night of [1, 2] as const) {
       const circle = nc?.[`night${night}`]?.circle
@@ -266,7 +279,7 @@ function main() {
       id,
       nightlord: toNightlord(s.nightlord),
       earth,
-      event: toEvent(s.Event, observer.eventInfo),
+      event,
       spawn: spawnEntry?.[0] ?? '',
       slots,
       inside: labelled.inside,

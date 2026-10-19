@@ -1,6 +1,6 @@
 import type { EarthId, NightlordId, SlotId, StructureKey } from './names'
 
-export type MarkerLayer = 'circle' | 'boss' | 'evergaol' | 'chest' | 'merchant' | 'rot-blessing'
+export type MarkerLayer = 'circle' | 'event' | 'boss' | 'evergaol' | 'chest' | 'merchant' | 'rot-blessing'
 /** `great`: a boss the game draws with its red great crest rather than the blue field one. */
 export interface Marker { layer: MarkerLayer; x: number; y: number; label: string; night?: 1 | 2; great?: boolean }
 export interface MapPoint { x: number; y: number }

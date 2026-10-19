@@ -35,6 +35,12 @@ describe('seed data', () => {
       }
     }
   })
+  it("marks where an event stands, with its day, and nowhere for one that follows the players", () => {
+    const events = (id: string) => catalog.all.find((s) => s.id === id)!.markers.filter((m) => m.layer === 'event')
+    expect(events('242').map((m) => m.label)).toEqual(['Meteor Strike · Day 1'])
+    expect(events('128').map((m) => m.label)).toEqual(['Mausoleum'])
+    expect(events('252')).toEqual([]) // an Augur Raid, which the source slips an '@event' slot onto
+  })
   it('lets every seed be identified from its full layout and spawn', () => {
     const seen = new Map<string, string>()
     for (const seed of catalog.all) {

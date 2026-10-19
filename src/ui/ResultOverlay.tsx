@@ -16,20 +16,20 @@ import { DAMAGE_NAMES, earthName, nightlordName, type DamageKey, type Weakness }
 import type { Seed } from '../domain/seed'
 
 const LAYER_NAMES: Record<Layer, string> = {
-  structures: 'Structures', spawn: 'Spawn', circle: 'Circles', boss: 'Bosses', evergaol: 'Evergaols',
+  structures: 'Structures', spawn: 'Spawn', circle: 'Circles', event: 'Event', boss: 'Bosses', evergaol: 'Evergaols',
   chest: 'Chests', merchant: 'Merchant', 'rot-blessing': 'Rot Blessing',
 }
 // A phone's chips: the layer's own map mark over a short name, each the same width, so six fit an iPhone's pill
 // and a longer row scrolls a whole chip at a time. The full name is the chip's accessible name.
 const LAYER_SHORT: Record<Layer, string> = {
-  structures: 'Sites', spawn: 'Spawn', circle: 'Rings', boss: 'Bosses', evergaol: 'Gaols', chest: 'Chests', merchant: 'Shop', 'rot-blessing': 'Rot',
+  structures: 'Sites', spawn: 'Spawn', circle: 'Rings', event: 'Event', boss: 'Bosses', evergaol: 'Gaols', chest: 'Chests', merchant: 'Shop', 'rot-blessing': 'Rot',
 }
 const LAYER_ICON: Record<Layer, string> = {
-  structures: '/structures/great-church.webp', spawn: '/markers/player.webp', circle: '', boss: '/markers/field-boss.webp',
+  structures: '/structures/great-church.webp', spawn: '/markers/player.webp', circle: '', event: '', boss: '/markers/field-boss.webp',
   evergaol: '/markers/evergaol.webp', chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', 'rot-blessing': '/elements/rot.webp',
 }
 const CHIP_STEP = 49 + 4 // a phone chip's width and the gap after it
-const MARKER_LAYERS = ['circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
+const MARKER_LAYERS = ['circle', 'event', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 
 export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setMap }: {
@@ -167,7 +167,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
             <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
           ) : (
             <button key={l} className="chip chip-tile" aria-label={LAYER_NAMES[l]} aria-pressed={on.has(l)} onClick={() => toggle(l)}>
-              {LAYER_ICON[l] ? <img className={l === 'spawn' ? 'chip-player' : undefined} src={LAYER_ICON[l]} alt="" draggable={false} /> : <span className="chip-ring" />}
+              {LAYER_ICON[l] ? <img className={l === 'spawn' ? 'chip-player' : undefined} src={LAYER_ICON[l]} alt="" draggable={false} /> : <span className={l === 'event' ? 'chip-ring chip-event' : 'chip-ring'} />}
               <span aria-hidden>{LAYER_SHORT[l]}</span>
             </button>
           ))}

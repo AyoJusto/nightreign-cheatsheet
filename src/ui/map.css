@@ -52,10 +52,11 @@
 /* Rings lie under the pins (MapView renders them first), so the sites inside stay on top. */
 .ring-mark { z-index: 0; }
 /* A night's name draws above every other mark: it is always shown (placeLabels keeps it). */
-.marker.marker-circle { z-index: 3; }
+.marker.marker-circle, .marker.marker-event { z-index: 3; }
 .ring { display: block; }
 .ring-1 { color: var(--night-1); }
 .ring-2 { color: var(--night-2); }
+.event-glow { display: block; color: var(--event); }
 /* Icons carry their shadow in the image (the import bakes it), so nothing is filtered as the map moves. */
 .marker-icon { display: block; object-fit: contain; }
 /* Evergaols are the game's dark stone ring: drawn smaller and lighter than the crests, so a phone map is not

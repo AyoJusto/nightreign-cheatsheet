@@ -36,6 +36,8 @@
   --stone-3: #3a4458;
   --night-1: #6fe39a;
   --night-2: #84b2ff;
+  /* An event's circle: the game map's deep blood red. */
+  --event: #a3121c;
   /* Hairlines between rows: faint slate. */
   --rule: color-mix(in srgb, var(--edge) 70%, transparent);
   /* A selected row: the game's periwinkle band, fading out to the right. */

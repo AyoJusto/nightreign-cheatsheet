@@ -94,3 +94,5 @@
    gutter (plus the safe inset) the other floating controls use. Solid, not blurred: the pill and sheet own the blur. */
 .toast { position: fixed; z-index: 30; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%); padding: 12px 20px; font-size: 15px; white-space: nowrap; box-sizing: border-box; max-width: calc(100% - 2 * var(--gutter) - var(--safe-left) - var(--safe-right)); }
 .toast.plate { background: var(--panel-texture); -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* The Event chip's mark: the event's soft red disc, as on the map. */
+.chip-event { box-shadow: none; background: radial-gradient(circle, var(--event) 40%, transparent 72%); }

@@ -10,7 +10,8 @@ export const RING_SIZE = 110
 
 export function tagOf(m: MapMarker): TagSpec {
   const at = { x: m.x, y: m.y }
-  if (m.layer === 'circle') return { ...at, kind: 'night', mark: 'ring' }
+  // An event's name is placed as a night's is: kept in sight, just above its circle, else inside it.
+  if (m.layer === 'circle' || m.layer === 'event') return { ...at, kind: 'night', mark: 'ring' }
   const mark = m.plain || !MARKER_ART[m.layer] ? 'none' : 'icon'
   if (m.layer === 'castle') return { ...at, kind: 'castle', mark }
   if (m.layer === 'boss' || m.layer === 'evergaol') return { ...at, kind: m.layer, mark }
@@ -74,6 +75,27 @@ export function Ring({ night }: { night: 1 | 2 }) {
       <circle cx={c} cy={c} r={c * 0.76} fill="none" stroke="currentColor" strokeOpacity="0.45" strokeWidth="16" />
       <circle cx={c} cy={c} r={c * 0.76} fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="6" />
       <circle cx={c} cy={c} r={c * 0.76} fill="none" stroke="#fff" strokeOpacity="0.7" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+/**
+ * Where an event stands, as the game's map marks it: a soft, translucent red disc with no rim, darkest at its heart
+ * (map.css), the size of a night's ring so their names are placed alike.
+ */
+export function EventGlow() {
+  const c = RING_SIZE / 2
+  return (
+    <svg className="event-glow" width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden>
+      <defs>
+        <radialGradient id="event-glow">
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.85" />
+          <stop offset="0.55" stopColor="currentColor" stopOpacity="0.6" />
+          <stop offset="0.8" stopColor="currentColor" stopOpacity="0.25" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx={c} cy={c} r={c} fill="url(#event-glow)" />
     </svg>
   )
 }
