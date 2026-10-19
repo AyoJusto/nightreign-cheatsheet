@@ -4,7 +4,8 @@ import { useWide } from './useWide'
 import { NIGHTLORDS, earthName, type NightlordPick } from '../domain/names'
 import { catalog } from '../data/catalog'
 import { WeaknessCard } from './NightlordMedallion'
-import { BackButton } from './Page'
+import { TopBar } from './TopBar'
+import { goBack } from './router'
 
 const spring = { type: 'spring', visualDuration: 0.45, bounce: 0.15 } as const
 
@@ -23,7 +24,7 @@ export function NightlordPicker({ go }: { go: (path: string, back?: boolean) => 
   const [picked, setPicked] = useState<NightlordPick | null>(null)
   return (
     <main className="home">
-      <BackButton go={go} fallback="/" />
+      <TopBar className="pill-page" onBack={() => goBack('/', go)} />
       <h1 className="home-title">Choose your Nightlord</h1>
       <ul className="nightlord-grid">
         {PICKS.map((n) => (

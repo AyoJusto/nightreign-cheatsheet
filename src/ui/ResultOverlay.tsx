@@ -14,6 +14,7 @@ import { DAMAGE_NAMES } from '../domain/names'
 import { bestiary, headline, type Headline } from '../bestiary/bestiary'
 import type { Affliction, Enemy } from '../bestiary/enemy'
 import type { Seed } from '../domain/seed'
+import { TopBar } from './TopBar'
 import { EnemyCardHeader, EnemyFacts, EnemyPageLink } from './EnemyCard'
 import { gearForTheRun } from '../domain/gear'
 
@@ -216,8 +217,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
 
   return (
     <>
-      <Plate className="pill" ref={pillRef}>
-        <button className="pill-back" aria-label="Back" onClick={back}><Icon name="back" /></button>
+      <TopBar className={wide ? 'pill-corner' : ''} ref={pillRef} onBack={back}>
         <div className="chips" ref={chips} onScroll={fadeChips} role="group" aria-label="Map layers">
           {available.map((l) => wide ? (
             <button key={l} className="chip" aria-pressed={on.has(l)} onClick={() => toggle(l)}>{LAYER_NAMES[l]}</button>
@@ -228,7 +228,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
             </button>
           ))}
         </div>
-      </Plate>
+      </TopBar>
       {wide ? (
         <>
           <aside className="side-panel" aria-label="Seed details"><div className="side-scroll">{title}{runCard}{lists}</div></aside>
