@@ -15,6 +15,7 @@ import { bestiary, headline, type Headline } from '../bestiary/bestiary'
 import type { Affliction, Enemy } from '../bestiary/enemy'
 import type { Seed } from '../domain/seed'
 import { EnemyCardHeader, EnemyFacts, EnemyPageLink } from './EnemyCard'
+import { gearForTheRun } from '../domain/gear'
 
 const LAYER_NAMES: Record<Layer, string> = {
   structures: 'Structures', spawn: 'Spawn', circle: 'Circles', event: 'Event', boss: 'Bosses', evergaol: 'Evergaols',
@@ -169,11 +170,18 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     { label: 'Rooftop', value: seed.castle?.rooftop, enemy: seed.castle?.rooftop ? bestiary.named(seed.castle.rooftop) : undefined },
     { label: 'Old Gaol', value: seed.oldGaol ? 'Present' : null },
   ]
+  const loot = gearForTheRun(seed).afflictions
   const runCard = (
     <dl className="run-card">
       {rows.filter((r) => r.value).map((r) => (
         <RunRow key={r.label} label={r.label} value={r.value!} more={r.more} onSelect={select(r.enemy)} pressed={!!r.enemy && focus?.enemy === r.enemy} />
       ))}
+      {loot.length > 0 && (
+        <div className="run-row">
+          <dt>Loot</dt>
+          <dd className="run-value"><span className="weak-line mt-0">{loot.map((k) => <span key={k} className="weak-item"><img src={`damage/${k}.webp`} alt="" draggable={false} />{DAMAGE_NAMES[k]}</span>)}</span></dd>
+        </div>
+      )}
     </dl>
   )
   const lists = (

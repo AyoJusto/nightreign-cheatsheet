@@ -4,6 +4,7 @@ import type { Enemy } from '../bestiary/enemy'
 import type { MarkerLayer, Seed } from '../domain/seed'
 import { splitStructure, structureName } from '../domain/names'
 import { catalog } from '../data/catalog'
+import { gearForTheRun } from '../domain/gear'
 
 // A rise's puzzle clue ("Above Door") means nothing alone on the map: it carries the site it belongs to.
 const HINT_SITES = new Set(['sorcerers-rise', 'ruined-rise'])
@@ -22,11 +23,12 @@ export function resultMap(seed: Seed, on: ReadonlySet<Layer>): MapContent {
     pins.push({ slot: seed.spawn, ...coords[seed.spawn], state: 'spawn', structure: atSpawn, label: atSpawn ? `Spawn point, ${structureName(atSpawn)}` : 'Spawn point' })
   }
   if (on.has('structures')) {
+    const matches = new Set(gearForTheRun(seed).camps)
     for (const [slot, key] of Object.entries(seed.slots)) {
       if (!key || (slot === seed.spawn && on.has('spawn'))) continue
       // What is inside is written on the map under the art, and spoken as part of the pin's name.
       const name = seed.inside[slot]
-      pins.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: name ? `${structureName(key)}, ${name}` : structureName(key), name: name && mapName(key, name) })
+      pins.push({ slot, ...coords[slot], state: 'sighted', structure: key, label: name ? `${structureName(key)}, ${name}` : structureName(key), name: name && mapName(key, name), match: matches.has(slot) || undefined })
     }
   }
   const markers: MapMarker[] = [
