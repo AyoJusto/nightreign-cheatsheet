@@ -20,14 +20,14 @@ export function tagOf(m: MapMarker): TagSpec {
   return { ...at, kind: 'other', mark }
 }
 const MARKER_ART: Partial<Record<MapMarker['layer'], string>> = {
-  boss: '/markers/field-boss.webp', castle: '/markers/field-boss.webp', evergaol: '/markers/evergaol.webp',
-  chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', caravan: '/markers/caravan.webp',
-  'rot-blessing': '/elements/rot.webp', // the layer chip's own icon (ResultOverlay), already precached
+  boss: 'markers/field-boss.webp', castle: 'markers/field-boss.webp', evergaol: 'markers/evergaol.webp',
+  chest: 'markers/chest.webp', merchant: 'markers/merchant.webp', caravan: 'markers/caravan.webp',
+  'rot-blessing': 'elements/rot.webp', // the layer chip's own icon (ResultOverlay), already precached
 }
 
 /** A marker's game icon, sized with the map; a plain name (the castle's guard) has none. */
 export function MarkerIcon({ marker, scale }: { marker: MapMarker; scale: MotionValue<number> }) {
-  const src = marker.great ? '/markers/great-boss.webp' : MARKER_ART[marker.layer]
+  const src = marker.great ? 'markers/great-boss.webp' : MARKER_ART[marker.layer]
   if (marker.plain || !src) return null
   return (
     <motion.span className="mark" style={{ scale }}>

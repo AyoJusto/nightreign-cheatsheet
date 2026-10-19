@@ -10,7 +10,7 @@ import { Icon } from './Icon'
 import { useWide } from './useWide'
 import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
-import { resultBackPath } from './router'
+import { currentSearch, linkTo, resultBackPath } from './router'
 import { catalog } from '../data/catalog'
 import { DAMAGE_NAMES, earthName, nightlordName, type DamageKey, type Weakness } from '../domain/names'
 import type { Seed } from '../domain/seed'
@@ -25,8 +25,8 @@ const LAYER_SHORT: Record<Layer, string> = {
   structures: 'Sites', spawn: 'Spawn', circle: 'Rings', event: 'Event', boss: 'Bosses', evergaol: 'Gaols', chest: 'Chests', merchant: 'Shop', 'rot-blessing': 'Rot',
 }
 const LAYER_ICON: Record<Layer, string> = {
-  structures: '/structures/great-church.webp', spawn: '/markers/player.webp', circle: '', event: '', boss: '/markers/field-boss.webp',
-  evergaol: '/markers/evergaol.webp', chest: '/markers/chest.webp', merchant: '/markers/merchant.webp', 'rot-blessing': '/elements/rot.webp',
+  structures: 'structures/great-church.webp', spawn: 'markers/player.webp', circle: '', event: '', boss: 'markers/field-boss.webp',
+  evergaol: 'markers/evergaol.webp', chest: 'markers/chest.webp', merchant: 'markers/merchant.webp', 'rot-blessing': 'elements/rot.webp',
 }
 const CHIP_STEP = 49 + 4 // a phone chip's width and the gap after it
 const MARKER_LAYERS = ['circle', 'event', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
@@ -85,7 +85,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   }
   // Native share sheet on phone; on desktop the OS share dialog is a detour, so copy the link.
   const share = async () => {
-    const url = `${location.origin}/seed/${seed.id}`
+    const url = linkTo(`/seed/${seed.id}`)
     if (!wide && navigator.share) {
       try {
         return await navigator.share({ title: `Seed ${seed.id}`, url })
@@ -101,7 +101,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       flash('Could not copy the link')
     }
   }
-  const back = () => go(resultBackPath(location.search, seed), true)
+  const back = () => go(resultBackPath(currentSearch(), seed), true)
   const toggle = (l: Layer) =>
     setOn((s) => {
       const next = new Set(s)
@@ -222,7 +222,7 @@ function DamageLine({ tag, spoken, keys }: { tag: string; spoken: string; keys: 
       <span className="weak-tag" aria-hidden>{tag}</span>
       <span className="sr-only">, {spoken} </span>
       {keys.map((k, i) => (
-        <span key={k} className="weak-item">{i > 0 && <span className="sr-only">, </span>}<img src={`/damage/${k}.webp`} alt="" draggable={false} />{DAMAGE_NAMES[k]}</span>
+        <span key={k} className="weak-item">{i > 0 && <span className="sr-only">, </span>}<img src={`damage/${k}.webp`} alt="" draggable={false} />{DAMAGE_NAMES[k]}</span>
       ))}
     </span>
   )

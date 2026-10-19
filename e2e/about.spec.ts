@@ -5,7 +5,7 @@ test('opens About from home and returns', async ({ page }, testInfo) => {
     await testInfo.attach(name, { body: await page.screenshot(), contentType: 'image/png' })
   }
 
-  await page.goto('/')
+  await page.goto('./')
   await expect(page.getByRole('heading', { name: 'Choose your Nightlord' })).toBeVisible()
   await capture('Home')
 

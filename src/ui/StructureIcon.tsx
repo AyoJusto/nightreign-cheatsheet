@@ -12,7 +12,7 @@ export function ElementEmblem({ element, className = 'element-emblem', size }: {
   if (failed === element) {
     return <span className={`${className} element-code`} style={{ minWidth: size, height: size }} aria-hidden>{ELEMENT_CODES[element]}</span>
   }
-  return <img key={element} className={className} src={`/elements/${element}.webp`} alt="" width={size} height={size}
+  return <img key={element} className={className} src={`elements/${element}.webp`} alt="" width={size} height={size}
     onError={() => setFailed(element)} draggable={false} aria-hidden />
 }
 
@@ -36,7 +36,7 @@ export function StructureIcon({ structure, size = 36 }: { structure: StructureKe
       {failed === structure ? (
         <span className="icon-glyph" aria-hidden>{kind.split('-').map((w) => w[0]).join('').toUpperCase()}</span>
       ) : (
-        <img key={kind} className="structure-art" src={`/structures/${kind}.webp`} alt="" width={size} height={size} onError={() => setFailed(structure)} draggable={false} />
+        <img key={kind} className="structure-art" src={`structures/${kind}.webp`} alt="" width={size} height={size} onError={() => setFailed(structure)} draggable={false} />
       )}
       {element && <span className="element-badge-at" style={badgeAt}><ElementEmblem element={element} className="element-badge" size={Math.round(size * BADGE.size)} /></span>}
     </span>

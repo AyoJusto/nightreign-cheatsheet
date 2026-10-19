@@ -40,8 +40,8 @@ const LABEL_GAP = 9
 const CALLOUT_GAP = 4
 // The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
 const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
-  open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
-  'spawn-option': '/markers/spawn-option.webp', spawn: '/markers/player.webp',
+  open: 'markers/unknown.webp', candidate: 'markers/unknown.webp', dimmed: 'markers/unknown.webp',
+  'spawn-option': 'markers/spawn-option.webp', spawn: 'markers/player.webp',
 }
 
 export function MapView(props: MapContent & {
@@ -437,7 +437,7 @@ export function MapView(props: MapContent & {
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
       <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
-        <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
+        <img className="map-image" src={`maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
         {/* Rings first: the sites on the ground they cover still show on top. Their names come after the pins. */}
         {props.markers?.map((m, i) => (m.layer === 'circle' || m.layer === 'event') && (
