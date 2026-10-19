@@ -195,39 +195,31 @@ for (const reduced of [false, true]) {
   test(`the slot sheet ${reduced ? 'fades' : 'slides'} away over many frames when closed${reduced ? ' (reduced motion)' : ''}`, async ({ page, isMobile }) => {
     test.skip(!isMobile, 'the sheet is phone only')
     if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.install()
     await page.goto(`#/find/${targets[0].nightlord}/${targets[0].earth}`)
     await page.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
     await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
     await page.waitForTimeout(900)
-    const samples = await page.evaluate(() => new Promise<{ t: number; top: number | null; opacity: number | null }[]>((resolve) => {
-      const out: { t: number; top: number | null; opacity: number | null }[] = []
-      const sample = (t: number) => {
-        const sheet = document.querySelector('.sheet')
-        const layer = sheet?.querySelector<HTMLElement>('.sheet-solid')
-        out.push({ t, top: sheet ? sheet.getBoundingClientRect().top : null, opacity: layer ? parseFloat(getComputedStyle(layer).opacity) : null })
-      }
-      sample(0)
-      dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-      const start = performance.now()
-      const tick = () => {
-        const t = performance.now() - start
-        sample(t)
-        if (t < 1500) requestAnimationFrame(tick)
-        else resolve(out)
-      }
-      requestAnimationFrame(tick)
-    }))
-    const at = (ms: number) => samples.find((s) => s.t >= ms)!
-    const open = samples[0]
-    const leaving = samples.filter((s) => s.t > 0 && s.top !== null)
+    const sheet = () => page.evaluate(() => {
+      const el = document.querySelector('.sheet')
+      const layer = el?.querySelector<HTMLElement>('.sheet-solid')
+      return { top: el ? el.getBoundingClientRect().top : null, opacity: layer ? parseFloat(getComputedStyle(layer).opacity) : null }
+    })
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100))
+    const open = await sheet()
+    await page.keyboard.press('Escape')
+    await page.clock.runFor(100)
+    const leaving = await sheet()
+    expect(leaving.top, 'still on screen 100ms after closing').not.toBeNull()
     if (reduced) {
-      expect(leaving.every((s) => s.top === open.top), 'reduced motion fades without sliding').toBe(true)
-      expect(leaving.some((s) => s.opacity! > 0 && s.opacity! < open.opacity!), 'seen part-faded').toBe(true)
+      expect(leaving.top, 'reduced motion fades without sliding').toBe(open.top)
+      expect(leaving.opacity!).toBeLessThan(open.opacity!)
     } else {
-      const midSlide = leaving.filter((s) => s.top! > open.top! + 5 && s.top! < page.viewportSize()!.height)
-      expect(midSlide.length, 'seen part-way down, not gone in one jump').toBeGreaterThanOrEqual(1)
+      expect(leaving.top!).toBeGreaterThan(open.top! + 5)
+      expect(leaving.top!).toBeLessThan(page.viewportSize()!.height)
     }
-    expect(at(1300).top).toBeNull()
+    await page.clock.runFor(1300)
+    expect((await sheet()).top).toBeNull()
   })
 }
 
