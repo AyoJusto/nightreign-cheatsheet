@@ -16,7 +16,10 @@ import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
 import { splitStructure, structureName, nightlordName, earthName, type EarthId, type NightlordPick, type SlotId, type StructureKey } from '../domain/names'
 import type { Seed } from '../domain/seed'
-import { Scouting, type Sighting } from '../domain/scouting'
+import { Scouting, targetOf } from '../domain/scouting'
+import { bestiary } from '../bestiary/bestiary'
+
+const NIGHT_ONE = 'night1'
 
 export function FinderOverlay(props: {
   pool: readonly Seed[]; nightlord: NightlordPick; earth: EarthId
@@ -118,21 +121,45 @@ export function FinderOverlay(props: {
     const preferred = focus ? (p: Pin) => p.state === 'candidate' : (p: Pin) => p.state === 'spawn-option'
     // Spawn pins set the spawn when clicked, so there is nothing about the site to preview.
     const onHover = wide ? (p: Pin | null) => setHover(p && p.state !== 'spawn' && p.state !== 'spawn-option' ? p.slot : null) : undefined
-    props.setMap({ pins, dim: focus !== null, selected, onPin, onBackground: close, preferred, onHover })
+    props.setMap({ pins, dim: focus !== null, selected: selected === NIGHT_ONE ? null : selected, onPin, onBackground: close, preferred, onHover })
   }, [pins, focus, selected, onPin, close, props.setMap, wide])
 
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
   const atSpawn = selected !== null && spawn?.slot === selected
-  const sightedHere = selected ? scouting.sightings.find((s) => s.type !== 'spawn' && s.slot === selected) : undefined
+  const sightedHere = selected ? scouting.sightings.find((s) => targetOf(s) === selected && s.type !== 'spawn') : undefined
   // The spawn pin holds the spawn sighting; it asks what stands there only when some seed has a structure
   // (a Church) at that spawn point.
-  const possible = selected ? scouting.possibilitiesAt(selected) : []
+  const pickingNightOne = selected === NIGHT_ONE
+  const possible = selected && !pickingNightOne ? scouting.possibilitiesAt(selected) : []
+  const nightOne = scouting.sightings.find((s) => s.type === 'night1')
+  const nightOneOptions = scouting.nightOneOptions()
+  const nightOneHelps = nightOne !== undefined || nightOneOptions.length > 1
+  const fightName = (id: string) => bestiary.enemy(id)?.name ?? id
+  const openNightOne = () => { setFocus(null); setOpen(null); setSelected(NIGHT_ONE); setDetent('half') }
   const options = atSpawn && possible.every((p) => p.option === 'nothing') ? [] : possible
   // What was recorded at a sighted site, marked in its list like an iOS selected row.
   const current = sightedHere && (sightedHere.type === 'structure' ? sightedHere.structure : 'nothing')
   const groups = groupByKind(scouting.structuresInPlay().map((p) => p.structure))
-  const choices = selected && (
-    // Named by the heading or sheet title around it; data-slot is for tests, players never see slot numbers.
+  const nightOneChoices = (
+    <ul className="options" ref={optionsRef} data-night="1">
+      {nightOne && (
+        <li><button className="option option-clear" onClick={() => apply(scouting.retract(NIGHT_ONE))}>Clear</button></li>
+      )}
+      {nightOneOptions.map(({ boss, remaining }) => (
+        <li key={boss}>
+          <button className="option option-text" aria-label={`${fightName(boss)}${nightOne?.type === 'night1' && nightOne.boss === boss ? ', current' : ''}, leaves ${remaining}`}
+            onClick={() => apply(scouting.sight({ type: 'night1', boss }))}>
+            <span className="option-name">{fightName(boss)}</span>
+            <span className="num option-count">
+              {nightOne?.type === 'night1' && nightOne.boss === boss && <Icon name="check" size={17} className="option-check" />}
+              <Icon name="arrow" size={15} />{remaining}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+  const choices = pickingNightOne ? nightOneChoices : selected && (
     <ul className="options" ref={optionsRef} data-slot={selected}>
       {/* First, so the half-height sheet never cuts it off. */}
       {sightedHere && (
@@ -170,7 +197,13 @@ export function FinderOverlay(props: {
       }}
       onName={wide ? setTileName : undefined} variantsBelow={wide} />
   )
-  const choicesTitle = atSpawn ? 'Spawn point' : "What's here?"
+  const choicesTitle = pickingNightOne ? 'Night 1 boss' : atSpawn ? 'Spawn point' : "What's here?"
+  const nightOneTile = nightOneHelps && (
+    <button className="strip-item night-one-tile" aria-label={nightOne?.type === 'night1' ? `Night 1 boss, ${fightName(nightOne.boss)}` : 'Night 1 boss'}
+      aria-pressed={nightOne !== undefined} onClick={openNightOne}>
+      <span className="option-ring" aria-hidden>1</span>
+    </button>
+  )
   // Read-only: the same rows as the choices, but nothing to click until the site itself is clicked.
   const preview = wide && hover && hover !== selected && (
     <section>
@@ -212,7 +245,7 @@ export function FinderOverlay(props: {
         </div>
       </Plate>
       {!wide && (
-        <StructureStrip plateRef={stripRef} open={open} hidden={!groups.length}>{structureButtons}</StructureStrip>
+        <StructureStrip plateRef={stripRef} open={open} hidden={!groups.length && !nightOneHelps}>{nightOneTile}{structureButtons}</StructureStrip>
       )}
       {wide ? (
         <aside className="side-panel" aria-label="Scouting">
@@ -225,6 +258,19 @@ export function FinderOverlay(props: {
                 {choices}
               </section>
             ) : <p className="hint">{spawn ? 'Select a site on the map or a structure.' : `${verb} where you spawned on the map.`}</p>)}
+            {nightOneHelps && !pickingNightOne && (
+              <section>
+                <h3 className="side-heading">Night 1 boss</h3>
+                <ul className="options">
+                  <li>
+                    <button className="option option-text" onClick={openNightOne}>
+                      <span className="option-name">{nightOne?.type === 'night1' ? fightName(nightOne.boss) : 'Choose the boss'}</span>
+                      <span className="num option-count"><Icon name="chevron" size={15} /></span>
+                    </button>
+                  </li>
+                </ul>
+              </section>
+            )}
             {groups.length > 0 && (
               <section>
                 {/* The tile's name goes here, not in a tooltip that would cover the tiles around it. */}
@@ -246,7 +292,7 @@ export function FinderOverlay(props: {
                   {scouting.sightings.map((s) => (
                     <li key={targetOf(s)}>
                       <span className="sighting-glyph" aria-hidden>
-                        {s.type === 'spawn' ? <img src="markers/player.webp" width={32} height={32} alt="" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
+                        {s.type === 'spawn' ? <img src="markers/player.webp" width={32} height={32} alt="" /> : s.type === 'night1' ? <span className="option-ring">1</span> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
                       </span>
                       {sightingLabel(s)}
                     </li>
@@ -272,6 +318,5 @@ export function FinderOverlay(props: {
   )
 }
 
-const targetOf = (s: Sighting) => (s.type === 'spawn' ? 'spawn' : s.slot)
 
 // Player vocabulary: what is (or could be) at a place, never its internal slot number.

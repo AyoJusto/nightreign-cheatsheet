@@ -38,6 +38,7 @@ describe('sightings in the URL', () => {
       { type: 'spawn', slot: '19' },
       { type: 'structure', slot: '22', structure: 'great-church:fire' },
       { type: 'nothing', slot: '9' },
+      { type: 'night1', boss: 'tree-sentinel-royal-cavalrymen' },
     ] as const
     expect(decodeSightings(encodeSightings(s))).toEqual(s)
   })

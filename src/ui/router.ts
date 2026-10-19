@@ -24,10 +24,15 @@ export const PICK_PATH = '/find'
 
 const SLOT = /^\d{1,3}$/
 const KEY = /^[a-z-]+(:[a-z]+)?$/
+const FIGHT = /^[a-z0-9-]+$/
 
 export const encodeSightings = (list: readonly Sighting[]) =>
   list
-    .map((s) => (s.type === 'spawn' ? `spawn@${s.slot}` : s.type === 'nothing' ? `${s.slot}@none` : `${s.slot}@${s.structure}`))
+    .map((s) => {
+      if (s.type === 'spawn') return `spawn@${s.slot}`
+      if (s.type === 'night1') return `night1@${s.boss}`
+      return s.type === 'nothing' ? `${s.slot}@none` : `${s.slot}@${s.structure}`
+    })
     .join(',')
 
 export function decodeSightings(q: string | null): Sighting[] {
@@ -35,6 +40,7 @@ export function decodeSightings(q: string | null): Sighting[] {
   for (const part of (q ?? '').split(',')) {
     const [a, b] = part.split('@')
     if (a === 'spawn' && SLOT.test(b ?? '')) out.push({ type: 'spawn', slot: b })
+    else if (a === 'night1' && FIGHT.test(b ?? '')) out.push({ type: 'night1', boss: b })
     else if (SLOT.test(a ?? '') && b === 'none') out.push({ type: 'nothing', slot: a })
     else if (SLOT.test(a ?? '') && KEY.test(b ?? '')) out.push({ type: 'structure', slot: a, structure: b })
   }
