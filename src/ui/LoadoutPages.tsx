@@ -1,5 +1,5 @@
-import { useDeferredValue, useMemo, useState } from 'react'
-import { applyFilter, byCategory, effectsIn, filtersFor, POOL_TAG, searchEffects, stackLabel, type StackTone } from '../loadout/effects'
+import { useDeferredValue, useState } from 'react'
+import { byCategory, effectsIn, POOL_TAG, searchEffects, stackLabel, type StackTone } from '../loadout/effects'
 import { BUILDS, BY_CHARACTER, describe, groupSlots } from '../loadout/builds'
 import type { BuildLine, BuildSlot, Effect, EffectGroup } from '../loadout/loadout'
 import { Icon } from './Icon'
@@ -39,23 +39,13 @@ export function EffectRow({ effect }: { effect: Effect }) {
 
 export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<string | null>(null)
-  const filters = useMemo(() => filtersFor(group), [group])
   const settledQuery = useDeferredValue(query)
   const found = settledQuery.trim() ? searchEffects(settledQuery).filter((e) => e.group === group) : null
-  const list = applyFilter(found ?? effectsIn(group), filter)
+  const list = found ?? effectsIn(group)
   return (
     <Page title={GROUP_TITLES[group]} go={go}>
       <SearchField label="Filter" placeholder="Text on the relic" value={query} onChange={setQuery} />
-      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Category">
-        {filters.map((f) => (
-          <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(filter === f.key ? null : f.key)}
-            className="min-h-11 shrink-0 rounded-full px-3.5 text-[15px] whitespace-nowrap text-label-2 surface aria-pressed:bg-fill-strong aria-pressed:text-label">
-            {f.label} <span className="tabular-nums">{f.count}</span>
-          </button>
-        ))}
-      </div>
-      {found || filter ? (
+      {found ? (
         <Group className="mt-4">{list.map((e) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} />)}</Group>
       ) : (
         byCategory(list).map(({ cat, items }) => (

@@ -8,7 +8,7 @@ export type Go = (path: string, back?: boolean) => void
 export function Page({ title, go, back = '/', children }: { title: string; go: Go; back?: string; children: ReactNode }) {
   return (
     <main className="page mx-auto box-border min-h-dvh max-w-3xl px-4 pt-[calc(var(--safe-top)+76px)] pb-[calc(var(--safe-bottom)+32px)]">
-      <TopBar className="pill-page" onBack={() => goBack(back, go)} trailing={back !== '/' && <HomeLink />} />
+      <TopBar onBack={() => goBack(back, go)} trailing={back !== '/' && <HomeLink />} />
       <h1 className="mx-1 mt-0 mb-5 text-[32px] leading-tight font-bold">{title}</h1>
       {children}
     </main>

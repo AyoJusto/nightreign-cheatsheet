@@ -24,7 +24,7 @@ export function NightlordPicker({ go }: { go: (path: string, back?: boolean) => 
   const [picked, setPicked] = useState<NightlordPick | null>(null)
   return (
     <main className="home">
-      <TopBar className="pill-page" onBack={() => goBack('/', go)} />
+      <TopBar onBack={() => goBack('/', go)} />
       <h1 className="home-title">Choose your Nightlord</h1>
       <ul className="nightlord-grid">
         {PICKS.map((n) => (

@@ -70,4 +70,5 @@
 .pill a { flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; color: var(--color-label); border-radius: 22px; }
 @media (hover: hover) { .pill a:hover { background: var(--color-fill); } }
 .pill > .pill-trailing { margin-left: auto; }
-.pill.pill-page { left: calc(var(--gutter) + var(--safe-left)); right: calc(var(--gutter) + var(--safe-right)); transform: none; max-width: none; }
+.pill.pill-solo { left: calc(var(--gutter) + var(--safe-left)); right: auto; width: 52px; transform: none; max-width: none; }
+.pill.pill-solo-end { left: auto; right: calc(var(--gutter) + var(--safe-right)); }

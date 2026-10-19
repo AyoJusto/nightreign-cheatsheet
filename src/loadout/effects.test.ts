@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EFFECTS } from './data/effects'
-import { GROUPS, applyFilter, byCategory, effectsIn, filtersFor, searchEffects, stackLabel } from './effects'
+import { GROUPS, byCategory, effectsIn, searchEffects, stackLabel } from './effects'
 
 describe('the effects data', () => {
   it('holds every row of the five sheet tabs', () => {
@@ -85,37 +85,6 @@ describe('searchEffects', () => {
   it('returns nothing for a blank query', () => {
     expect(searchEffects('')).toEqual([])
     expect(searchEffects('   ')).toEqual([])
-  })
-})
-
-describe('filters', () => {
-  it('offers only the pools a group has, alongside its categories', () => {
-    const keys = filtersFor('weapons').map((f) => f.key)
-    expect(keys).toContain('pool:deep')
-    expect(keys).toContain('pool:dormant')
-    expect(filtersFor('relics').map((f) => f.key)).not.toContain('pool:dormant')
-  })
-
-  it('never offers a base chip, because base is everything untagged', () => {
-    expect(filtersFor('relics').map((f) => f.key)).not.toContain('pool:base')
-  })
-
-  it('counts exactly what each filter returns', () => {
-    for (const group of ['relics', 'weapons'] as const) {
-      const list = effectsIn(group)
-      for (const f of filtersFor(group)) expect(applyFilter(list, f.key)).toHaveLength(f.count)
-    }
-  })
-
-  it('finds a row filed under two categories from either one', () => {
-    const both = EFFECTS.find((e) => e.cats.length > 1)!
-    const list = effectsIn(both.group)
-    for (const cat of both.cats) expect(applyFilter(list, `cat:${cat}`)).toContain(both)
-  })
-
-  it('passes the list through when no filter is selected', () => {
-    const list = effectsIn('relics')
-    expect(applyFilter(list, null)).toHaveLength(list.length)
   })
 })
 
