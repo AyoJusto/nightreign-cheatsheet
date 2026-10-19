@@ -10,7 +10,7 @@ import { groupByKind } from './structureGroups'
 import { buildPins, sightingLabel } from './finderPins'
 import { Icon } from './Icon'
 import { useSightings } from './useSightings'
-import { findPath, replacePath, seedPath } from './router'
+import { PICK_PATH, findPath, replacePath, seedPath } from './router'
 import { useFinePointer, useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
@@ -193,7 +193,7 @@ export function FinderOverlay(props: {
       {/* Desktop's count lives in the side panel, so its pill is just a control group in the map's corner. */}
       <Plate className={`pill${wide ? ' pill-corner' : ' pill-titled'}`} ref={pillRef}>
         <div className="pill-leading">
-          <button className="pill-back" aria-label="Back" onClick={() => props.go('/', true)}><Icon name="back" /></button>
+          <button className="pill-back" aria-label="Back" onClick={() => props.go(PICK_PATH, true)}><Icon name="back" /></button>
         </div>
         {/* Desktop shows the count and the guidance in the side panel, so its pill carries only the controls. */}
         {!wide && (

@@ -1,64 +1,92 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import { useWide } from './useWide'
-import { NIGHTLORDS, earthName, type NightlordPick } from '../domain/names'
-import { catalog } from '../data/catalog'
-import { WeaknessCard } from './NightlordMedallion'
+import { bestiary } from '../bestiary/bestiary'
+import type { Enemy } from '../bestiary/enemy'
+import { searchEffects } from '../loadout/effects'
+import { normalize } from '../loadout/text'
+import { Icon } from './Icon'
+import { EffectRow, GROUP_TITLES } from './LoadoutPages'
+import { EnemyRow } from './NightlordPages'
+import { Group, LinkRow, Page, Section, type Go } from './Page'
+import { PICK_PATH } from './router'
+import { SearchField } from './SearchField'
 
-const spring = { type: 'spring', visualDuration: 0.45, bounce: 0.15 } as const
+const ENEMIES_AND_NIGHTLORDS: { enemy: Enemy; href: string }[] = [
+  ...bestiary.nightlords.map((n) => ({ enemy: n as Enemy, href: `#/nightlord/${n.id}` })),
+  ...bestiary.all.map((e) => ({ enemy: e, href: `#/enemy/${e.id}` })),
+]
 
-const PICKS: readonly { id: NightlordPick; name: string }[] = [...NIGHTLORDS, { id: 'unknown', name: 'Unknown' }]
-
-function Portrait({ id, name }: { id: NightlordPick; name: string }) {
-  const [failed, setFailed] = useState(false)
-  if (failed) {
-    return <div className="portrait monogram" aria-hidden>{name.split(' ').map((w) => w[0]).join('')}</div>
-  }
-  return <img className="portrait" src={`nightlords/${id}.webp`} alt="" onError={() => setFailed(true)} />
+export const findEnemies = (query: string) => {
+  const q = normalize(query)
+  if (!q) return []
+  return ENEMIES_AND_NIGHTLORDS
+    .map((entry) => ({ ...entry, at: normalize(entry.enemy.name).indexOf(q) }))
+    .filter((entry) => entry.at >= 0)
+    .sort((a, b) => a.at - b.at || a.enemy.name.localeCompare(b.enemy.name))
 }
 
-export function HomeScreen({ go }: { go: (path: string) => void }) {
-  const wide = useWide()
-  const [picked, setPicked] = useState<NightlordPick | null>(null)
+export function BossesPage({ go }: { go: Go }) {
+  const [query, setQuery] = useState('')
+  const shown = query.trim() ? findEnemies(query).filter((e) => !e.href.includes('nightlord')).map((e) => e.enemy) : bestiary.all
   return (
-    <main className="home">
-      <h1 className="home-title">Choose your Nightlord</h1>
-      <ul className="nightlord-grid">
-        {PICKS.map((n) => (
-          <li key={n.id}>
-            <button className="nightlord" aria-pressed={picked === n.id} data-dim={(picked && picked !== n.id) || undefined} onClick={() => setPicked(n.id)}>
-              <span className="medallion"><Portrait id={n.id} name={n.name} /></span>
-              <span className="nightlord-name">{n.name}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <AnimatePresence>
-        {picked && (
-          <motion.nav
-            key="earths"
-            className={wide ? 'earths' : 'earths earth-bar plate'}
-            aria-labelledby="earth-heading"
-            initial={{ y: 24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
-            transition={spring}
-          >
-            <WeaknessCard nightlord={picked} />
-            <h2 id="earth-heading" className="earth-heading">Shifting Earth</h2>
-            <div className="earth-grid">
-              {catalog.earthsFor(picked).map((earth) => (
-                <button key={earth} className="earth" onClick={() => go(`/find/${picked}/${earth}`)}>
-                  <img className="earth-thumb" src={`maps/thumb/${earth}.webp`} alt="" width={240} height={240} draggable={false} />
-                  <span className="earth-name">{earthName(earth)}</span>
-                  <span className="num earth-count">{catalog.seedsFor(picked, earth).length} seeds</span>
-                </button>
-              ))}
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
-      <footer className="home-footer"><button onClick={() => go('/about')}>About</button></footer>
+    <Page title="Bosses" go={go}>
+      <SearchField label="Filter bosses" placeholder="Name" value={query} onChange={setQuery} />
+      <Group className="mt-4">{shown.map((e) => <EnemyRow key={e.id} enemy={e} />)}</Group>
+      {!shown.length && <p className="mx-1 mt-4 text-label-2">Nothing matches.</p>}
+    </Page>
+  )
+}
+
+const LINKS: [string, string][] = [
+  ['Nightlords', '#/nightlords'],
+  ['Bosses', '#/bosses'],
+  ['Relic Effects', '#/effects/relics'],
+  ['Weapon Effects', '#/effects/weapons'],
+  ['Builds', '#/builds'],
+]
+
+export function HomeScreen() {
+  const [query, setQuery] = useState('')
+  const searching = query.trim().length > 0
+  const enemies = findEnemies(query)
+  const effects = searchEffects(query)
+  return (
+    <main className="home-screen mx-auto box-border flex min-h-dvh max-w-3xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+40px)] pb-[calc(var(--safe-bottom)+24px)]">
+      <h1 className="mx-1 my-0 text-[34px] font-bold">Nightreign</h1>
+      <SearchField label="Search bosses and relic effects" placeholder="Bosses, relic effects" value={query} onChange={setQuery} />
+      {searching ? (
+        <div>
+          {enemies.length > 0 && (
+            <Section title="Bosses">
+              <Group>{enemies.map(({ enemy, href }) => <EnemyRow key={href} enemy={enemy} href={href} />)}</Group>
+            </Section>
+          )}
+          {(['relics', 'weapons'] as const).map((group) => {
+            const found = effects.filter((e) => e.group === group)
+            return found.length ? (
+              <Section key={group} title={GROUP_TITLES[group]}>
+                <Group>{found.map((e) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} />)}</Group>
+              </Section>
+            ) : null
+          })}
+          {!enemies.length && !effects.length && <p className="mx-1 text-label-2">Nothing matches.</p>}
+        </div>
+      ) : (
+        <>
+          <a href={`#${PICK_PATH}`}
+            className="find-my-seed glass relative mt-2 box-border flex h-48 w-full items-end overflow-hidden rounded-[32px] p-5 text-left">
+            <img src="maps/default.webp" alt="" className="pointer-events-none absolute top-1/2 left-1/2 w-[130%] max-w-none -translate-x-1/2 -translate-y-[42%] opacity-70" draggable={false} />
+            <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgb(0_0_0/0.75),transparent_65%)]" aria-hidden />
+            <span className="relative flex w-full items-center justify-between text-[24px] font-semibold">
+              Find My Seed
+              <Icon name="chevron" size={22} />
+            </span>
+          </a>
+          <Group>
+            {LINKS.map(([label, href]) => <LinkRow key={href} href={href}>{label}</LinkRow>)}
+          </Group>
+          <a href="#/about" className="mt-auto self-center px-4 py-3 text-[15px] text-label-2">About</a>
+        </>
+      )}
     </main>
   )
 }
