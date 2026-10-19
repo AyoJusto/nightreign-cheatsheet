@@ -1,15 +1,19 @@
 import type { Pin } from './mapTypes'
 import { structureName, type SlotId, type StructureKey } from '../domain/names'
 import type { Scouting, Sighting } from '../domain/scouting'
+import { bestiary } from '../bestiary/bestiary'
 
-export const sightingLabel = (s: Sighting) =>
-  s.type === 'spawn' ? 'Spawn point' : s.type === 'structure' ? structureName(s.structure) : 'Nothing here'
+export function sightingLabel(s: Sighting): string {
+  if (s.type === 'spawn') return 'Spawn point'
+  if (s.type === 'night1') return `Night 1: ${bestiary.enemy(s.boss)?.name ?? s.boss}`
+  return s.type === 'structure' ? structureName(s.structure) : 'Nothing here'
+}
 
 /** The finder map's pins, one per slot still worth showing, each in its state for this step of the scouting. */
 export function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number; y: number }>, focus: StructureKey | null): Pin[] {
   const pins: Pin[] = []
   const spawn = scouting.sightings.find((s) => s.type === 'spawn')
-  const sighted = new Map(scouting.sightings.flatMap((s) => (s.type === 'spawn' ? [] : [[s.slot, s] as const])))
+  const sighted = new Map(scouting.sightings.flatMap((s) => (s.type === 'structure' || s.type === 'nothing' ? [[s.slot, s] as const] : [])))
   const certain = scouting.certainSlots()
   const focusSlots = new Set(focus ? scouting.structuresInPlay().find((p) => p.structure === focus)?.slots ?? [] : [])
 

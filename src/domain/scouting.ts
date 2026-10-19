@@ -1,23 +1,30 @@
 import type { Seed } from './seed'
 import type { SlotId, StructureKey } from './names'
+import { bestiary } from '../bestiary/bestiary'
 
+/** `night1`: the boss the first night closed on, by its fight's id. */
 export type Sighting =
   | { type: 'spawn'; slot: SlotId }
   | { type: 'structure'; slot: SlotId; structure: StructureKey }
   | { type: 'nothing'; slot: SlotId }
+  | { type: 'night1'; boss: string }
+export type Target = SlotId | 'spawn' | 'night1'
+export const targetOf = (s: Sighting): Target => (s.type === 'spawn' || s.type === 'night1' ? s.type : s.slot)
+const siteOf = (s: Sighting): SlotId | null => (s.type === 'structure' || s.type === 'nothing' ? s.slot : null)
+export const nightOneFight = (seed: Seed) => bestiary.nightBoss(seed.nights[1].boss)?.id
 export type Option = StructureKey | 'nothing'
 
 export class ImpossibleSighting extends Error {}
 
 const matches = (seed: Seed, s: Sighting) => {
   if (s.type === 'spawn') return seed.spawn === s.slot
+  if (s.type === 'night1') return nightOneFight(seed) === s.boss
   // seed.slots lists every slot on the map, so a slot it lacks is not "nothing": it is not there at all.
   if (!Object.hasOwn(seed.slots, s.slot)) return false
   const actual = seed.slots[s.slot]
   return s.type === 'nothing' ? actual === null : actual === s.structure
 }
-const sameTarget = (a: Sighting, b: Sighting) =>
-  a.type === 'spawn' || b.type === 'spawn' ? a.type === b.type : a.slot === b.slot
+const sameTarget = (a: Sighting, b: Sighting) => targetOf(a) === targetOf(b)
 const byRemainingThenOption = (a: { option: Option; remaining: number }, b: { option: Option; remaining: number }) =>
   b.remaining - a.remaining || a.option.localeCompare(b.option)
 const byRemainingThenSlot = (a: { slot: SlotId; remaining: number }, b: { slot: SlotId; remaining: number }) =>
@@ -46,15 +53,12 @@ export class Scouting {
     return new Scouting(this.pool, next)
   }
 
-  retract(slot: SlotId | 'spawn'): Scouting {
-    return new Scouting(
-      this.pool,
-      this.sightings.filter((s) => (slot === 'spawn' ? s.type !== 'spawn' : s.type === 'spawn' || s.slot !== slot)),
-    )
+  retract(target: Target): Scouting {
+    return new Scouting(this.pool, this.sightings.filter((s) => targetOf(s) !== target))
   }
 
   possibilitiesAt(slot: SlotId) {
-    const others = this.sightings.filter((s) => s.type === 'spawn' || s.slot !== slot)
+    const others = this.sightings.filter((s) => siteOf(s) !== slot)
     const counts = new Map<Option, number>()
     for (const seed of this.filtered(others)) {
       const option: Option = seed.slots[slot] ?? 'nothing'
@@ -71,8 +75,17 @@ export class Scouting {
     return [...counts].map(([slot, remaining]) => ({ slot, remaining })).sort(byRemainingThenSlot)
   }
 
+  nightOneOptions() {
+    const counts = new Map<string, number>()
+    for (const seed of this.filtered(this.sightings.filter((s) => s.type !== 'night1'))) {
+      const fight = nightOneFight(seed)
+      if (fight) counts.set(fight, (counts.get(fight) ?? 0) + 1)
+    }
+    return [...counts].map(([boss, remaining]) => ({ boss, remaining })).sort((a, b) => b.remaining - a.remaining || a.boss.localeCompare(b.boss))
+  }
+
   structuresInPlay() {
-    const sighted = new Set(this.sightings.flatMap((s) => (s.type === 'spawn' ? [] : [s.slot])))
+    const sighted = new Set(this.sightings.flatMap((s) => siteOf(s) ?? []))
     const slotsByStructure = new Map<StructureKey, Set<SlotId>>()
     for (const seed of this.candidates()) {
       for (const [slot, key] of Object.entries(seed.slots)) {
@@ -86,7 +99,7 @@ export class Scouting {
 
   certainSlots(): Map<SlotId, StructureKey | null> {
     const [first, ...rest] = this.candidates()
-    const sighted = new Set(this.sightings.flatMap((s) => (s.type === 'spawn' ? [] : [s.slot])))
+    const sighted = new Set(this.sightings.flatMap((s) => siteOf(s) ?? []))
     const certain = new Map<SlotId, StructureKey | null>()
     if (!first) return certain
     for (const [slot, key] of Object.entries(first.slots)) {

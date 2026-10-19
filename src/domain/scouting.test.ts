@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Scouting, ImpossibleSighting } from './scouting'
+import { Scouting, ImpossibleSighting, nightOneFight } from './scouting'
 import type { Seed } from './seed'
 import { catalog } from '../data/catalog'
 
@@ -113,5 +113,39 @@ describe('Scouting', () => {
       }
       expect(s.identifiedSeed()?.id, `seed ${target.id}`).toBe(target.id)
     }
+  })
+})
+
+describe('the Night 1 boss as a sighting', () => {
+  const pool = catalog.seedsFor('tricephalos', 'default')
+  const target = pool[0]
+  const fight = nightOneFight(target)!
+
+  it('leaves only the seeds whose first night closed on that fight', () => {
+    const scouting = Scouting.start(pool).sight({ type: 'night1', boss: fight })
+    expect(scouting.candidates().length).toBeGreaterThan(0)
+    expect(scouting.candidates().every((s) => nightOneFight(s) === fight)).toBe(true)
+  })
+
+  it('offers each possible fight with the seeds it would leave', () => {
+    const options = Scouting.start(pool).nightOneOptions()
+    expect(options.reduce((n, o) => n + o.remaining, 0)).toBe(pool.length)
+    expect(options.map((o) => o.boss)).toContain(fight)
+  })
+
+  it('replaces an earlier Night 1 sighting rather than stacking with it, and can be retracted', () => {
+    const other = Scouting.start(pool).nightOneOptions().find((o) => o.boss !== fight)!.boss
+    const changed = Scouting.start(pool).sight({ type: 'night1', boss: other }).sight({ type: 'night1', boss: fight })
+    expect(changed.sightings).toEqual([{ type: 'night1', boss: fight }])
+    expect(changed.retract('night1').sightings).toEqual([])
+  })
+
+  it('names the hidden Nightlord in 339 of 520 Deep of Night runs once spawn and Night 1 are known', () => {
+    const named = catalog.all.filter((seed) => {
+      const seeds = catalog.seedsFor('unknown', seed.earth)
+      const left = Scouting.start(seeds).sight({ type: 'spawn', slot: seed.spawn }).sight({ type: 'night1', boss: nightOneFight(seed)! }).candidates()
+      return new Set(left.map((s) => s.nightlord)).size === 1
+    })
+    expect(named).toHaveLength(339)
   })
 })

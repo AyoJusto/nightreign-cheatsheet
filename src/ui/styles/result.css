@@ -37,3 +37,5 @@ li.run-row { grid-template-columns: 1fr; }
 dd .run-select { width: auto; margin: -11px 0; padding: 11px 0; }
 @media (hover: hover) { .run-row:has(> .run-value > .run-select):hover, .run-row:has(> dd > .run-select):hover { background: var(--color-fill); } }
 .run-row[data-pressed] { background: var(--color-fill-strong); }
+.option-ring { display: grid; place-items: center; width: 30px; height: 30px; margin: 0 auto; border-radius: 50%; box-shadow: inset 0 0 0 3px var(--color-night-1); color: var(--color-night-1); font-size: 14px; font-weight: 700; }
+.option.option-text { grid-template-columns: 1fr auto; padding-left: 16px; }
