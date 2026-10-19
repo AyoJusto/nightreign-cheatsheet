@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { resultMap, type Layer } from './resultMap'
+import { enemyOfMark, resultMap, type Layer } from './resultMap'
+import type { MapMarker } from './mapTypes'
 import { catalog } from '../data/catalog'
 
 // Seed 008 has a Church at its spawn, a castle and a caravan; seed 000 has a Sorcerer's Rise with a clue inside.
@@ -37,5 +38,24 @@ describe('the result map', () => {
     const rise = catalog.seed('000')!
     const pin = resultMap(rise, all).pins.find((p) => p.structure?.startsWith('sorcerers-rise') && p.name)!
     expect(pin.name).toMatch(/^Rise · /)
+  })
+})
+
+describe('a tapped name on the result map', () => {
+  const marker = (layer: MapMarker['layer'], label: string): MapMarker => ({ layer, label, x: 0, y: 0 })
+  it("opens a night's fight from its ring, by the boss after the night number", () => {
+    expect(enemyOfMark({ marker: marker('circle', 'Night 2: Tree Sentinel and Royal Cavalrymen') })?.id).toBe('tree-sentinel-royal-cavalrymen')
+  })
+  it('opens a field boss, an evergaol, a castle boss and a camp by name', () => {
+    expect(enemyOfMark({ marker: marker('boss', 'Golden Hippopotamus') })?.name).toBe('Golden Hippopotamus')
+    expect(enemyOfMark({ marker: marker('evergaol', 'Nox Warriors') })).toBeDefined()
+    expect(enemyOfMark({ marker: marker('castle', 'Grafted Scion') })).toBeDefined()
+    expect(enemyOfMark({ site: 'Fire Monk' })).toBeDefined()
+  })
+  it('opens nothing for a list of possible bosses, a rise clue, a caravan or a chest', () => {
+    expect(enemyOfMark({ marker: marker('boss', 'Morgott, Great Wyrm, Dancer') })).toBeUndefined()
+    expect(enemyOfMark({ site: 'Rise · Fog Door' })).toBeUndefined()
+    expect(enemyOfMark({ marker: marker('caravan', 'Caravans') })).toBeUndefined()
+    expect(enemyOfMark({ marker: marker('chest', 'Chest') })).toBeUndefined()
   })
 })

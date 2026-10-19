@@ -379,9 +379,9 @@ test('a tap on a crest calls out its name, and a second tap or a pan hides it', 
   await tap()
   await expect(callout).toBeVisible()
   const map = (await page.locator('.map-frame').boundingBox())!
-  await page.mouse.move(map.width / 2, map.height / 3)
+  await page.mouse.move(map.width / 2, map.height * 2 / 3)
   await page.mouse.down()
-  await page.mouse.move(map.width / 2 + 50, map.height / 3 + 40, { steps: 6 })
+  await page.mouse.move(map.width / 2 + 50, map.height * 2 / 3 + 40, { steps: 6 })
   await page.mouse.up()
   await expect(callout).toHaveCount(0)
 })
@@ -891,7 +891,7 @@ test('an unknown Nightlord scouts every seed on the earth and the result names i
   await page.evaluate((s) => { history.replaceState(history.state, '', `${location.hash}?s=${s}`) }, sightings.join(','))
   await page.reload()
   await expect(page).toHaveURL(new RegExp(`/seed/${target.id}`))
-  await expect(page.locator('.result-sub')).toContainText(nightlordName(target.nightlord))
+  await expect(page.locator('.nl-medal')).toHaveAccessibleName(new RegExp(`^${nightlordName(target.nightlord)}:`))
 
   await page.getByRole('button', { name: 'Back' }).click()
   await expect(page).toHaveURL(new RegExp(`/find/unknown/${target.earth}\\?s=`))
