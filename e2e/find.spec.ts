@@ -46,6 +46,44 @@ for (const target of targets) {
   })
 }
 
+const recordedTarget = data.seeds.find((s: any) => s.id === '228')
+
+test('reconstructs seed 228 from the recorded Darkdrift Knight Crater sightings', async ({ page }, testInfo) => {
+  const capture = async (name: string) => {
+    await testInfo.attach(`${name} screenshot`, { body: await page.screenshot(), contentType: 'image/png' })
+  }
+  const optionName = (slot: string) => `${structureName(recordedTarget.slots[slot])}, leaves`
+
+  await page.goto('/')
+
+  await test.step('Select Darkdrift Knight', async () => {
+    await page.getByRole('button', { name: nightlordName(recordedTarget.nightlord) }).click()
+    await capture('Select Darkdrift Knight')
+  })
+
+  await test.step('Select Crater', async () => {
+    await page.getByRole('button', { name: earthName(recordedTarget.earth) }).click()
+    await capture('Select Crater')
+  })
+
+  await test.step('Choose Ruins at slot 13', async () => {
+    const ruins = page.getByRole('button', { name: 'Unknown site', exact: true }).and(page.locator('[data-slot="13"]'))
+    await ruins.click()
+    await page.locator('[data-slot="13"].options').getByRole('button', { name: new RegExp(`^${escapeRe(optionName('13'))}`) }).click()
+    await capture('Choose Ruins at slot 13')
+  })
+
+  await test.step('Choose Main Encampment with Madness at slot 18', async () => {
+    const encampment = page.getByRole('button', { name: 'Unknown site', exact: true }).and(page.locator('[data-slot="18"]'))
+    await encampment.click()
+    await page.locator('[data-slot="18"].options').getByRole('button', { name: new RegExp(`^${escapeRe(optionName('18'))}`) }).click()
+    await capture('Choose Main Encampment with Madness at slot 18')
+  })
+
+  await expect(page).toHaveURL(new RegExp(`/seed/${recordedTarget.id}`), { timeout: 5000 })
+  await expect(page.getByRole('heading', { name: `Seed ${recordedTarget.id}` })).toBeVisible()
+})
+
 test('a shared seed link opens directly', async ({ page }) => {
   await page.goto(`/seed/${targets[0].id}`)
   await expect(page.getByRole('heading', { name: `Seed ${targets[0].id}` })).toBeVisible()
