@@ -39,10 +39,10 @@ export function WeakTo({ forms, named }: { forms: Form[]; named?: Affliction }) 
       ) : (
         <p className="m-0 text-[28px] leading-tight font-bold text-label-2">No damage weakness</p>
       )}
-      {verdict.fastest.length > 0 && (
+      {verdict.weakStatuses.length > 0 && (
         <p className="m-0 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[15px] text-label-2 shadow-[inset_0_0.5px_0_var(--color-separator)]">
           Fastest status
-          {verdict.fastest.map((s) => (
+          {verdict.weakStatuses.map((s) => (
             <span key={s} className="inline-flex items-center gap-1.5 text-label">
               <AfflictionIcon affliction={s} />{DAMAGE_NAMES[s]} <b className="text-weak tabular-nums">{verdict.fastestAt}</b>
             </span>

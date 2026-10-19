@@ -35,7 +35,7 @@ describe('Scouting', () => {
     expect(s.identifiedSeed()?.id).toBe('000')
   })
 
-  // A crafted ?s= such as 999@none must not count as "nothing" at a site this map does not have (final m3).
+  // A crafted ?s= such as 999@none must not count as "nothing" at a site this map does not have.
   it('rejects a sighting at a slot the map does not have', () => {
     expect(() => Scouting.start(pool).sight({ type: 'nothing', slot: '999' })).toThrow(ImpossibleSighting)
   })

@@ -1,9 +1,10 @@
 import { Icon } from './Icon'
+import { goBack } from './router'
 
 export function AboutScreen({ go }: { go: (path: string, back?: boolean) => void }) {
   return (
     <main className="home about">
-      <button className="about-back" onClick={() => go('/', true)}><Icon name="back" />Back</button>
+      <button className="about-back" onClick={() => goBack('/', go)}><Icon name="back" />Back</button>
       <div className="about-panel">
         <h1 className="home-title">About</h1>
         <p>Find your Nightreign seed mid-run, see its whole map, and look up what every boss on it is weak to.</p>

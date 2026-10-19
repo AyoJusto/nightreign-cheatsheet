@@ -43,8 +43,8 @@ export function EnemyFacts({ enemy }: { enemy: Enemy }) {
       {verdict.resists.length > 0 && (
         <Row label="Resists"><Afflictions keys={verdict.resists} value={(k) => signed(verdict.negation[k as keyof typeof verdict.negation])} tone="text-label-2" /></Row>
       )}
-      {verdict.fastest.length > 0 && (
-        <Row label="Status"><Afflictions keys={verdict.fastest} value={() => String(verdict.fastestAt)} tone="text-weak" /></Row>
+      {verdict.weakStatuses.length > 0 && (
+        <Row label="Status"><Afflictions keys={verdict.weakStatuses} value={() => String(verdict.fastestAt)} tone="text-weak" /></Row>
       )}
       {verdict.immuneTo.length > 0 && (
         <Row label="Immune"><span className="text-immune">{verdict.immuneTo.map((s) => DAMAGE_NAMES[s]).join(', ')}</span></Row>
@@ -53,11 +53,11 @@ export function EnemyFacts({ enemy }: { enemy: Enemy }) {
   )
 }
 
-export function EnemyCardHeader({ enemy, onClose }: { enemy: Enemy; onClose: () => void }) {
+export function EnemyCardHeader({ enemy, onClose, takeFocus }: { enemy: Enemy; onClose: () => void; takeFocus?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <h2 className="m-0 min-w-0 flex-1 text-[22px] leading-7 font-bold">{enemy.name}</h2>
-      <button type="button" onClick={onClose} aria-label={`Close ${enemy.name}`} className="grid size-11 shrink-0 place-items-center rounded-full text-label-2">
+      <button type="button" onClick={onClose} aria-label={`Close ${enemy.name}`} autoFocus={takeFocus} className="grid size-11 shrink-0 place-items-center rounded-full text-label-2">
         <span className="grid size-8 place-items-center rounded-full bg-fill"><Icon name="close" /></span>
       </button>
     </div>

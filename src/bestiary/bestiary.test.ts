@@ -45,6 +45,11 @@ describe('the bestiary', () => {
     }
   })
 
+  it("lists no weak status for Darkdrift Knight, whose five statuses tie at the floor", () => {
+    expect(nightlordHeadline(bestiary.nightlord('darkdrift-knight')!).status).toEqual([])
+    expect(nightlordHeadline(bestiary.nightlord('tricephalos')!).status).toEqual(['sleep'])
+  })
+
   it('shows a field Tree Sentinel alone, and the night fight with its cavalry', () => {
     expect(bestiary.named('Tree Sentinel')!.forms).toHaveLength(1)
     expect(bestiary.nightBoss('Tree Sentinel')!.forms.length).toBeGreaterThan(1)

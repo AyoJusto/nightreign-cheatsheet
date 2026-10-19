@@ -42,6 +42,11 @@ describe('assessing a fight', () => {
     expect(verdict.fastestAt).toBe(154)
   })
 
+  it('counts the fastest statuses as a weakness only when they stand out from the rest', () => {
+    expect(assess([form({}, { sleep: 154 })]).weakStatuses).toEqual(['sleep'])
+    expect(assess([form({}, { bleed: 154, frost: 154, rot: 154, poison: 154, sleep: 154 })]).weakStatuses).toEqual([])
+  })
+
   it('names a weakness only one form has when the worst case has none', () => {
     const verdict = assess([form({ fire: -30 }, {}, 'Phase 1'), form({ fire: 10 }, {}, 'Phase 2')])
     expect(verdict.weakTo).toEqual([])

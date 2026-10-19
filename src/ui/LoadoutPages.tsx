@@ -49,7 +49,7 @@ export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
       <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Category">
         {filters.map((f) => (
           <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(filter === f.key ? null : f.key)}
-            className="shrink-0 rounded-full px-3.5 py-2 text-[15px] whitespace-nowrap text-label-2 glass-flat aria-pressed:bg-fill-strong aria-pressed:text-label">
+            className="min-h-11 shrink-0 rounded-full px-3.5 text-[15px] whitespace-nowrap text-label-2 glass-flat aria-pressed:bg-fill-strong aria-pressed:text-label">
             {f.label} <span className="tabular-nums">{f.count}</span>
           </button>
         ))}
@@ -115,10 +115,10 @@ export function BuildsPage({ character, go }: { character: string | null; go: Go
   return (
     <Page title={builds.name} go={go} back="/builds">
       {builds.builds.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Build">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Build">
           {builds.builds.map((b, i) => (
-            <button key={b.name} type="button" role="tab" aria-selected={b === build} onClick={() => setPicked(i)}
-              className="rounded-full px-4 py-2.5 text-[15px] text-label-2 glass-flat aria-selected:bg-fill-strong aria-selected:font-semibold aria-selected:text-label">
+            <button key={b.name} type="button" aria-pressed={b === build} onClick={() => setPicked(i)}
+              className="min-h-11 rounded-full px-4 text-[15px] text-label-2 glass-flat aria-pressed:bg-fill-strong aria-pressed:font-semibold aria-pressed:text-label">
               {b.name}
             </button>
           ))}

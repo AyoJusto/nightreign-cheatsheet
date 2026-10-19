@@ -57,7 +57,7 @@ export function HomeScreen() {
         <div>
           {enemies.length > 0 && (
             <Section title="Bosses">
-              <Group>{enemies.map(({ enemy, href }) => <EnemyRow key={href} enemy={enemy} href={href} />)}</Group>
+              <Group>{enemies.map(({ enemy, href }) => <EnemyRow key={href} enemy={enemy} href={href} nightlord={href.startsWith('#/nightlord/')} />)}</Group>
             </Section>
           )}
           {(['relics', 'weapons'] as const).map((group) => {
