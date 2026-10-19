@@ -1,0 +1,58 @@
+{
+  "nightlordByNumber": {
+    "1": "tricephalos", "2": "gaping-jaw", "3": "sentient-pest", "4": "augur", "5": "equilibrious-beast",
+    "6": "darkdrift-knight", "7": "fissure-in-the-fog", "8": "night-aspect", "9": "balancers", "10": "dreglord"
+  },
+  "internalNightlordNames": ["Gladius", "Adel", "Gnoster", "Maris", "Libra", "Fulghor", "Caligo", "Heolstor", "Harmonia", "Straghess", "Greg"],
+  "eventNameOverrides": {
+    "gladiusRaid": "Tricephalos Raid",
+    "caligoRaid": "Fissure in the Fog Raid",
+    "gnosterplague": "Sentient Pest Plague",
+    "libracurse": "Equilibrious Beast Curse"
+  },
+  "weaknessBossNames": {
+    "_readme": "Our night boss display name -> the cheatsheet's name for the same fight (data/raw/weaknesses). Names that already match are left out.",
+    "Artorias": "Knight Artorias",
+    "Crucible Knight & Hippo": "Crucible Knight & Golden Hippopotamus",
+    "Crucible Knight and Golden Hippopotamus": "Crucible Knight & Golden Hippopotamus",
+    "DBW & Curseblade": "Curseblade & Divine Beast Warrior",
+    "Dancer": "Dancer of the Boreal Valley",
+    "Dancing Lion": "Divine Beast Dancing Lion",
+    "Death Knights": "Death Knight",
+    "Demi-Human Queen and Swordmaster": "Demi-Human Queen & Swordmaster",
+    "Demons": "Demon in Pain & Demon from Below",
+    "Draconic Tree Sentinel": "Draconic Tree Sentinel & Royal Cavalrymen",
+    "Draconic Tree Sentinel and Royal Cavalrymen": "Draconic Tree Sentinel & Royal Cavalrymen",
+    "Dragonkin Soldier": "Nox Dragonkin Soldier",
+    "Fallingstar Beast": "Full-Grown Fallingstar Beast",
+    "Mohg": "Lord of Blood",
+    "Morgott": "Fell Omen",
+    "Night's Cavalries": "Night's Cavalry",
+    "Night's Cavalry Duo": "Night's Cavalry",
+    "The Duke's Dear Freja": "Duke's Dear Freja",
+    "Tibia Mariner": "Tibia Mariner & Those Who Live in Death",
+    "Tree Sentinel": "Tree Sentinel & Royal Cavalrymen",
+    "Tree Sentinel and Royal Cavalrymen": "Tree Sentinel & Royal Cavalrymen"
+  },
+  "bossSlots": {
+    "_readme": "Field boss spots the source sheets spell two ways -> the name bossPositions uses. The DLC sheet (seeds 1000 on) writes Southwest of Lake where the base sheet writes Far Southwest of Lake; no seed has both, and the reference map draws that seed's boss there.",
+    "Southwest of Lake": "Far Southwest of Lake"
+  },
+  "bossNameOverrides": {
+    "Demihuman Queen & Swordmaster": "Demi-Human Queen and Swordmaster"
+  },
+  "structureKinds": {
+    "church": "church", "greatchurch": "great-church", "fort": "fort", "mainencampment": "main-encampment",
+    "ruins": "ruins", "sorcerers": "sorcerers-rise", "diff_sorcerers": "ruined-rise",
+    "township": "township", "forge": "blacksmith-village", "marsh": "marsh", "WUF": "western-underground-fort", "EUF": "eastern-underground-fort",
+    "ScaleBearingMerchant": "scale-bearing-merchant"
+  },
+  "elements": {
+    "fire": "fire", "holy": "holy", "magic": "magic", "eletric": "lightning", "frostbite": "frostbite",
+    "poison": "poison", "bleed": "bleed", "blight": "blight", "madness": "madness", "sleep": "sleep", "rot": "rot"
+  },
+  "earths": {
+    "Normal": "default", "Crater": "crater", "Mountaintop": "mountaintop", "Rotted": "rotted-woods",
+    "Noklateo": "noklateo", "Great Hollow": "great-hollow"
+  }
+}

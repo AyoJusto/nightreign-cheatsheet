@@ -1,0 +1,132 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { extname, join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { catalog } from './catalog'
+import { NIGHTLORDS, EARTHS, DAMAGE_NAMES, structureName } from '../domain/names'
+
+const raw = readFileSync('src/data/seeds.json', 'utf8')
+const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
+
+// Binary assets are skipped: their bytes can land in the CJK range by chance.
+const TEXT_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html'])
+const walk = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) return walk(full)
+    return TEXT_EXT.has(extname(entry.name)) ? [full] : []
+  })
+const toPosixPath = (f: string) => f.split(/[\\/]/).join('/')
+const srcFilesBesidesSeeds = walk('src').filter((f) => toPosixPath(f) !== 'src/data/seeds.json')
+
+describe('seed data', () => {
+  it('holds all 520 seeds', () => {
+    expect(catalog.all.length).toBe(520)
+  })
+  it('gives every structure a display name and every used slot coordinates', () => {
+    for (const seed of catalog.all) {
+      const coords = catalog.slotsOf(seed.earth)
+      expect(coords[seed.spawn], `seed ${seed.id} spawn`).toBeDefined()
+      for (const [slot, key] of Object.entries(seed.slots)) {
+        if (key) {
+          expect(() => structureName(key)).not.toThrow()
+          expect(coords[slot], `seed ${seed.id} slot ${slot}`).toBeDefined()
+        }
+      }
+    }
+  })
+  it("marks where an event stands, with its day, and nowhere for a raid the source wrongly pins to a slot", () => {
+    const events = (id: string) => catalog.all.find((s) => s.id === id)!.markers.filter((m) => m.layer === 'event')
+    expect(events('242').map((m) => m.label)).toEqual(['Meteor Strike · Day 1'])
+    expect(events('128').map((m) => m.label)).toEqual(['Mausoleum'])
+    const augurRaidSeed = '252'
+    expect(events(augurRaidSeed)).toEqual([])
+  })
+  it('lets every seed be identified from its full layout and spawn', () => {
+    const seen = new Map<string, string>()
+    for (const seed of catalog.all) {
+      const fingerprint = JSON.stringify([seed.nightlord, seed.earth, seed.spawn, seed.slots])
+      expect(seen.get(fingerprint), `seed ${seed.id} duplicates ${seen.get(fingerprint)}`).toBeUndefined()
+      seen.set(fingerprint, seed.id)
+    }
+  })
+  it('never contains internal nightlord names or non-English text', () => {
+    const sources: [string, string][] = [
+      ['src/data/seeds.json', raw],
+      ...srcFilesBesidesSeeds.map((f): [string, string] => [f, readFileSync(f, 'utf8')]),
+    ]
+    for (const [file, text] of sources) {
+      for (const name of aliases.internalNightlordNames) expect(text, `${file}: ${name}`).not.toMatch(new RegExp(`\\b${name}\\b`, 'i'))
+      expect(text, file).not.toMatch(/[\u3000-\u9FFF\uFF00-\uFFEF]/)
+    }
+  })
+  it('knows where the castle is on every map a castle crew holds', () => {
+    for (const seed of catalog.all) {
+      if (!seed.castle) continue
+      const at = catalog.castleOf(seed.earth)
+      expect(at, `seed ${seed.id}`).toBeDefined()
+      for (const point of [at!.crew, at!.rooftop, at!.basement]) {
+        expect(point.x).toBeGreaterThan(0)
+        expect(point.y).toBeGreaterThan(0)
+      }
+    }
+    expect(catalog.castleOf('great-hollow')).toBeUndefined()
+  })
+  it("says what is inside the sites of every Limveld seed, and only on built slots or open-ground caravans", () => {
+    for (const seed of catalog.all) {
+      const labels = Object.entries(seed.inside)
+      if (seed.earth !== 'great-hollow') expect(labels.length, `seed ${seed.id}`).toBeGreaterThan(0)
+      for (const [slot, label] of labels) {
+        expect(seed.slots[slot] !== null || label === 'Caravans', `seed ${seed.id} slot ${slot} ${label}`).toBe(true)
+      }
+    }
+  })
+  it('offers every nightlord at least one shifting earth', () => {
+    for (const n of NIGHTLORDS) expect(catalog.earthsFor(n.id).length).toBeGreaterThan(0)
+    expect(EARTHS.length).toBe(6)
+  })
+})
+
+describe('game art for the new look', () => {
+  const size = (file: string) => statSync(`public/${file}`).size
+  it('has an icon for every damage type and status the weaknesses name', () => {
+    for (const key of Object.keys(DAMAGE_NAMES)) expect(size(`damage/${key}.webp`), key).toBeLessThan(30_000)
+  })
+  it('has every map marker, each within the 30 KB budget', () => {
+    for (const name of ['unknown', 'player', 'field-boss', 'great-boss', 'evergaol', 'chest', 'merchant', 'caravan']) {
+      expect(size(`markers/${name}.webp`), name).toBeLessThan(30_000)
+    }
+  })
+  it('has a map thumbnail for every earth, each within 25 KB', () => {
+    for (const earth of EARTHS) expect(size(`maps/thumb/${earth.id}.webp`), earth.id).toBeLessThanOrEqual(25_000)
+  })
+})
+
+describe('islands', () => {
+  it("frames each earth's whole island, every site on it", () => {
+    for (const { id } of EARTHS) {
+      const island = catalog.islandOf(id)
+      for (const slot of Object.values(catalog.slotsOf(id))) {
+        expect(slot.x, id).toBeGreaterThan(island.x0)
+        expect(slot.x, id).toBeLessThan(island.x1)
+        expect(slot.y, id).toBeGreaterThan(island.y0)
+        expect(slot.y, id).toBeLessThan(island.y1)
+      }
+      expect(island.x0, id).toBeGreaterThanOrEqual(0)
+      expect(island.x1, id).toBeLessThanOrEqual(1000)
+    }
+  })
+})
+
+describe('boss crests', () => {
+  it('marks the bosses the game draws on seed 1003 with its red great crest, and only those', () => {
+    const seed = catalog.all.find((s) => s.id === '1003')!
+    const great = (name: string) => seed.markers.find((m) => m.layer === 'boss' && m.label === name)?.great === true
+    for (const name of ['Black Blade Kindred', 'Draconic Tree Sentinel', 'Ancestor Spirit', 'Magma Wyrm']) expect(great(name), name).toBe(true)
+    for (const name of ['Royal Revenant', 'Ancient Hero of Zamor', 'Elder Lion', "Night's Cavalry"]) expect(great(name), name).toBe(false)
+    expect(catalog.all.every((s) => s.markers.every((m) => m.great === undefined || m.layer === 'boss'))).toBe(true)
+  })
+  it('places the field boss south-west of the lake on DLC seeds, whose sheet drops the "Far" from "Far Southwest of Lake"', () => {
+    const seed = catalog.all.find((s) => s.id === '1003')!
+    expect(seed.markers).toContainEqual({ layer: 'boss', x: 309, y: 823, label: 'Grafted Scion' })
+  })
+})
