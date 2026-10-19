@@ -11,7 +11,7 @@
     "e2e": "playwright test",
     "check": "tsc -b && vitest run && playwright test",
     "fetch-raw": "node --experimental-strip-types scripts/fetch-raw.ts",
-    "import": "node --experimental-strip-types scripts/import-seeds.ts",
+    "import": "node --experimental-strip-types scripts/import-seeds.ts && node --experimental-strip-types scripts/import-enemies.ts",
     "screens": "node --experimental-strip-types scripts/screens.ts"
   },
   "dependencies": {

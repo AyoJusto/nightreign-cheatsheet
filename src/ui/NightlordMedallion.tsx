@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
 import { useWide } from './useWide'
-import { catalog } from '../data/catalog'
 import './weakness.css'
-import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type DamageKey, type NightlordPick, type Weakness } from '../domain/names'
+import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type NightlordPick } from '../domain/names'
+import { bestiary, nightlordHeadline, type Headline } from '../bestiary/bestiary'
+import type { Affliction } from '../bestiary/enemy'
 
 /** Screen px: x from the left edge, `bottom` and `top` measured up from whatever covers the bottom of the screen. */
 export interface CornerRect { x0: number; x1: number; bottom: number; top: number }
@@ -34,7 +35,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
   }
   useEffect(() => moves.on('change', () => setOpen(false)), [moves])
   const shown = !unknown && (open || !collapsible)
-  const weakness = unknown ? undefined : catalog.nightlordWeakness(nightlord)
+  const weakness = unknown ? undefined : nightlordHeadline(bestiary.nightlord(nightlord)!)
   const label = [nightlordName(nightlord), weakness ? weaknessPhrase(weakness) : 'named once the seed is found'].filter(Boolean).join(': ')
 
   const slide = useReducedMotion() ? 0 : -12
@@ -103,7 +104,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
 }
 
 export function WeaknessCard({ nightlord }: { nightlord: NightlordPick }) {
-  const weakness = nightlord === 'unknown' ? undefined : catalog.nightlordWeakness(nightlord)
+  const weakness = nightlord === 'unknown' ? undefined : nightlordHeadline(bestiary.nightlord(nightlord)!)
   const facts = weakness ? weaknessPhrase(weakness) : HIDDEN_NIGHTLORD
   return (
     <div className="nl-pick" role="img" aria-label={`${nightlordName(nightlord)}: ${facts}`}>
@@ -119,7 +120,7 @@ export function WeaknessCard({ nightlord }: { nightlord: NightlordPick }) {
 
 const HIDDEN_NIGHTLORD = 'Deep of Night can hide the Nightlord. Scout the map as usual: the seed you find names it.'
 
-function CardRows({ weakness }: { weakness: Weakness }) {
+function CardRows({ weakness }: { weakness: Headline }) {
   const { weak, resist, status } = cardRows(weakness)
   return (
     <>
@@ -130,7 +131,7 @@ function CardRows({ weakness }: { weakness: Weakness }) {
   )
 }
 
-function CardRow({ label, keys, named }: { label: string; keys: DamageKey[]; named?: boolean }) {
+function CardRow({ label, keys, named }: { label: string; keys: Affliction[]; named?: boolean }) {
   return (
     <div className="nl-row">
       <span className="nl-row-label">{label}</span>

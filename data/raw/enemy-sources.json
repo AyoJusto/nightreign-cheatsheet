@@ -1,0 +1,1552 @@
+{
+  "Abductor Virgin": {
+    "id": "abductor-virgin",
+    "name": "Abductor Virgin",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Abductor Virgin",
+        "variant": "Fort"
+      }
+    ]
+  },
+  "Albinauric Archers": {
+    "id": "albinauric-archers",
+    "name": "Albinauric Archers",
+    "forms": [
+      {
+        "label": "Albinauric Archer",
+        "source": "fextralife",
+        "match": "https://eldenringnightreign.wiki.fextralife.com/Albinauric+Archers",
+        "variant": null,
+        "negation": {
+          "standard": 0,
+          "slash": 0,
+          "strike": 10,
+          "pierce": 0,
+          "magic": 20,
+          "fire": 0,
+          "lightning": 0,
+          "holy": -40
+        },
+        "buildup": {
+          "bleed": 154,
+          "frost": 252,
+          "rot": 112,
+          "poison": "Immune",
+          "sleep": 112,
+          "madness": "Immune"
+        }
+      },
+      {
+        "label": "Albinauric Archer's Wolf",
+        "source": "npcs",
+        "match": "Albinauric Archer's Wolf",
+        "variant": "31800000"
+      }
+    ]
+  },
+  "Albinaurics": {
+    "id": "albinaurics",
+    "name": "Albinaurics",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Large Albinauric",
+        "variant": "34715315"
+      }
+    ]
+  },
+  "Ancestor Spirit": {
+    "id": "ancestor-spirit",
+    "name": "Ancestor Spirit",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Ancestor Spirit",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Ancestral Followers": {
+    "id": "ancestral-followers",
+    "name": "Ancestral Followers",
+    "forms": []
+  },
+  "Ancient Dragon": {
+    "id": "ancient-dragon",
+    "name": "Ancient Dragon",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Ancient Dragon",
+        "variant": null
+      }
+    ]
+  },
+  "Ancient Hero of Zamor": {
+    "id": "ancient-hero-of-zamor",
+    "name": "Ancient Hero of Zamor",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Ancient Hero",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Ancient Heroes of Zamor": {
+    "id": "ancient-hero-of-zamor",
+    "name": "Ancient Hero of Zamor",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Ancient Hero",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Artorias": {
+    "id": "knight-artorias",
+    "name": "Knight Artorias",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Knight Artorias",
+        "variant": "Night Boss"
+      }
+    ]
+  },
+  "Banished Knights": {
+    "id": "banished-knights",
+    "name": "Banished Knights",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Banished Knight",
+        "variant": "30100275"
+      }
+    ]
+  },
+  "Battlefield Commander": {
+    "id": "battlefield-commander",
+    "name": "Battlefield Commander",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Battlefield Commander",
+        "variant": null
+      }
+    ]
+  },
+  "Battlemages": {
+    "id": "battlemages",
+    "name": "Battlemages",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Battlemage",
+        "variant": "37040093"
+      }
+    ]
+  },
+  "Beastly Brigade": {
+    "id": "beastly-brigade",
+    "name": "Beastly Brigade",
+    "forms": [
+      {
+        "label": "Scaly Misbegotten",
+        "source": "npcs",
+        "match": "Scaly Misbegotten",
+        "variant": "34510000"
+      },
+      {
+        "label": "Misbegotten",
+        "source": "npcs",
+        "match": "Misbegotten",
+        "variant": "34500200"
+      }
+    ]
+  },
+  "Beastmen of Farum Azula": {
+    "id": "beastmen-of-farum-azula",
+    "name": "Beastmen of Farum Azula",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Azula Beastman",
+        "variant": "39700500"
+      }
+    ]
+  },
+  "Bell Bearing Hunter": {
+    "id": "bell-bearing-hunter",
+    "name": "Bell Bearing Hunter",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Bell Bearing Hunter",
+        "variant": null
+      }
+    ]
+  },
+  "Black Blade Kindred": {
+    "id": "black-blade-kindred",
+    "name": "Black Blade Kindred",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Black Blade Kindred",
+        "variant": "47701210"
+      }
+    ]
+  },
+  "Black Flame Monks": {
+    "id": "black-flame-monks",
+    "name": "Black Flame Monks",
+    "forms": [
+      {
+        "label": "Blackflame Monk (mace)",
+        "source": "npcs",
+        "match": "Blackflame Monk - Mace",
+        "variant": "39010020"
+      },
+      {
+        "label": "Blackflame Monk (sword)",
+        "source": "npcs",
+        "match": "Blackflame Monk - Sword",
+        "variant": "39011020"
+      }
+    ]
+  },
+  "Black Knife Assassin": {
+    "id": "black-knife-assassin",
+    "name": "Black Knife Assassin",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Black Knife Assassin",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Bloodbane Giant Crows": {
+    "id": "bloodbane-giant-crows",
+    "name": "Bloodbane Giant Crows",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Bloodbane Giant Crow",
+        "variant": "Ruins Group Boss"
+      }
+    ]
+  },
+  "Bloodhound Knight": {
+    "id": "bloodhound-knight",
+    "name": "Bloodhound Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Bloodhound Knight",
+        "variant": "Evergaol"
+      }
+    ]
+  },
+  "Centipede Demon": {
+    "id": "centipede-demon",
+    "name": "Centipede Demon",
+    "forms": [
+      {
+        "label": "Centipede Demon",
+        "source": "nightbosses",
+        "match": "Centipede Demon",
+        "variant": "Centipede Demon"
+      },
+      {
+        "label": "Centipede Grub (severed tail)",
+        "source": "nightbosses",
+        "match": "Centipede Demon",
+        "variant": "Centipede Grub (severed tail)"
+      }
+    ]
+  },
+  "Chief Bloodfiend": {
+    "id": "chief-bloodfiend",
+    "name": "Chief Bloodfiend",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Chief Bloodfiend",
+        "variant": "Blacksmith Boss"
+      }
+    ]
+  },
+  "Chief Purple Fiend": {
+    "id": "chief-purple-fiend",
+    "name": "Chief Purple Fiend",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Chief Purple Fiend",
+        "variant": "Ruins Boss"
+      }
+    ]
+  },
+  "Cleanrot Knight": {
+    "id": "cleanrot-knight",
+    "name": "Cleanrot Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Cleanrot Knight - Spear",
+        "variant": "38000010"
+      }
+    ]
+  },
+  "Cleanrot Knights": {
+    "id": "cleanrot-knight",
+    "name": "Cleanrot Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Cleanrot Knight - Spear",
+        "variant": "38000010"
+      }
+    ]
+  },
+  "Crucible Knight & Hippo": {
+    "id": "crucible-knight-golden-hippopotamus",
+    "name": "Crucible Knight & Golden Hippopotamus",
+    "forms": [
+      {
+        "label": "Crucible Knight",
+        "source": "nightbosses",
+        "match": "Crucible Knight & Golden Hippopotamus",
+        "variant": "Crucible Knight"
+      },
+      {
+        "label": "Golden Hippopotamus",
+        "source": "nightbosses",
+        "match": "Crucible Knight & Golden Hippopotamus",
+        "variant": "Golden Hippopotamus"
+      }
+    ]
+  },
+  "Crucible Knight and Golden Hippopotamus": {
+    "id": "crucible-knight-golden-hippopotamus",
+    "name": "Crucible Knight & Golden Hippopotamus",
+    "forms": [
+      {
+        "label": "Crucible Knight",
+        "source": "nightbosses",
+        "match": "Crucible Knight & Golden Hippopotamus",
+        "variant": "Crucible Knight"
+      },
+      {
+        "label": "Golden Hippopotamus",
+        "source": "nightbosses",
+        "match": "Crucible Knight & Golden Hippopotamus",
+        "variant": "Golden Hippopotamus"
+      }
+    ]
+  },
+  "Crucible Knight with Spear": {
+    "id": "crucible-knight-with-spear",
+    "name": "Crucible Knight with Spear",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Crucible Knight",
+        "variant": "Evergaol, Treespear"
+      }
+    ]
+  },
+  "Crucible Knight with Sword": {
+    "id": "crucible-knight-with-sword",
+    "name": "Crucible Knight with Sword",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Crucible Knight",
+        "variant": "Base [perm x1.88]"
+      }
+    ]
+  },
+  "Crucible Knights": {
+    "id": "crucible-knights",
+    "name": "Crucible Knights",
+    "forms": [
+      {
+        "label": "Crucible Knight (sword)",
+        "source": "bosses",
+        "match": "Crucible Knight",
+        "variant": "Ruins Group Boss, Sword"
+      },
+      {
+        "label": "Crucible Knight (spear)",
+        "source": "bosses",
+        "match": "Crucible Knight",
+        "variant": "Ruins Group Boss, Spear"
+      }
+    ]
+  },
+  "Crystalians": {
+    "id": "crystalians",
+    "name": "Crystalians",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Crystalian",
+        "variant": "33509000"
+      }
+    ]
+  },
+  "Cuckoo Knights": {
+    "id": "cuckoo-knights",
+    "name": "Cuckoo Knights",
+    "forms": [
+      {
+        "label": "Cuckoo Knight (sword)",
+        "source": "npcs",
+        "match": "Cuckoo Knight - Sword",
+        "variant": "43520020"
+      },
+      {
+        "label": "Cuckoo Knight (spear)",
+        "source": "npcs",
+        "match": "Cuckoo Knight - Spear",
+        "variant": "43521020"
+      }
+    ]
+  },
+  "Curseblade": {
+    "id": "curseblade",
+    "name": "Curseblade",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Curseblade",
+        "variant": "Ruins Boss"
+      }
+    ]
+  },
+  "DBW & Curseblade": {
+    "id": "curseblade-divine-beast-warrior",
+    "name": "Curseblade & Divine Beast Warrior",
+    "forms": [
+      {
+        "label": "Curseblade",
+        "source": "nightbosses",
+        "match": "Curseblade & Divine Beast Warrior",
+        "variant": "Curseblade"
+      },
+      {
+        "label": "Divine Beast Warrior",
+        "source": "nightbosses",
+        "match": "Curseblade & Divine Beast Warrior",
+        "variant": "Divine Beast Warrior"
+      }
+    ]
+  },
+  "Dancer": {
+    "id": "dancer-of-the-boreal-valley",
+    "name": "Dancer of the Boreal Valley",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Dancer of the Boreal Valley",
+        "variant": null
+      }
+    ]
+  },
+  "Dancer of the Boreal Valley": {
+    "id": "dancer-of-the-boreal-valley",
+    "name": "Dancer of the Boreal Valley",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Dancer of the Boreal Valley",
+        "variant": null
+      }
+    ]
+  },
+  "Dancing Lion": {
+    "id": "divine-beast-dancing-lion",
+    "name": "Divine Beast Dancing Lion",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Divine Beast Dancing Lion",
+        "variant": null
+      }
+    ]
+  },
+  "Death Knight": {
+    "id": "death-knight",
+    "name": "Death Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Death Knight",
+        "variant": null
+      }
+    ]
+  },
+  "Death Knights": {
+    "id": "death-knight",
+    "name": "Death Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Death Knight",
+        "variant": null
+      }
+    ]
+  },
+  "Death Rite Bird": {
+    "id": "death-rite-bird",
+    "name": "Death Rite Bird",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Death Rite Bird",
+        "variant": null
+      }
+    ]
+  },
+  "Demi-Human Queen": {
+    "id": "demi-human-queen",
+    "name": "Demi-Human Queen",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Demi-Human Queen",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Demi-Human Queen and Swordmaster": {
+    "id": "demi-human-queen-swordmaster",
+    "name": "Demi-Human Queen & Swordmaster",
+    "forms": [
+      {
+        "label": "Demi-Human Queen",
+        "source": "nightbosses",
+        "match": "Demi-Human Queen & Swordmaster",
+        "variant": "Demi-Human Queen"
+      },
+      {
+        "label": "Demi-Human Swordmaster",
+        "source": "nightbosses",
+        "match": "Demi-Human Queen & Swordmaster",
+        "variant": "Demi-Human Swordmaster"
+      }
+    ]
+  },
+  "Demon Prince": {
+    "id": "demon-prince",
+    "name": "Demon Prince",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Demon Prince",
+        "variant": null
+      }
+    ]
+  },
+  "Demons": {
+    "id": "demon-in-pain-demon-from-below",
+    "name": "Demon in Pain & Demon from Below",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Demon in Pain & Demon from Below",
+        "variant": null
+      }
+    ]
+  },
+  "Depraved Perfumer": {
+    "id": "depraved-perfumer",
+    "name": "Depraved Perfumer",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Depraved Perfumer",
+        "variant": "37000093"
+      }
+    ]
+  },
+  "Divine Beast Warrior": {
+    "id": "divine-beast-warrior",
+    "name": "Divine Beast Warrior",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Divine Beast Warrior",
+        "variant": "Eastern Underground Fort Boss, Lightning"
+      }
+    ]
+  },
+  "Divine Bird Warrior": {
+    "id": "divine-bird-warrior",
+    "name": "Divine Bird Warrior",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Divine Bird Warrior",
+        "variant": "Eastern Underground Fort Elite"
+      }
+    ]
+  },
+  "Draconic Tree Sentinel": {
+    "id": "draconic-tree-sentinel",
+    "name": "Draconic Tree Sentinel",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Draconic Tree Sentinel",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Draconic Tree Sentinel and Royal Cavalrymen": {
+    "id": "draconic-tree-sentinel-royal-cavalrymen",
+    "name": "Draconic Tree Sentinel & Royal Cavalrymen",
+    "forms": [
+      {
+        "label": "Draconic Tree Sentinel",
+        "source": "nightbosses",
+        "match": "Draconic Tree Sentinel & Royal Cavalrymen",
+        "variant": "Draconic Tree Sentinel"
+      },
+      {
+        "label": "Leyndell Knight",
+        "source": "nightbosses",
+        "match": "Draconic Tree Sentinel & Royal Cavalrymen",
+        "variant": "Leyndell Knight"
+      },
+      {
+        "label": "Leyndell Knight's horse",
+        "source": "nightbosses",
+        "match": "Draconic Tree Sentinel & Royal Cavalrymen",
+        "variant": "Leyndell Knight's horse"
+      }
+    ]
+  },
+  "Dragonkin Soldier": {
+    "id": "nox-dragonkin-soldier",
+    "name": "Nox Dragonkin Soldier",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Nox Dragonkin Soldier",
+        "variant": null
+      }
+    ]
+  },
+  "Duke's Dear Freja": {
+    "id": "duke-s-dear-freja",
+    "name": "Duke's Dear Freja",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Duke's Dear Freja",
+        "variant": null
+      }
+    ]
+  },
+  "Elder Inquisitor": {
+    "id": "elder-inquisitor",
+    "name": "Elder Inquisitor",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Elder Inquisitor",
+        "variant": "Great Church Boss"
+      }
+    ]
+  },
+  "Elder Lion": {
+    "id": "elder-lion",
+    "name": "Elder Lion",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Elder Lion",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Erdtree Avatar": {
+    "id": "erdtree-avatar",
+    "name": "Erdtree Avatar",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Erdtree Avatar",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Erdtree Burial Watchdogs": {
+    "id": "erdtree-burial-watchdogs",
+    "name": "Erdtree Burial Watchdogs",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Erdtree Burial Watchdog",
+        "variant": "Ruins, Sword"
+      }
+    ]
+  },
+  "Fallingstar Beast": {
+    "id": "full-grown-fallingstar-beast",
+    "name": "Full-Grown Fallingstar Beast",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Full-Grown Fallingstar Beast",
+        "variant": null
+      }
+    ]
+  },
+  "Fire Monk": {
+    "id": "fire-monk",
+    "name": "Fire Monk",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Fire Monk",
+        "variant": "39000000"
+      }
+    ]
+  },
+  "Flame Chariots": {
+    "id": "flame-chariots",
+    "name": "Flame Chariots",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Flame Chariot",
+        "variant": "Encampment, healthbar"
+      }
+    ]
+  },
+  "Flying Dragon": {
+    "id": "flying-dragon",
+    "name": "Flying Dragon",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Flying Dragon",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Frenzied Flame Troll": {
+    "id": "frenzied-flame-troll",
+    "name": "Frenzied Flame Troll",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Frenzied Flame Troll",
+        "variant": "Encampment"
+      }
+    ]
+  },
+  "Frost Crayfish": {
+    "id": "frost-crayfish",
+    "name": "Frost Crayfish",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Frost Crayfish",
+        "variant": "Marsh Boss"
+      }
+    ]
+  },
+  "Gaping Dragon": {
+    "id": "gaping-dragon",
+    "name": "Gaping Dragon",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Gaping Dragon",
+        "variant": null
+      }
+    ]
+  },
+  "Ghostflame Dragon": {
+    "id": "ghostflame-dragon",
+    "name": "Ghostflame Dragon",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Ghostflame Dragon",
+        "variant": "Great Church Boss"
+      }
+    ]
+  },
+  "Giant Crabs": {
+    "id": "giant-crabs",
+    "name": "Giant Crabs",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Giant Crayfish",
+        "variant": "Great Church Boss"
+      }
+    ]
+  },
+  "Godskin Apostle": {
+    "id": "godskin-apostle",
+    "name": "Godskin Apostle",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Godskin Apostle",
+        "variant": "Evergaol"
+      }
+    ]
+  },
+  "Godskin Duo": {
+    "id": "godskin-duo",
+    "name": "Godskin Duo",
+    "forms": [
+      {
+        "label": "Godskin Apostle",
+        "source": "nightbosses",
+        "match": "Godskin Duo",
+        "variant": "Godskin Apostle"
+      },
+      {
+        "label": "Godskin Noble",
+        "source": "nightbosses",
+        "match": "Godskin Duo",
+        "variant": "Godskin Noble"
+      }
+    ]
+  },
+  "Godskin Noble": {
+    "id": "godskin-noble",
+    "name": "Godskin Noble",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Godskin Noble",
+        "variant": "Evergaol"
+      }
+    ]
+  },
+  "Golden Hippopotamus": {
+    "id": "golden-hippopotamus",
+    "name": "Golden Hippopotamus",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Golden Hippopotamus",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Grafted Monarch": {
+    "id": "grafted-monarch",
+    "name": "Grafted Monarch",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Grafted Monarch",
+        "variant": null
+      }
+    ]
+  },
+  "Grafted Scion": {
+    "id": "grafted-scion",
+    "name": "Grafted Scion",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Grafted Scion",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Grave Warden Duelist": {
+    "id": "grave-warden-duelist",
+    "name": "Grave Warden Duelist",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Grave Warden Duelist",
+        "variant": "Evergaol"
+      }
+    ]
+  },
+  "Grave Warden Duelists": {
+    "id": "grave-warden-duelist",
+    "name": "Grave Warden Duelist",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Grave Warden Duelist",
+        "variant": "Evergaol"
+      }
+    ]
+  },
+  "Great Red Bear": {
+    "id": "great-red-bear",
+    "name": "Great Red Bear",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Great Red Bear",
+        "variant": null
+      }
+    ]
+  },
+  "Great Wyrm": {
+    "id": "great-wyrm",
+    "name": "Great Wyrm",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Great Wyrm",
+        "variant": null
+      }
+    ]
+  },
+  "Guardian Golem": {
+    "id": "guardian-golem",
+    "name": "Guardian Golem",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Guardian Golem",
+        "variant": "46600000"
+      }
+    ]
+  },
+  "Inquisitor": {
+    "id": "inquisitor",
+    "name": "Inquisitor",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Fat Inquisitor",
+        "variant": "53200010"
+      }
+    ]
+  },
+  "Kindreds of Rot": {
+    "id": "kindreds-of-rot",
+    "name": "Kindreds of Rot",
+    "forms": []
+  },
+  "Leonine Misbegotten": {
+    "id": "leonine-misbegotten",
+    "name": "Leonine Misbegotten",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Leonine Misbegotten",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Lordsworn Captain": {
+    "id": "lordsworn-captain",
+    "name": "Lordsworn Captain",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Lordsworn Captain",
+        "variant": "43510000"
+      }
+    ]
+  },
+  "Magma Wyrm": {
+    "id": "magma-wyrm",
+    "name": "Magma Wyrm",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Magma Wyrm",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Mausoleum Knight": {
+    "id": "mausoleum-knight",
+    "name": "Mausoleum Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Mausoleum Knight",
+        "variant": "43550000"
+      }
+    ]
+  },
+  "Mimic Tears": {
+    "id": "mimic-tears",
+    "name": "Mimic Tears",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Troll",
+        "variant": "Great Church Group Boss, Mimic Tear"
+      }
+    ]
+  },
+  "Miranda Blossom": {
+    "id": "miranda-blossom",
+    "name": "Miranda Blossom",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Miranda Blossom",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Mohg": {
+    "id": "lord-of-blood",
+    "name": "Lord of Blood",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Lord of Blood",
+        "variant": null
+      }
+    ]
+  },
+  "Morgott": {
+    "id": "fell-omen",
+    "name": "Fell Omen",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Fell Omen",
+        "variant": null
+      }
+    ]
+  },
+  "Nameless King": {
+    "id": "nameless-king",
+    "name": "Nameless King",
+    "forms": [
+      {
+        "label": "Phase 1 (dragon)",
+        "source": "nightbosses",
+        "match": "Nameless King",
+        "variant": "Phase 1 (dragon)"
+      },
+      {
+        "label": "Phase 2 (Nameless King)",
+        "source": "nightbosses",
+        "match": "Nameless King",
+        "variant": "Phase 2 (Nameless King)"
+      }
+    ]
+  },
+  "Night's Cavalries": {
+    "id": "night-s-cavalry",
+    "name": "Night's Cavalry",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Night's Cavalry",
+        "variant": null
+      }
+    ]
+  },
+  "Night's Cavalry": {
+    "id": "night-s-cavalry",
+    "name": "Night's Cavalry",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Night's Cavalry",
+        "variant": null
+      }
+    ]
+  },
+  "Night's Cavalry Duo": {
+    "id": "night-s-cavalry",
+    "name": "Night's Cavalry",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Night's Cavalry",
+        "variant": null
+      }
+    ]
+  },
+  "Nomads": {
+    "id": "nomads",
+    "name": "Nomads",
+    "forms": []
+  },
+  "Nox Warriors": {
+    "id": "nox-warriors",
+    "name": "Nox Warriors",
+    "forms": [
+      {
+        "label": "Nox Swordstress",
+        "source": "npcs",
+        "match": "Nox Swordstress",
+        "variant": "33001020"
+      },
+      {
+        "label": "Nox Monk",
+        "source": "npcs",
+        "match": "Nox Monk",
+        "variant": "33000020"
+      }
+    ]
+  },
+  "Omen": {
+    "id": "omen",
+    "name": "Omen",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Omen",
+        "variant": "21403000"
+      }
+    ]
+  },
+  "Omenkillers": {
+    "id": "omenkillers",
+    "name": "Omenkillers",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Omenkiller",
+        "variant": "48200010"
+      }
+    ]
+  },
+  "Omens": {
+    "id": "omen",
+    "name": "Omen",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Omen",
+        "variant": "21403000"
+      }
+    ]
+  },
+  "Oracle Envoys": {
+    "id": "oracle-envoys",
+    "name": "Oracle Envoys",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Oracle Envoy",
+        "variant": "36200015"
+      }
+    ]
+  },
+  "Outland Commander": {
+    "id": "outland-commander",
+    "name": "Outland Commander",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Outland Commander",
+        "variant": null
+      }
+    ]
+  },
+  "Perfumer": {
+    "id": "perfumer",
+    "name": "Perfumer",
+    "forms": [
+      {
+        "label": null,
+        "source": "fextralife",
+        "match": "https://eldenringnightreign.wiki.fextralife.com/Perfumer",
+        "variant": null,
+        "negation": {
+          "standard": 0,
+          "slash": 0,
+          "strike": 10,
+          "pierce": 0,
+          "magic": 40,
+          "fire": 40,
+          "lightning": 40,
+          "holy": 0
+        },
+        "buildup": {
+          "bleed": 84,
+          "frost": 84,
+          "rot": 252,
+          "poison": 252,
+          "sleep": 84,
+          "madness": "Immune"
+        }
+      }
+    ]
+  },
+  "Putrid Avatar": {
+    "id": "putrid-avatar",
+    "name": "Putrid Avatar",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Putrid Avatar",
+        "variant": "Base"
+      }
+    ]
+  },
+  "Red Wolf": {
+    "id": "red-wolf-of-radagon",
+    "name": "Red Wolf of Radagon",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Red Wolf of Radagon",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Redmane Knights": {
+    "id": "redmane-knights",
+    "name": "Redmane Knights",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Redmane Knight",
+        "variant": "43540015"
+      }
+    ]
+  },
+  "Royal Army Knights": {
+    "id": "royal-army-knights",
+    "name": "Royal Army Knights",
+    "forms": [
+      {
+        "label": null,
+        "source": "fextralife",
+        "match": "https://eldenringnightreign.wiki.fextralife.com/Royal+Army+Knights",
+        "variant": null,
+        "negation": {
+          "standard": 10,
+          "slash": 35,
+          "strike": 10,
+          "pierce": 0,
+          "magic": 20,
+          "fire": 20,
+          "lightning": 40,
+          "holy": 20
+        },
+        "buildup": {
+          "bleed": 154,
+          "frost": 154,
+          "rot": 112,
+          "poison": 112,
+          "sleep": 112,
+          "madness": "Immune"
+        }
+      }
+    ]
+  },
+  "Royal Carian Knight": {
+    "id": "royal-carian-knight",
+    "name": "Royal Carian Knight",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Royal Carian Knight",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Royal Revenant": {
+    "id": "royal-revenant",
+    "name": "Royal Revenant",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Royal Revenant",
+        "variant": null
+      }
+    ]
+  },
+  "Runebear": {
+    "id": "runebear",
+    "name": "Runebear",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Runebear",
+        "variant": "46300000"
+      }
+    ]
+  },
+  "Sanguine Noble": {
+    "id": "sanguine-noble",
+    "name": "Sanguine Noble",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Sanguine Noble",
+        "variant": "Marsh Group Boss"
+      }
+    ]
+  },
+  "Sanguine Nobles": {
+    "id": "sanguine-noble",
+    "name": "Sanguine Noble",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Sanguine Noble",
+        "variant": "Marsh Group Boss"
+      }
+    ]
+  },
+  "Smelter Demon": {
+    "id": "smelter-demon",
+    "name": "Smelter Demon",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Smelter Demon",
+        "variant": null
+      }
+    ]
+  },
+  "Spider Scorpions": {
+    "id": "spider-scorpions",
+    "name": "Spider Scorpions",
+    "forms": []
+  },
+  "Spiritcaller Snail": {
+    "id": "spiritcaller-snail",
+    "name": "Spiritcaller Snail",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Spiritcaller Snail",
+        "variant": "41402210"
+      }
+    ]
+  },
+  "Stoneskin Lords": {
+    "id": "stoneskin-lords",
+    "name": "Stoneskin Lords",
+    "forms": [
+      {
+        "label": "Alabaster Lord",
+        "source": "bosses",
+        "match": "Alabaster Lord",
+        "variant": "Evergaol"
+      },
+      {
+        "label": "Onyx Lord",
+        "source": "bosses",
+        "match": "Onyx Lord",
+        "variant": "Evergaol"
+      }
+    ]
+  },
+  "The Duke's Dear Freja": {
+    "id": "duke-s-dear-freja",
+    "name": "Duke's Dear Freja",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Duke's Dear Freja",
+        "variant": null
+      }
+    ]
+  },
+  "Tibia Mariner": {
+    "id": "tibia-mariner-those-who-live-in-death",
+    "name": "Tibia Mariner & Those Who Live in Death",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Tibia Mariner & Those Who Live in Death",
+        "variant": null
+      }
+    ]
+  },
+  "Tree Sentinel": {
+    "id": "tree-sentinel",
+    "name": "Tree Sentinel",
+    "forms": [
+      {
+        "label": null,
+        "source": "bosses",
+        "match": "Tree Sentinel",
+        "variant": "Field Boss"
+      }
+    ]
+  },
+  "Tree Sentinel and Royal Cavalrymen": {
+    "id": "tree-sentinel-royal-cavalrymen",
+    "name": "Tree Sentinel & Royal Cavalrymen",
+    "forms": [
+      {
+        "label": "Tree Sentinel",
+        "source": "nightbosses",
+        "match": "Tree Sentinel & Royal Cavalrymen",
+        "variant": "Tree Sentinel"
+      },
+      {
+        "label": "Leyndell Knight",
+        "source": "nightbosses",
+        "match": "Tree Sentinel & Royal Cavalrymen",
+        "variant": "Leyndell Knight"
+      },
+      {
+        "label": "Leyndell Knight's horse",
+        "source": "nightbosses",
+        "match": "Tree Sentinel & Royal Cavalrymen",
+        "variant": "Leyndell Knight's horse"
+      }
+    ]
+  },
+  "Trolls": {
+    "id": "trolls",
+    "name": "Trolls",
+    "forms": [
+      {
+        "label": null,
+        "source": "npcs",
+        "match": "Troll",
+        "variant": "46000000"
+      }
+    ]
+  },
+  "Ulcerated Tree Spirit": {
+    "id": "ulcerated-tree-spirit",
+    "name": "Ulcerated Tree Spirit",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Ulcerated Tree Spirit",
+        "variant": null
+      }
+    ]
+  },
+  "Valiant Gargoyle": {
+    "id": "valiant-gargoyle",
+    "name": "Valiant Gargoyle",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Valiant Gargoyle",
+        "variant": null
+      }
+    ]
+  },
+  "Wormface": {
+    "id": "wormface",
+    "name": "Wormface",
+    "forms": [
+      {
+        "label": null,
+        "source": "nightbosses",
+        "match": "Wormface",
+        "variant": null
+      }
+    ]
+  }
+}

@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 // Use the domain's own names so the test speaks the ubiquitous language, not a copy of it.
-import { structureName, nightlordName, earthName, weaknessPhrase, DAMAGE_NAMES, type DamageKey } from '../src/domain/names'
+import { structureName, nightlordName, earthName, weaknessPhrase, DAMAGE_NAMES } from '../src/domain/names'
+import { bestiary, headline, nightlordHeadline } from '../src/bestiary/bestiary'
+import type { Affliction } from '../src/bestiary/enemy'
 
 const data = JSON.parse(readFileSync('src/data/seeds.json', 'utf8'))
 
@@ -698,7 +700,7 @@ test('works offline once the service worker has installed', async ({ page, conte
 // phone it rides above the collapsed sheet (never under it) and tucks away once the sheet opens, coming back at peek.
 test.describe('the Nightlord medallion', () => {
   const seed = targets[0]
-  const phrase = `${nightlordName(seed.nightlord)}: ${weaknessPhrase(data.weaknesses.nightlords[seed.nightlord])}`
+  const phrase = `${nightlordName(seed.nightlord)}: ${weaknessPhrase(nightlordHeadline(bestiary.nightlord(seed.nightlord)!))}`
   const box = (page: import('@playwright/test').Page, s: string) => page.locator(s).evaluate((el) => el.getBoundingClientRect().toJSON())
 
   test('shows its weaknesses on the result, above the sheet', async ({ page, isMobile }) => {
@@ -799,7 +801,7 @@ test.describe('the Nightlord medallion', () => {
 
   // "Status" alone could read as what the Nightlord inflicts: the row says weak status, and names each one in words.
   test('its card names the statuses it is weak to, on the map and on Home', async ({ page, isMobile }) => {
-    const statuses: DamageKey[] = data.weaknesses.nightlords[seed.nightlord].status
+    const statuses: Affliction[] = nightlordHeadline(bestiary.nightlord(seed.nightlord)!).status
     expect(statuses.length).toBeGreaterThan(0)
     await page.goto(`#/seed/${seed.id}`)
     if (isMobile) await page.locator('.nl-medal').click()
@@ -845,8 +847,9 @@ test.describe('the Nightlord medallion', () => {
 // Each night's boss row says what the weakness data knows, and is never blank (a blank reads as missing data):
 // what the boss is weak to, else what it resists, else that it has no damage weakness, or that there is no data.
 const expectedLine = (boss: string) => {
-  const w: { weak: DamageKey[]; resist: DamageKey[] } | undefined = data.weaknesses.bosses[boss]
-  const names = (keys: DamageKey[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
+  const fight = bestiary.nightBoss(boss)
+    const w = fight?.forms.length ? headline(fight) : undefined
+  const names = (keys: Affliction[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
   if (!w) return 'No data'
   if (w.weak.length) return `weak to ${names(w.weak)}`
   if (w.resist.length) return `resists ${names(w.resist)}`

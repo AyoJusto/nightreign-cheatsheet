@@ -1,24 +1,14 @@
+import { isStatus, type Affliction } from '../bestiary/enemy'
+import type { Headline } from '../bestiary/bestiary'
+
 export type NightlordId =
   | 'tricephalos' | 'gaping-jaw' | 'sentient-pest' | 'augur' | 'equilibrious-beast'
   | 'darkdrift-knight' | 'fissure-in-the-fog' | 'night-aspect' | 'balancers' | 'dreglord'
-/**
- * What the user picked on Home: a Nightlord, or `unknown` for a Deep of Night run that hides it until the final
- * battle. Every Nightlord has its own map seeds, so an unknown one scouts all of an earth's seeds, and the seed
- * found names the Nightlord.
- */
+/** `unknown`: a Deep of Night run that hides the Nightlord, so every Nightlord's seeds on the earth stay in play. */
 export type NightlordPick = NightlordId | 'unknown'
 export type EarthId = 'default' | 'crater' | 'mountaintop' | 'rotted-woods' | 'noklateo' | 'great-hollow'
 export type ElementId =
   | 'fire' | 'holy' | 'magic' | 'lightning' | 'frostbite' | 'poison' | 'bleed' | 'blight' | 'madness' | 'sleep' | 'rot'
-/** The game's 14 damage and status icons (public/damage/<key>.webp), as the weakness data names them. */
-export type DamageKey =
-  | 'standard' | 'slash' | 'strike' | 'pierce' | 'magic' | 'fire' | 'lightning' | 'holy'
-  | 'bleed' | 'frost' | 'rot' | 'poison' | 'sleep' | 'madness'
-/**
- * What to hit a boss with (`weak`, best first) and what it shrugs off (`resist`). A Nightlord listed for a damage
- * type also has `status`: the statuses that build up fastest on it, the cheatsheet's "Also" line.
- */
-export interface Weakness { weak: DamageKey[]; resist: DamageKey[]; status?: DamageKey[] }
 export type SlotId = string
 /** `kind` or `kind:element`, e.g. `great-church:fire`. */
 export type StructureKey = string
@@ -45,7 +35,6 @@ export const EARTHS: readonly { id: EarthId; name: string }[] = [
   { id: 'great-hollow', name: 'Great Hollow' },
 ]
 
-// Names confirmed against Fextralife on 2026-09-23.
 const KIND_NAMES: Record<string, string> = {
   church: 'Church',
   'great-church': 'Great Church',
@@ -67,20 +56,20 @@ export const ELEMENT_NAMES: Record<ElementId, string> = {
   bleed: 'Bleed', blight: 'Blight', madness: 'Madness', sleep: 'Sleep', rot: 'Rot',
 }
 
-/** The game's own word for each damage type and status, for accessible labels beside the icons. */
-export const DAMAGE_NAMES: Record<DamageKey, string> = {
+export const DAMAGE_NAMES: Record<Affliction, string> = {
   standard: 'Standard', slash: 'Slash', strike: 'Strike', pierce: 'Pierce',
   magic: 'Magic', fire: 'Fire', lightning: 'Lightning', holy: 'Holy',
   bleed: 'Blood Loss', frost: 'Frostbite', rot: 'Scarlet Rot', poison: 'Poison', sleep: 'Sleep', madness: 'Madness',
 }
 
-/**
- * What a Nightlord's weakness card shows, row by row (cardRows), as words for a screen reader:
- * "weak to Holy, Pierce; resists Fire; weak status Sleep".
- */
-export function weaknessPhrase(w: Weakness): string {
-  const words = (keys: DamageKey[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
-  const { weak, resist, status } = cardRows(w)
+/** Statuses always get their own row, so a status icon never stands unnamed among the damage types. */
+export function cardRows(h: Headline): Headline {
+  return { weak: h.weak.filter((k) => !isStatus(k)), resist: h.resist, status: [...new Set([...h.weak.filter(isStatus), ...h.status])] }
+}
+
+export function weaknessPhrase(h: Headline): string {
+  const words = (keys: Affliction[]) => keys.map((k) => DAMAGE_NAMES[k]).join(', ')
+  const { weak, resist, status } = cardRows(h)
   return [
     weak.length ? `weak to ${words(weak)}` : '',
     resist.length ? `resists ${words(resist)}` : '',
@@ -88,18 +77,7 @@ export function weaknessPhrase(w: Weakness): string {
   ].filter(Boolean).join('; ')
 }
 
-const STATUSES: ReadonlySet<DamageKey> = new Set(['bleed', 'frost', 'rot', 'poison', 'sleep', 'madness'])
-/**
- * A Nightlord card's rows: damage types under Weak, and every status under Weak status, whether the data lists it
- * as the Nightlord's weakness (Sleep for Balancers) or as the fastest to build up (Sleep for Tricephalos), so a
- * status is always named in words, never left as an unnamed icon.
- */
-export function cardRows(w: Weakness): { weak: DamageKey[]; resist: DamageKey[]; status: DamageKey[] } {
-  const listed = w.weak.filter((k) => STATUSES.has(k))
-  return { weak: w.weak.filter((k) => !STATUSES.has(k)), resist: w.resist, status: [...new Set([...listed, ...(w.status ?? [])])] }
-}
-
-/** Two letters, unique per element, shown if an emblem image fails to load: first letters alone collide (Fire/Frostbite, Bleed/Blight). */
+/** Shown when an emblem image fails to load; first letters alone collide (Fire and Frostbite, Bleed and Blight). */
 export const ELEMENT_CODES: Record<ElementId, string> = {
   fire: 'Fi', holy: 'Ho', magic: 'Mg', lightning: 'Li', frostbite: 'Fr', poison: 'Po',
   bleed: 'Bl', blight: 'Bt', madness: 'Md', sleep: 'Sl', rot: 'Ro',

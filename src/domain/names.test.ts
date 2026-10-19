@@ -19,16 +19,16 @@ describe('element codes', () => {
 
 describe('weaknessPhrase', () => {
   it('speaks what a card shows: weak first, then resists, in the game words', () => {
-    expect(weaknessPhrase({ weak: ['holy', 'pierce'], resist: ['fire'] })).toBe('weak to Holy, Pierce; resists Fire')
-    expect(weaknessPhrase({ weak: [], resist: ['holy', 'lightning'] })).toBe('resists Holy, Lightning')
-    expect(weaknessPhrase({ weak: [], resist: [] })).toBe('')
+    expect(weaknessPhrase({ weak: ['holy', 'pierce'], resist: ['fire'], status: [] })).toBe('weak to Holy, Pierce; resists Fire')
+    expect(weaknessPhrase({ weak: [], resist: ['holy', 'lightning'], status: [] })).toBe('resists Holy, Lightning')
+    expect(weaknessPhrase({ weak: [], resist: [], status: [] })).toBe('')
   })
   it("speaks every status last as the card's Weak status row, whichever field the data lists it in", () => {
     expect(weaknessPhrase({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })).toBe('weak to Holy; resists Fire; weak status Sleep')
     expect(weaknessPhrase({ weak: ['holy'], resist: [], status: ['frost', 'rot'] })).toBe('weak to Holy; weak status Frostbite, Scarlet Rot')
     // Balancers: listed weak to Sleep and Strike, shown as Weak Strike and Weak status Sleep, and spoken the same way.
     expect(weaknessPhrase({ weak: ['sleep', 'strike'], resist: ['holy'], status: [] })).toBe('weak to Strike; resists Holy; weak status Sleep')
-    expect(weaknessPhrase({ weak: ['bleed'], resist: [] })).toBe('weak status Blood Loss')
+    expect(weaknessPhrase({ weak: ['bleed'], resist: [], status: [] })).toBe('weak status Blood Loss')
   })
 })
 
