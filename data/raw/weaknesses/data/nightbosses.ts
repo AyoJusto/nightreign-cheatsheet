@@ -116,7 +116,7 @@ export const NIGHT_BOSSES: NightBoss[] = [
             "standard": 35,
             "slash": 35,
             "strike": 35,
-            "pierce": -10
+            "pierce": 10
           },
           "elem": {
             "magic": 40,
@@ -400,7 +400,7 @@ export const NIGHT_BOSSES: NightBoss[] = [
             "frost": 252,
             "rot": 252,
             "poison": 252,
-            "sleep": "Immune",
+            "sleep": 252,
             "madness": "Immune"
           }
         }
@@ -436,7 +436,7 @@ export const NIGHT_BOSSES: NightBoss[] = [
           "status": {
             "bleed": "Immune",
             "frost": "Immune",
-            "rot": 253,
+            "rot": 252,
             "poison": "Immune",
             "sleep": "Immune",
             "madness": "Immune"
@@ -1061,7 +1061,19 @@ export const NIGHT_BOSSES: NightBoss[] = [
     "expeditions": [
       "dreglord"
     ],
-    "data": null
+    "data": {
+      "forms": [
+        {
+          "label": null,
+          "hp": null,
+          "poise": null,
+          "phys": { "standard": 0, "slash": 10, "strike": -10, "pierce": 0 },
+          "elem": { "magic": 15, "fire": 10, "lightning": -10, "holy": -10 },
+          "status": { "bleed": 542, "frost": 542, "rot": 542, "poison": 542, "sleep": "Immune", "madness": "Immune" }
+        }
+      ],
+      "source": null
+    }
   },
   {
     "slug": "lord-of-blood",
@@ -1089,7 +1101,7 @@ export const NIGHT_BOSSES: NightBoss[] = [
             "holy": 40
           },
           "status": {
-            "bleed": 154,
+            "bleed": 112,
             "frost": 252,
             "rot": 252,
             "poison": 252,

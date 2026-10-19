@@ -1,13 +1,9 @@
-# Where the weakness data comes from
+# Curated Nightlord and night boss numbers
 
-Verbatim copies from the Nightreign cheat sheet repo (`nightreign-cheatsheet`, commit c9eb829, 2026-08-31), laid
-out as in its `src/` so the relative imports still resolve:
+These files came from the original Nightreign cheat sheet (commit c9eb829, 2026-08-31) and are now edited here.
 
-- `data/nightlords.ts` is the 10 Nightlords: per-form negation and status numbers plus `listed`, the headline weakness the game and guides name. The cheat sheet took these from an upstream Nightlord dataset (its notes do not name it) and corrected them by hand.
-- `data/nightbosses.ts` is the 35 Night 1 / Night 2 bosses, transcribed from the Fextralife Elden Ring Nightreign wiki's per-boss pages (see the file header). Knight Artorias has no data on purpose.
-- `summary.ts` holds the cheat sheet's worst-case rules (`summarize`). `scripts/import-seeds.ts` uses it as is.
-- `types.ts` has the types the three files above share.
+`data/nightlords.ts` holds the 10 Nightlords: per-form negation and status numbers, plus `listed`, the weakness the game and the guides name. The numbers came from an upstream Nightlord dataset and were corrected by hand.
 
-The damage and status icons in `data/raw/assets/damage/` are the cheat sheet's `public/icons/*.png`, the game's own icons as shown on the same wiki.
+`data/nightbosses.ts` holds the 35 Night 1 and Night 2 fights, transcribed from the Fextralife Elden Ring Nightreign wiki's per-boss pages. On 2026-10-19 every form was compared with the game-data export in `../enemies/`. Five numbers were changed to the game's own values, and Knight Artorias got its numbers from the export. The reasons are in `../enemy-rulings.md`.
 
-Do not edit these copies. If the numbers change, copy the files again and re-run `npm run import`.
+`types.ts` is the shape these two files are written in. `scripts/import-enemies.ts` reads them into `src/data/enemies.json`; run `npm run import` after editing.

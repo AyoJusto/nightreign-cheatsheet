@@ -10,8 +10,9 @@ import { useWide } from './useWide'
 import './weakness.css'
 import { useMeasure, pillBottom } from './useMeasure'
 import { currentSearch, linkTo, resultBackPath } from './router'
-import { catalog } from '../data/catalog'
-import { DAMAGE_NAMES, earthName, nightlordName, type DamageKey, type Weakness } from '../domain/names'
+import { DAMAGE_NAMES, earthName, nightlordName } from '../domain/names'
+import { bestiary, headline, type Headline } from '../bestiary/bestiary'
+import type { Affliction } from '../bestiary/enemy'
 import type { Seed } from '../domain/seed'
 
 const LAYER_NAMES: Record<Layer, string> = {
@@ -127,7 +128,10 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     </div>
   )
   // Each night's boss with what the weakness data says about it (never guessed; WeakLine says when it has none).
-  const weakOf = (boss: string) => catalog.nightBossWeakness(boss)
+  const weakOf = (boss: string) => {
+    const fight = bestiary.nightBoss(boss)
+    return fight?.forms.length ? headline(fight) : undefined
+  }
   const rows: [string, string | null, ReactNode?][] = [
     ['Night 1', seed.nights[1].boss || null, <WeakLine weakness={weakOf(seed.nights[1].boss)} />],
     ['Night 2', seed.nights[2].boss || null, <WeakLine weakness={weakOf(seed.nights[2].boss)} />],
@@ -208,14 +212,14 @@ function RunRow({ label, value, count, more }: { label?: string; value: string; 
 // What to know about a night boss, as the cheatsheet's weakness line does: never blank, since a blank reads as
 // missing data. What it is weak to; failing that, what it resists; failing that, that it has no damage weakness;
 // and for a fight the data does not cover, that there is no data.
-function WeakLine({ weakness }: { weakness: Weakness | undefined }) {
+function WeakLine({ weakness }: { weakness: Headline | undefined }) {
   if (!weakness) return <span className="weak-line weak-none"><span className="sr-only">, </span>No data</span>
   if (weakness.weak.length) return <DamageLine tag="Weak" spoken="weak to" keys={weakness.weak} />
   if (weakness.resist.length) return <DamageLine tag="Resist" spoken="resists" keys={weakness.resist} />
   return <span className="weak-line weak-none"><span className="sr-only">, </span>No damage weakness</span>
 }
 
-function DamageLine({ tag, spoken, keys }: { tag: string; spoken: string; keys: DamageKey[] }) {
+function DamageLine({ tag, spoken, keys }: { tag: string; spoken: string; keys: Affliction[] }) {
   return (
     <span className="weak-line">
       <span className="weak-tag" aria-hidden>{tag}</span>
