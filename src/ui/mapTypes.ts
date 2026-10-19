@@ -6,7 +6,8 @@ import type { Marker } from '../domain/seed'
 
 export type PinState = 'open' | 'sighted' | 'certain' | 'candidate' | 'dimmed' | 'spawn-option' | 'spawn'
 /** `name`: what is inside the site ("Guardian Golem"), written on the map under its art when there is room. */
-export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string; name?: string }
+/** `match`: a camp whose dropped weapon hits what the run's hardest fights are weak to. */
+export interface Pin { slot: SlotId; x: number; y: number; state: PinState; structure: StructureKey | null; label: string; name?: string; match?: boolean }
 /**
  * A marker as the map draws it. Beyond the seed's own layers: the castle's bosses (a crest each) and its guard
  * (a name alone), and caravans, which stand on open ground where nothing is built (a cart, drawn for the app).

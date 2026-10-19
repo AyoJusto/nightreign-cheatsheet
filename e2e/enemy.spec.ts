@@ -40,3 +40,9 @@ test("a night's boss in the seed's details opens its card", async ({ page, isMob
   await page.getByRole('button', { name: 'Tree Sentinel and Royal Cavalrymen' }).click()
   await expect(page.getByRole('dialog', { name: 'Tree Sentinel & Royal Cavalrymen' })).toBeVisible()
 })
+
+test("camps that drop what the run's hardest fights are weak to glow, and the run card names their element", async ({ page }) => {
+  await page.goto('#/seed/042')
+  await expect(page.locator('.pin-match')).toHaveCount(6)
+  await expect(page.locator('.run-row').filter({ hasText: 'Loot' })).toContainText('Poison')
+})

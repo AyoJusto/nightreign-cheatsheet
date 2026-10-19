@@ -441,7 +441,7 @@ export function MapView(props: MapContent & {
             // An orb keeps its element through state changes (spawn option to spawn, open to candidate), so a
             // keyboard user's focus on it survives the change instead of falling to the document body.
             key={`${p.slot}:${p.structure ?? 'dot'}`}
-            className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}`}
+            className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}${p.match ? ' pin-match' : ''}`}
             // A pin that does nothing (the result map) is a named image, not a Tab stop or a button to VoiceOver.
             {...(props.onPin ? {} : { role: 'img', 'aria-label': p.label })}
             data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
