@@ -10,8 +10,6 @@ export type Route =
   | { name: 'seed'; id: string }
   | { name: 'about' }
 
-// ---------- Sightings in the URL: `?s=spawn@19,22@church,9@none` ----------
-
 const SLOT = /^\d{1,3}$/
 const KEY = /^[a-z-]+(:[a-z]+)?$/
 
@@ -31,26 +29,22 @@ export function decodeSightings(q: string | null): Sighting[] {
   return out
 }
 
-/** `?s=…` for these sightings, or nothing when there are none. */
 export const sightingsQuery = (list: readonly Sighting[]) =>
   list.length ? `?${new URLSearchParams({ s: encodeSightings(list) })}` : ''
 
 export const findPath = (nightlord: NightlordPick, earth: EarthId, sightings: readonly Sighting[] = []) =>
   `/find/${nightlord}/${earth}${sightingsQuery(sightings)}`
 
-/** A found seed, carrying the sightings that found it, and `n=unknown` when the Nightlord was hidden. */
 export function seedPath(id: string, sightings: readonly Sighting[], unknown: boolean) {
   const q = new URLSearchParams()
   if (sightings.length) q.set('s', encodeSightings(sightings))
   if (unknown) q.set('n', 'unknown')
-  const query = q.toString() // not q.size: iOS 16 Safari lacks it
+  // not q.size: iOS 16 Safari lacks it
+  const query = q.toString()
   return `/seed/${id}${query ? `?${query}` : ''}`
 }
 
-/**
- * Where a result's Back goes: its finder, one sighting back, so the finder does not solve the seed again and bounce
- * straight back to it. A shared link (no sightings) goes home.
- */
+/** One sighting back, so the finder does not solve the seed again and bounce straight back to it. */
 export function resultBackPath(search: string, seed: Pick<Seed, 'nightlord' | 'earth'>) {
   const params = new URLSearchParams(search)
   const q = params.get('s')
@@ -71,27 +65,38 @@ export function parseRoute(pathname: string): Route {
   return { name: 'home' }
 }
 
-/** Where a pushed entry was pushed from, so an in-app Back can tell whether the previous entry is its target. */
+const appPath = () => location.hash.slice(1) || '/'
+export const currentPathname = () => appPath().split('?')[0]
+export const currentSearch = () => {
+  const path = appPath()
+  const start = path.indexOf('?')
+  return start < 0 ? '' : path.slice(start)
+}
+export const replacePath = (path: string) => history.replaceState(history.state, '', `#${path}`)
+export const linkTo = (path: string) => `${location.href.split('#')[0]}#${path}`
+
 type Entry = { from: string } | null
-const here = () => location.pathname + location.search
 
 /**
- * `go(path)` pushes a new entry. `go(path, true)` is an in-app Back: it steps back through history when the
- * previous entry is already `path`, so the browser's own Back and Forward agree with it afterwards; otherwise
- * (a shared link opened directly) it replaces the current entry rather than pushing a duplicate.
+ * `go(path, true)` is an in-app Back: it steps back through history when the previous entry is already `path`,
+ * so the browser's own Back and Forward agree with it; a shared link opened directly has no such entry.
  */
 export function useRoute(): [Route, (path: string, back?: boolean) => void] {
-  const [route, setRoute] = useState(() => parseRoute(location.pathname))
+  const [route, setRoute] = useState(() => parseRoute(currentPathname()))
   useEffect(() => {
-    const onPop = () => setRoute(parseRoute(location.pathname))
-    addEventListener('popstate', onPop)
-    return () => removeEventListener('popstate', onPop)
+    const follow = () => setRoute(parseRoute(currentPathname()))
+    addEventListener('popstate', follow)
+    addEventListener('hashchange', follow)
+    return () => {
+      removeEventListener('popstate', follow)
+      removeEventListener('hashchange', follow)
+    }
   }, [])
   const go = useCallback((path: string, back = false) => {
-    if (back && (history.state as Entry)?.from === path) return history.back() // popstate sets the route
-    if (back) history.replaceState(history.state, '', path)
-    else history.pushState({ from: here() } satisfies Entry, '', path)
-    setRoute(parseRoute(new URL(path, location.origin).pathname))
+    if (back && (history.state as Entry)?.from === path) return history.back()
+    if (back) replacePath(path)
+    else history.pushState({ from: appPath() } satisfies Entry, '', `#${path}`)
+    setRoute(parseRoute(path.split('?')[0]))
   }, [])
   return [route, go]
 }

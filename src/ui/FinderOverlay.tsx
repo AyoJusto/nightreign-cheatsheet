@@ -11,7 +11,7 @@ import { groupByKind } from './structureGroups'
 import { buildPins, sightingLabel } from './finderPins'
 import { Icon } from './Icon'
 import { useSightings } from './useSightings'
-import { findPath, seedPath } from './router'
+import { findPath, replacePath, seedPath } from './router'
 import { useFinePointer, useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
@@ -50,10 +50,7 @@ export function FinderOverlay(props: {
     const seed = scouting.identifiedSeed()
     if (!seed) return
     const t = setTimeout(() => {
-      // Leave the finder entry one step back, so browser Back lands on a finder that is not already
-      // solved (and so does not bounce straight back here), then push the result. The entry keeps its state,
-      // which records where it was pushed from (router.ts).
-      history.replaceState(history.state, '', findPath(props.nightlord, props.earth, scouting.sightings.slice(0, -1)))
+      replacePath(findPath(props.nightlord, props.earth, scouting.sightings.slice(0, -1)))
       props.go(seedPath(seed.id, scouting.sightings, props.nightlord === 'unknown'))
     }, 350)
     return () => clearTimeout(t)
@@ -251,7 +248,7 @@ export function FinderOverlay(props: {
                   {scouting.sightings.map((s) => (
                     <li key={targetOf(s)}>
                       <span className="sighting-glyph" aria-hidden>
-                        {s.type === 'spawn' ? <img src="/markers/player.webp" width={32} height={32} alt="" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
+                        {s.type === 'spawn' ? <img src="markers/player.webp" width={32} height={32} alt="" /> : <StructureIcon structure={s.type === 'structure' ? s.structure : null} size={28} />}
                       </span>
                       {sightingLabel(s)}
                     </li>

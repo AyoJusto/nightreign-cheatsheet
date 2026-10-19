@@ -177,7 +177,7 @@ function CardRow({ label, keys, named }: { label: string; keys: DamageKey[]; nam
       <span className="nl-row-label">{label}</span>
       {/* Named: one status's name beside its icon; several (Darkdrift Knight has five tied) in a line under them. */}
       <span className={named ? 'nl-icons nl-named' : 'nl-icons'} data-many={(named && keys.length > 1) || undefined}>
-        {keys.map((k) => <img key={k} src={`/damage/${k}.webp`} alt="" title={DAMAGE_NAMES[k]} draggable={false} />)}
+        {keys.map((k) => <img key={k} src={`damage/${k}.webp`} alt="" title={DAMAGE_NAMES[k]} draggable={false} />)}
         {named && <span className="nl-names">{keys.map((k) => DAMAGE_NAMES[k]).join(', ')}</span>}
       </span>
     </div>
@@ -216,7 +216,7 @@ function MedallionArt({ nightlord }: { nightlord: NightlordPick }) {
       <circle cx="60" cy="60" r="54.4" fill="none" style={{ stroke: 'var(--stone-3)' }} strokeOpacity="0.5" strokeWidth="3.6" strokeDasharray="0.8 2.2" />
       <circle cx="60" cy="60" r="51.8" fill="none" style={{ stroke: 'var(--stone-1)' }} strokeOpacity="0.35" strokeWidth="0.7" />
       <circle cx="60" cy="60" r="49.4" style={{ fill: 'var(--panel)' }} stroke="url(#nl-ring)" strokeWidth="2.2" />
-      <image href={`/nightlords/${nightlord}.webp`} x="10" y="10" width="100" height="100" clipPath="url(#nl-clip)" preserveAspectRatio="xMidYMid slice" />
+      <image href={`nightlords/${nightlord}.webp`} x="10" y="10" width="100" height="100" clipPath="url(#nl-clip)" preserveAspectRatio="xMidYMid slice" />
       <circle cx="60" cy="60" r="48" fill="url(#nl-frost)" />
       <circle cx="60" cy="60" r="48.2" fill="none" style={{ stroke: 'var(--bg)' }} strokeOpacity="0.8" strokeWidth="1" />
     </svg>

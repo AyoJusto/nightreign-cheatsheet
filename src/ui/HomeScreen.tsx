@@ -16,7 +16,7 @@ function Portrait({ id, name }: { id: NightlordPick; name: string }) {
   if (failed) {
     return <div className="portrait monogram title" aria-hidden>{name.split(' ').map((w) => w[0]).join('')}</div>
   }
-  return <img className="portrait" src={`/nightlords/${id}.webp`} alt="" onError={() => setFailed(true)} />
+  return <img className="portrait" src={`nightlords/${id}.webp`} alt="" onError={() => setFailed(true)} />
 }
 
 export function HomeScreen({ go }: { go: (path: string) => void }) {
@@ -60,7 +60,7 @@ export function HomeScreen({ go }: { go: (path: string) => void }) {
             <div className="earth-grid">
               {catalog.earthsFor(picked).map((earth) => (
                 <button key={earth} className="earth" onClick={() => go(`/find/${picked}/${earth}`)}>
-                  <img className="earth-thumb" src={`/maps/thumb/${earth}.webp`} alt="" width={240} height={240} draggable={false} />
+                  <img className="earth-thumb" src={`maps/thumb/${earth}.webp`} alt="" width={240} height={240} draggable={false} />
                   <span className="earth-name">{earthName(earth)}</span>
                   <span className="num earth-count">{catalog.seedsFor(picked, earth).length} seeds</span>
                 </button>
