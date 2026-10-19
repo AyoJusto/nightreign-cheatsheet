@@ -1,0 +1,517 @@
+import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type MotionValue } from 'motion/react'
+import { useGesture } from '@use-gesture/react'
+import type { EarthId } from '../domain/names'
+import { StructureIcon } from './StructureIcon'
+import type { Corner } from './NightlordMedallion'
+import { catalog } from '../data/catalog'
+import { crossfade } from './crossfade'
+import { useWide } from './useWide'
+import { ICON_BODY, isTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
+import './map.css'
+import { EventGlow, ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
+import { measureName, type NameBox } from './mapNames'
+import type { MapContent, PinState } from './mapTypes'
+
+
+
+const MAX_ZOOM = 4
+// Marks are laid out at these sizes (px) and scaled to markSize's on-screen size for the map's current width,
+// so they grow and shrink with the map like the game's own. Laid out near their desktop size, they scale down
+// on a phone rather than up, and stay crisp.
+const ART_SIZE = 80
+// The unknown-site glow's bright core; its image is twice as large, with the soft halo round the core.
+const ORB_SIZE = 50
+const ORB_DISC = 0.5
+const ORB_BOX = ORB_SIZE / ORB_DISC
+// The player's marker is drawn crest-sized: its disc is 0.48 of its image (public/markers/player.webp).
+const PLAYER_BOX = Math.round(ICON_SIZE / 0.48)
+// How far (CSS px on screen) a tap may land from a slot and still count as that slot: at least 32, or the
+// art's own half-width once it is drawn larger.
+const TAP_REACH = 32
+const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
+// With reduced motion, a map move shorter than this (px) just jumps, like the finger it follows; a longer one crossfades.
+const NUDGE = 24
+
+// Gap kept between a label and the frame's edges; distance from a small glyph's point to its label.
+const LABEL_EDGE = 8
+const LABEL_GAP = 9
+// Distance from a mark to its called-out name.
+const CALLOUT_GAP = 4
+// The orb art per pin state: gold "?" for an unknown site, teal for a possible spawn, the player for the spawn.
+const ORB_ART: Partial<Record<PinState, string>> & { open: string; spawn: string } = {
+  open: '/markers/unknown.webp', candidate: '/markers/unknown.webp', dimmed: '/markers/unknown.webp',
+  'spawn-option': '/markers/spawn-option.webp', spawn: '/markers/player.webp',
+}
+
+export function MapView(props: MapContent & {
+  earth: EarthId
+  /** Screen y of the top overlay's bottom edge. */
+  topInset: MotionValue<number>
+  /** Height covered at the bottom by the overlay at rest (strip, or sheet at peek): the map frames itself above it. */
+  restInset: MotionValue<number>
+  /** Height covered at the bottom right now, including an open sheet: pins are kept above it. */
+  bottomInset: MotionValue<number>
+  /** What is drawn over the map's bottom-left corner (the Nightlord medallion), measured up from bottomInset. */
+  corner?: MotionValue<Corner>
+  /** Counts the user's pans and pinches: the Nightlord's card folds away when the map is moved. */
+  moves?: MotionValue<number>
+}) {
+  const frame = useRef<HTMLDivElement>(null)
+  // Measured by a ResizeObserver; at scale 1 the square image is max(w, h) wide, so it covers the frame.
+  const size = useMotionValue({ w: 0, h: 0 })
+  // What the map frames itself on: the whole island as drawn, so no mark starts off screen, the west coast included.
+  const box = catalog.islandOf(props.earth)
+  // The gap between the two nearest sites, which no glow outgrows (orbSize).
+  const spacing = useMemo(() => minSpacing(Object.values(catalog.slotsOf(props.earth))), [props.earth])
+  // Until the user moves the map, it keeps itself framed on the playable area as insets settle.
+  const touched = useRef(false)
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const scale = useMotionValue(1)
+  const pinScale = useTransform(scale, (s) => 1 / s)
+  const mapWidth = useTransform(() => Math.max(size.get().w, size.get().h) * scale.get())
+  const artScale = useTransform(mapWidth, (m) => markSize('art', m) / ART_SIZE)
+  const orbScale = useTransform(mapWidth, (m) => orbSize(m, spacing) / ORB_SIZE)
+  const iconScale = useTransform(mapWidth, (m) => markSize('icon', m) / ICON_SIZE)
+  const ringScale = useTransform(mapWidth, (m) => markSize('ring', m) / RING_SIZE)
+  // MotionConfig only reaches declarative animations; imperative moves crossfade themselves when motion is reduced.
+  const reduce = useReducedMotion()
+  const fade = useMotionValue(1)
+
+  const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
+  // The medallion and its card while they show, measured up from whatever covers the bottom of the screen.
+  const cornerRects = () => props.corner?.get().rects ?? []
+  const cornerUp = () => Math.max(0, ...cornerRects().map((r) => r.top))
+  // Per axis, an image larger than the frame keeps covering it and a smaller one (zoomed out to fit
+  // the playable area) stays inside it, so the playable area is always reachable. The bottom edge may
+  // also rise to whatever covers the bottom of the screen, and above the corner, so no pin stays under the medallion.
+  // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
+  const bounds = (axis: 'x' | 'y', s = scale.get()) => {
+    const slack = Math.abs(side(s) - (axis === 'x' ? size.get().w : size.get().h)) / 2
+    return { min: axis === 'x' ? -slack : -slack - props.bottomInset.get() - cornerUp(), max: slack }
+  }
+  const clamp = (v: number, axis: 'x' | 'y', s = scale.get()) => {
+    const { min, max } = bounds(axis, s)
+    return Math.min(max, Math.max(min, v))
+  }
+  // Under the finger the map may go past its bounds, with resistance; release springs it back.
+  const band = (v: number, axis: 'x' | 'y') => {
+    const { min, max } = bounds(axis)
+    return rubberband(v, min, max, axis === 'x' ? size.get().w : size.get().h)
+  }
+  // If the selected pin would sit under the sheet (or the medallion above it), pan it up into the visible area.
+  const reveal = (s = scale.get()): number | undefined => {
+    const pin = props.pins.find((p) => p.slot === props.selected)
+    if (!pin) return undefined
+    const { w, h } = size.get()
+    const pinY = h / 2 + y.get() + (pin.y / 1000 - 0.5) * side(s)
+    const pinX = w / 2 + x.get() + (pin.x / 1000 - 0.5) * side(s)
+    const over = cornerRects().filter((r) => pinX > r.x0 - 22 && pinX < r.x1 + 22).map((r) => r.top + 22)
+    const visibleBottom = h - props.bottomInset.get() - Math.max(56, ...over)
+    return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
+  }
+  // The scale that fits the playable area into the space between the top and resting bottom overlays.
+  // Resting, so a rising sheet neither reframes the map nor changes how far it zooms out.
+  const fitScale = () => {
+    const { w, h } = size.get()
+    if (!w || !h) return 1
+    const free = h - props.topInset.get() - props.restInset.get()
+    return Math.min(w / (((box.x1 - box.x0) / 1000) * side(1)), free / (((box.y1 - box.y0) / 1000) * side(1)))
+  }
+  // Zooming out stops at covering the frame, or further where needed to show the whole playable area.
+  const minScale = () => Math.min(1, fitScale())
+  const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(minScale(), s))
+  const fit = () => {
+    const { w, h } = size.get()
+    if (!w || !h) return
+    const top = props.topInset.get()
+    const bottom = h - props.restInset.get()
+    const s = boundScale(fitScale())
+    const centerX = ((box.x0 + box.x1) / 2000 - 0.5) * side(s)
+    const centerY = ((box.y0 + box.y1) / 2000 - 0.5) * side(s)
+    // Centred above the corner's medallion where the playable area has the room (a phone's spare height), so no
+    // site starts under it; where it has not, as high as it goes, which is where it was without the corner.
+    const boxH = ((box.y1 - box.y0) / 1000) * side(s)
+    // The corner's steady reach, not whether it shows right now: a tuck mid-drag must not move the map.
+    const mid = Math.max(top + boxH / 2, (top + bottom - (props.corner?.get().reach ?? 0)) / 2)
+    scale.jump(s)
+    x.jump(clamp(-centerX, 'x', s))
+    y.jump(clamp(mid - h / 2 - centerY, 'y', s))
+  }
+  // Which gestures own the motion values right now; the sheet-driven settle must not fight them.
+  const active = useRef({ drag: false, pinch: false })
+  // Reduced motion: the moves waiting for the running crossfade's jump, or null when none is running.
+  const queued = useRef<(() => [MotionValue<number>, number][])[] | null>(null)
+  // MotionValue.set does not stop a running animation, so a new gesture must stop the glide or
+  // settle spring itself. use-gesture calls `from` at pointer-down, before any handler runs,
+  // so stopping here freezes the map exactly where the finger landed.
+  const grab = (gesture: 'drag' | 'pinch') => {
+    active.current[gesture] = true
+    touched.current = true
+    x.stop()
+    y.stop()
+    scale.stop()
+    // A reduced-motion crossfade in flight is dropped: the finger owns the map now, so its jump must not land.
+    queued.current = null
+    fade.jump(1)
+  }
+  const moved = () => {
+    props.moves?.set(props.moves.get() + 1)
+    setCallout(null)
+  }
+  // Springs each value to its target. With reduced motion a far move crossfades instead; `targets` is read
+  // again when the map is faded out, so the jump lands where things are by then, not where they were.
+  // Moves that arrive during a crossfade wait for its jump, and each is read again there, in order.
+  type Targets = () => [MotionValue<number>, number][]
+  const moveTo = (targets: Targets) => {
+    if (reduce && queued.current) return void queued.current.push(targets)
+    const now = targets()
+    if (!reduce) return now.forEach(([v, t]) => { if (v !== scale || t !== v.get()) animate(v, t, snap) })
+    const far = now.some(([v, t]) => Math.abs(v === scale ? side(t) - side() : t - v.get()) > NUDGE)
+    if (!far) return now.forEach(([v, t]) => v.jump(t))
+    const batch = [targets]
+    queued.current = batch
+    crossfade(fade, () => {
+      if (queued.current !== batch) return // a gesture took over the map meanwhile (grab)
+      queued.current = null
+      batch.forEach((read) => read().forEach(([v, t]) => v.jump(t)))
+    })
+  }
+  const settle = () => moveTo(() => {
+    const s = boundScale(scale.get())
+    return [[scale, s], [x, clamp(x.get(), 'x', s)], [y, reveal(s) ?? clamp(y.get(), 'y', s)]]
+  })
+
+  useGesture(
+    {
+      onDrag: ({ offset: [ox, oy], pinching, cancel, tap, first }) => {
+        if (pinching) return cancel()
+        if (first && !tap) moved()
+        // A tap never becomes an intentional drag, so onDragEnd does not run for it: the tap's pointer-up
+        // (the only call with `tap` set) ends the grab here. Left set, it would block the settle that keeps
+        // a selected pin above the rising sheet. A tap can also stop a glide mid-bounce; settle puts it back.
+        if (tap) {
+          active.current.drag = false
+          return settle()
+        }
+        x.set(band(ox, 'x'))
+        y.set(band(oy, 'y'))
+      },
+      onDragEnd: ({ velocity: [vx, vy], direction: [dx, dy], tap, canceled }) => {
+        active.current.drag = false
+        if (canceled) return
+        // Reduced motion skips the glide.
+        if (tap || reduce) return settle()
+        // use-gesture reports speed in px/ms with a separate sign; Motion wants signed px/s.
+        const velocityX = vx * dx * 1000
+        const velocityY = vy * dy * 1000
+        const inertia = { type: 'inertia', power: 0.3, bounceStiffness: 300, bounceDamping: 30 } as const
+        // Inertia computes its own end point, but Motion skips any 'inertia' animation whose target
+        // equals the current value, so pass the same projected, clamped end point as the target.
+        const glideX = clamp(x.get() + velocityX * inertia.power, 'x')
+        const glideY = clamp(y.get() + velocityY * inertia.power, 'y')
+        // min/max make a glide that starts past the edge, or reaches it, spring back to it.
+        animate(x, glideX, { ...inertia, ...bounds('x'), velocity: velocityX, modifyTarget: (t: number) => clamp(t, 'x') })
+        animate(y, glideY, { ...inertia, ...bounds('y'), velocity: velocityY, modifyTarget: (t: number) => clamp(t, 'y') })
+      },
+      onPinch: ({ origin: [ox, oy], first, offset: [s], memo }) => {
+        if (first) {
+          moved()
+          const r = frame.current!.getBoundingClientRect()
+          // Start position, start scale, and the pinch origin relative to the layer's centre.
+          memo = [x.get(), y.get(), scale.get(), ox - (r.left + r.width / 2) - x.get(), oy - (r.top + r.height / 2) - y.get()]
+        }
+        const [x0, y0, s0, dx, dy] = memo as number[]
+        // Zoom about the pinch origin: the layer point under the fingers stays put.
+        const ratio = s / s0
+        scale.set(s)
+        x.set(band(x0 - (ratio - 1) * dx, 'x'))
+        y.set(band(y0 - (ratio - 1) * dy, 'y'))
+        return memo
+      },
+      onPinchEnd: () => {
+        active.current.pinch = false
+        settle()
+      },
+      onWheel: ({ event, delta: [dx, dy] }) => {
+        event.preventDefault()
+        // Trackpad pinch arrives as ctrl+wheel and is already handled by onPinch, about the pointer.
+        if (event.ctrlKey) return
+        touched.current = true
+        // A wheel step takes over from any glide or settle spring, which .set alone would not stop.
+        x.stop()
+        y.stop()
+        scale.stop()
+        // A two-finger trackpad scroll pans, as in Apple Maps; it stays inside the bounds, as there is no release to spring back from.
+        if (isTrackpadScroll(event)) {
+          x.set(clamp(x.get() - dx, 'x'))
+          y.set(clamp(y.get() - dy, 'y'))
+          return
+        }
+        // A mouse wheel zooms about the pointer: the image point under it stays under it.
+        const r = frame.current!.getBoundingClientRect()
+        const pointer = { x: event.clientX - (r.left + r.width / 2), y: event.clientY - (r.top + r.height / 2) }
+        const s0 = scale.get()
+        // Exponential, so a step in and the same step out cancel, and no step can flip the scale's sign.
+        const s1 = boundScale(s0 * Math.exp(-dy / 500))
+        const t = zoomAbout({ x: x.get(), y: y.get() }, s0, s1, pointer)
+        scale.set(s1)
+        x.set(band(t.x, 'x'))
+        y.set(band(t.y, 'y'))
+        settle()
+      },
+    },
+    {
+      target: frame,
+      eventOptions: { passive: false },
+      drag: {
+        filterTaps: true,
+        from: (): [number, number] => {
+          grab('drag')
+          return [x.get(), y.get()]
+        },
+      },
+      pinch: {
+        scaleBounds: () => ({ min: minScale(), max: MAX_ZOOM }),
+        rubberband: true,
+        from: (): [number, number] => {
+          grab('pinch')
+          return [scale.get(), 0]
+        },
+      },
+    },
+  )
+
+  // Keep the selected pin above the sheet as it rises, and reveal a newly selected pin.
+  // Re-subscribing on selected/pins changes means the listener never reads stale props.
+  useEffect(() => {
+    if (props.selected) touched.current = true
+    if (reveal() !== undefined) moveTo(() => { const target = reveal(); return target === undefined ? [] : [[y, target]] })
+    const onInset = () => {
+      if (!active.current.drag && !active.current.pinch) settle()
+    }
+    // The frame or the resting overlays changed size: reframe until the user has moved the map.
+    const onFrame = () => (touched.current ? onInset() : fit())
+    // Only the corner's reach frames the map; its tuck only changes what names avoid and how far the map pans.
+    let reach = props.corner?.get().reach
+    const onCorner = (c: Corner) => {
+      if (c.reach === reach) return
+      reach = c.reach
+      onFrame()
+    }
+    const offs = [
+      ...[size, props.topInset, props.restInset].map((v) => v.on('change', onFrame)),
+      ...(props.corner ? [props.corner.on('change', onCorner)] : []),
+      props.bottomInset.on('change', onInset),
+    ]
+    return () => offs.forEach((off) => off())
+  }, [props.topInset, props.restInset, props.bottomInset, props.corner, props.selected, props.pins])
+
+  // A tap on a named mark shows its name in a callout, and another tap on it, or anywhere else, hides it.
+  // Otherwise a tap goes to the nearest slot within reach, preferring the step's own pins, not to whichever hit area is on top.
+  const tapAt = (clientX: number, clientY: number) => {
+    const r = frame.current!.getBoundingClientRect()
+    const s = side()
+    const point = {
+      x: ((clientX - r.left - r.width / 2 - x.get()) / s + 0.5) * 1000,
+      y: ((clientY - r.top - r.height / 2 - y.get()) / s + 0.5) * 1000,
+    }
+    const tapped = nearestTag(point, s)
+    setCallout(tapped === null || tapped === calloutAt ? null : { tags, at: tapped })
+    if (tapped !== null) return
+    const reach = Math.max(TAP_REACH, markSize('art', s) / 2)
+    const pin = nearestPin(props.pins, point, (reach / s) * 1000, props.preferred)
+    if (pin) props.onPin?.(pin.slot, pin.state)
+    else props.onBackground?.()
+  }
+
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => size.set({ w: entry.contentRect.width, h: entry.contentRect.height }))
+    observer.observe(frame.current!)
+    return () => observer.disconnect()
+  }, [])
+
+  // Every name on the map, placed in one pass so names avoid each other and every mark, in labelRank order.
+  // Screen px equal a label's own px: tags counter-scale the map's zoom.
+  const tags = useMemo<TagSpec[]>(() => {
+    // A site's name already written at another site ranks below the evergaols (labelRank).
+    const seen = new Set<string>()
+    const sites = props.pins.flatMap((p): TagSpec[] => {
+      if (!p.name || !p.structure) return []
+      const kind = seen.has(p.name) ? 'repeat' : 'site'
+      seen.add(p.name)
+      return [{ x: p.x, y: p.y, kind, mark: 'art', structure: p.structure }]
+    })
+    return [...(props.markers ?? []).map(tagOf), ...sites]
+  }, [props.markers, props.pins])
+  const namedPins = props.pins.filter((p) => p.name && p.structure)
+  const markerCount = props.markers?.length ?? 0
+  // The mark whose name a tap called out, by its index in `tags`; a change of tags (a layer turned off) drops it.
+  const [callout, setCallout] = useState<{ tags: TagSpec[]; at: number } | null>(null)
+  const calloutAt = callout?.tags === tags ? callout.at : null
+  // Its text: a site's name, or a marker's own (a night's in full; a chest's icon says all its name would).
+  const nameOf = (i: number) => (i < markerCount ? props.markers![i].label : namedPins[i - markerCount].name!)
+  // The named mark nearest a tap, within reach of what it draws (a site's art, else a 44px target), or null.
+  const nearestTag = (point: { x: number; y: number }, s: number): number | null => {
+    const art = markSize('art', s) / 2
+    let best: number | null = null
+    let least = Infinity
+    tags.forEach((t, i) => {
+      if (t.silent) return
+      const reach = ((t.mark === 'art' ? art : 22) / s) * 1000
+      const distance = Math.hypot(t.x - point.x, t.y - point.y)
+      if (distance <= reach && distance < least) { best = i; least = distance }
+    })
+    return best
+  }
+  const labelBoxes = useMotionValue<NameBox[]>([])
+  const labelSizes = useRef<NameBox[]>([])
+  const measured = (i: number, box: NameBox) => { labelSizes.current[i] = box }
+  const wide = useWide()
+  // Night names are in EB Garamond, which may arrive after the first measure (font-display: swap): measure every
+  // name again whenever a font finishes loading (fonts.ready alone can resolve before the font is even requested).
+  // Read straight from the DOM, so a font arriving mid-gesture costs no re-render of the pins.
+  useEffect(() => {
+    const set = document.fonts
+    if (!set) return
+    const remeasure = () => {
+      frame.current?.querySelectorAll<HTMLElement>('[data-tag]').forEach((el) => {
+        labelSizes.current[Number(el.dataset.tag)] = measureName(el)
+      })
+      labelBoxes.set(labelBoxes.get().map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 }))
+    }
+    set.addEventListener('loadingdone', remeasure)
+    set.ready.then(remeasure)
+    return () => set.removeEventListener('loadingdone', remeasure)
+  }, [labelBoxes])
+  const labels = useTransform(() => {
+    const { w, h } = size.get()
+    const s = side()
+    const toScreen = (px: number, py: number) => ({ x: w / 2 + x.get() + (px / 1000 - 0.5) * s, y: h / 2 + y.get() + (py / 1000 - 0.5) * s })
+    const art = markSize('art', s)
+    const icon = markSize('icon', s)
+    const orb = orbSize(s, spacing)
+    const ring = markSize('ring', s)
+    // Pins with a name are placed as marks with a label (the tags); the rest only block: their art, an orb's glow,
+    // or the player's marker (crest-sized).
+    const pinRects = props.pins.filter((p) => !(p.name && p.structure)).flatMap((p) => {
+      const c = toScreen(p.x, p.y)
+      if (p.structure) return structureFootprint(c, art, p.structure)
+      return [square(c, p.state === 'spawn' ? icon / 2 : orb / 2)]
+    })
+    const boxes = labelBoxes.get()
+    const points = tags.map((t) => toScreen(t.x, t.y))
+    // The castle, whose guard's name is its own: the box round its crests.
+    const castle = tags.flatMap((t, i) => (t.kind === 'castle' && t.mark === 'icon' ? [square(points[i], icon * ICON_BODY)] : []))
+      .reduce<Rect | undefined>((u, r) => (u ? { x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) } : r), undefined)
+    const requests = tags.map((t, i) => labelRequest(t, points[i], boxes[i], { art, icon, ring }, wide, castle))
+    // The visible band runs from the pill's bottom edge to whatever covers the bottom right now (the sheet),
+    // so no label is sliced by the sheet or drawn under the pill's controls.
+    const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
+    // The medallion and its card are drawn over the map: names keep off them.
+    const blocked = (props.corner?.get().rects ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
+    // One line of a name: the shortest name box, as every map has names on one line.
+    const line = Math.min(...requests.filter((r) => !r.ring && r.label.h > 0).map((r) => r.label.h))
+    const spots = placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked, Number.isFinite(line) ? line : 0)
+      .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
+    // A called-out name goes centred just above its mark, over everything, or below it where the pill leaves no room.
+    if (calloutAt === null) return spots
+    const { point, box, mark = 0 } = requests[calloutAt]
+    const called = boxes[tags.length] ?? { w: 0, h: 0 }
+    const around = box ?? square(point, mark)
+    const calloutX = Math.min(w - LABEL_EDGE - called.w, Math.max(LABEL_EDGE, (around.x0 + around.x1) / 2 - called.w / 2))
+    const above = around.y0 - CALLOUT_GAP - called.h
+    const calloutY = above >= visible.top + LABEL_EDGE ? above : around.y1 + CALLOUT_GAP
+    // The mark's own name steps aside while its callout says it, so the name is never written twice.
+    spots[calloutAt] = { ...spots[calloutAt], shown: false }
+    return [...spots, { x: calloutX - point.x, y: calloutY - point.y, shown: true }]
+  })
+  // Tags measure their labels in their own layout effects, which run before this component's: published
+  // from here, after the transform above has subscribed (in its own layout effect, declared earlier), so the
+  // new sizes are never missed.
+  // The callout's size comes last, after every tag's.
+  useLayoutEffect(() => labelBoxes.set([...tags, null].map((_, i) => labelSizes.current[i] ?? { w: 0, h: 0 })), [tags, labelBoxes, calloutAt])
+
+  // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
+  return (
+    <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
+      <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
+        <img className="map-image" src={`/maps/${props.earth}.webp`} alt="" draggable={false} />
+        <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
+        {/* Rings first: the sites on the ground they cover still show on top. Their names come after the pins. */}
+        {props.markers?.map((m, i) => (m.layer === 'circle' || m.layer === 'event') && (
+          <motion.span key={`r${i}`} className="marker ring-mark" style={{ left: `${m.x / 10}%`, top: `${m.y / 10}%`, scale: pinScale }}>
+            <motion.span className="mark" style={{ scale: ringScale }}>{m.layer === 'event' ? <EventGlow /> : <Ring night={m.night ?? 1} />}</motion.span>
+          </motion.span>
+        ))}
+        {props.pins.map((p) => (
+          <motion.span
+            // Keyed by what the pin shows, so a structure already on the map stays put when the result takes over.
+            // An orb keeps its element through state changes (spawn option to spawn, open to candidate), so a
+            // keyboard user's focus on it survives the change instead of falling to the document body.
+            key={`${p.slot}:${p.structure ?? 'dot'}`}
+            className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}`}
+            // A pin that does nothing (the result map) is a named image, not a Tab stop or a button to VoiceOver.
+            {...(props.onPin ? {} : { role: 'img', 'aria-label': p.label })}
+            data-slot={p.slot} // a stable handle for tests; labels speak player vocabulary, not slot numbers
+            style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
+            initial={{ opacity: 0 }}
+            // A certain ghost dims its art alone (map.css), so its dashed ring stays clearly visible.
+            animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
+            transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
+          >
+            {/* A site sighted empty ("Nothing here") draws the same dashed-ring empty mark as the sheet and the
+                Sightings list (StructureIcon with no structure), never the unexplored "?" orb. */}
+            <motion.span className="pin-body" style={{ scale: p.structure || p.state === 'sighted' ? artScale : p.state === 'spawn' ? iconScale : orbScale }}>
+              <motion.span className={p.structure || p.state === 'sighted' ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
+                {p.structure || p.state === 'sighted'
+                  ? <StructureIcon structure={p.structure} size={ART_SIZE} />
+                  : p.state === 'spawn'
+                    ? <img className="orb" src={ORB_ART.spawn} width={PLAYER_BOX} height={PLAYER_BOX} data-disc={0.48} alt="" draggable={false} />
+                    : <img className="orb" src={ORB_ART[p.state] ?? ORB_ART.open} width={ORB_BOX} height={ORB_BOX} data-disc={ORB_DISC} alt="" draggable={false} />}
+                {/* A Church at the spawn point: the art stays whole and the player marker rides on its corner, so both show. */}
+                {p.state === 'spawn' && p.structure && <img className="spawn-badge" src={ORB_ART.spawn} alt="" draggable={false} />}
+              </motion.span>
+            </motion.span>
+            {/* The 44px target lies over the art as a sibling, so art and pin stay mounted when the result drops it. */}
+            {props.onPin && (
+              <button
+                className="pin-hit"
+                aria-label={p.label}
+                data-slot={p.slot}
+                // buttons === 0: a pan that sweeps across pins is not hovering them.
+                onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !e.buttons) props.onHover?.(p) }}
+                onPointerLeave={(e) => { if (e.pointerType === 'mouse') props.onHover?.(null) }}
+                onClick={(e) => {
+                  // Pointer taps bubble to the frame, which snaps them; keyboard activation has no point to snap.
+                  if (e.detail) return
+                  e.stopPropagation()
+                  props.onPin?.(p.slot, p.state)
+                }}
+              />
+            )}
+          </motion.span>
+        ))}
+        {/* After the pins, so a name is never under a structure; placeLabels also keeps it off every mark. */}
+        {props.markers?.map((m, i) => (
+          <Tag key={`m${i}`} index={i} at={m} className={`marker-${m.layer}${m.plain ? ' marker-plain' : ''}`} labels={labels} onMeasure={measured} pinScale={pinScale}
+            text={m.layer === 'circle' ? <RingName marker={m} /> : tags[i].silent ? null : m.label} textKey={m.label}>
+            {m.layer !== 'circle' && <MarkerIcon marker={m} scale={iconScale} />}
+          </Tag>
+        ))}
+        {/* A site's name: the pin above draws its art, the name goes under it where there is room. It is part of
+            the pin's own accessible name (ResultOverlay), so the text itself is hidden from screen readers. */}
+        {namedPins.map((p, j) => (
+          <Tag key={`p${p.slot}`} index={markerCount + j} at={p} className="marker-site" labels={labels} onMeasure={measured}
+            pinScale={pinScale} text={p.name!} textKey={p.name!} hidden />
+        ))}
+        {/* The called-out name, over every other mark; the mark's own accessible name already says it. */}
+        {calloutAt !== null && (
+          <Tag key={`c${calloutAt}`} index={tags.length} at={tags[calloutAt]} className="marker-callout" labels={labels} onMeasure={measured}
+            pinScale={pinScale} text={nameOf(calloutAt)} textKey={nameOf(calloutAt)} hidden />
+        )}
+      </motion.div>
+    </div>
+  )
+}

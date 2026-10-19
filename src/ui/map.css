@@ -1,0 +1,93 @@
+/* The map's marks at game scale (MapView): structure art, orbs, crests, night rings, and the names the game's
+   own map writes beside them. Every mark is laid out at a fixed size and scaled by MapView to follow the map. */
+
+/* Pins: a 44px target around the mark. Taps snap to the nearest slot (MapView). */
+.pin { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; }
+.pin-hit { position: absolute; inset: 0; border-radius: 50%; }
+.pin-hit:focus-visible { outline-offset: -4px; }
+/* Every mark centres on its point by its own size (translate), not by grid alignment: a mark larger than its
+   box may be start-aligned instead of centred. The body is a zero-size box on the point, so MapView's scale
+   grows the mark about the point itself. */
+.pin-body { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.pin-mark { position: absolute; left: 0; top: 0; display: grid; place-items: center; translate: -50% -50%; }
+/* An orb: the game's undiscovered-site glow with its "?" (gold), a possible spawn (spirit teal), or the player's
+   marker (crest-sized, MapView). The art carries its own glow, so the map pays for no filter as it moves. */
+.orb { display: block; user-select: none; -webkit-user-drag: none; }
+/* Focus mode: the sites that could hold the structure glow gold, on a map dimmed behind them. */
+.pin-candidate .pin-orb::before {
+  content: ''; position: absolute; inset: 10px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 130, 0.75) 0%, rgba(255, 190, 80, 0.35) 45%, rgba(255, 170, 60, 0) 70%);
+}
+.pin-candidate .structure-icon::after {
+  content: ''; position: absolute; inset: -14px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 130, 0.55) 0%, rgba(255, 190, 80, 0.25) 45%, rgba(255, 170, 60, 0) 70%);
+}
+/* A Church at the spawn point: the player marker rides on the art's lower-left corner. */
+.spawn-badge { position: absolute; left: -16px; bottom: -16px; width: 56px; height: 56px; }
+/* The site whose sheet is open: a pale reticle in the game's blue focus halo around the orb's disc, or around the
+   art's box, so it stands out from the gold orbs themselves. */
+.pin-selected .pin-orb::after,
+.pin-selected .structure-icon::before,
+.pin-selected .icon-empty::before {
+  content: ''; position: absolute; border: 4px solid var(--text); border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px rgba(0, 0, 0, 0.6), 0 0 16px 2px var(--halo);
+}
+.pin-selected .pin-orb::after { inset: 20px; }
+.pin-selected .structure-icon::before,
+.pin-selected .icon-empty::before { inset: -6px; }
+/* The pins the current step asks for draw above the rest; taps snap by distance (MapView). */
+.pin-spawn-option, .pin-candidate, .pin-selected { z-index: 1; }
+
+/* A certain but unconfirmed slot: faded grey art in a dashed ring, unlike a sighted pin's plain full-colour art.
+   Only the art fades, so the ring stays strong; the badge dims by filter, not opacity, so the ring can't show through. */
+.pin .structure-art { transition: opacity 0.35s ease-out; }
+.pin-certain .structure-art { opacity: 0.5; filter: grayscale(0.9); }
+.pin-certain:not(.pin-selected) .structure-icon::before { content: ''; position: absolute; inset: -6px; border: 3px dashed var(--text-2); border-radius: 50%; }
+.pin-certain .element-badge { filter: brightness(0.75); }
+
+/* A zero-size anchor on the point: the mark centres on it, MapView places the name beside it, clear of marks. */
+.marker { position: absolute; z-index: 2; width: 0; height: 0; pointer-events: none; }
+.marker .mark { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.marker .mark > * { position: absolute; left: 0; top: 0; translate: -50% -50%; }
+/* Rings lie under the pins (MapView renders them first), so the sites inside stay on top. */
+.ring-mark { z-index: 0; }
+/* A night's name draws above every other mark: it is always shown (placeLabels keeps it). */
+.marker.marker-circle, .marker.marker-event { z-index: 3; }
+.ring { display: block; }
+.ring-1 { color: var(--night-1); }
+.ring-2 { color: var(--night-2); }
+.event-glow { display: block; color: var(--event); }
+/* Icons carry their shadow in the image (the import bakes it), so nothing is filtered as the map moves. */
+.marker-icon { display: block; object-fit: contain; }
+/* Evergaols are the game's dark stone ring: drawn smaller and lighter than the crests, so a phone map is not
+   dotted with heavy discs. */
+.marker-evergaol .marker-icon { width: 28px; height: 28px; opacity: 0.75; }
+
+/* A name as the game's map writes it: pale text straight on the map, with a stacked dark glow and no box. On a
+   phone, 11px (the floor), a long name in two balanced lines: MapView shrinks the box to its longest line. */
+.map-name {
+  position: absolute; top: 0; left: 0; width: max-content; max-width: 82px; text-wrap: balance;
+  font: 600 11px/13px var(--font); text-align: center; color: var(--text);
+  text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+@media (min-width: 900px) { .map-name { font-size: 13px; line-height: 15px; max-width: 124px; } }
+/* A night's boss by its ring, in the game's face, on one line (never broken mid-name); the night's number in the
+   ring's colour. The same pale text and stacked dark glow as the other names, a weight heavier for the serif's thin strokes. */
+.marker-circle .map-name { font-weight: 500; max-width: none; white-space: nowrap; }
+/* A night's name wraps only between words, never after a hyphen; with only its number inside its ring, the rest hides. */
+.ring-word { white-space: nowrap; }
+.map-name[data-number-only] .ring-rest { display: none; }
+/* The number a size up, in lining figures (EB Garamond's default figures are old-style). */
+.marker-circle .map-name .ring-1, .marker-circle .map-name .ring-2 { font-weight: 600; font-size: 1.2em; font-variant-numeric: lining-nums; }
+/* A name alone (the castle's guard) sits on its point on one line, clear of the marks below it; on a phone it wraps
+   like every other name, as one line it is too long to fit anywhere round the castle. */
+@media (min-width: 900px) { .marker-plain .map-name { max-width: none; white-space: nowrap; } }
+/* The castle's guard, in the game's face, over the castle. */
+.marker-castle.marker-plain .map-name { font-weight: 500; }
+/* A name called out by a tap on its mark: the same pale text, on an opaque dark plate with a pale hairline, above
+   every other mark and name, so nothing it covers shows through. */
+.marker.marker-callout { z-index: 4; }
+.marker-callout .map-name {
+  max-width: 160px; padding: 2px 6px; border-radius: 4px;
+  background: var(--panel); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent), 0 2px 8px rgba(0, 0, 0, 0.6);
+}

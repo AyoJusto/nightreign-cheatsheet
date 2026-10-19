@@ -1,0 +1,48 @@
+/* ---------- Rows: framed plates, labels, values, slate hairlines ---------- */
+
+.options, .run-card, .sightings {
+  list-style: none; margin: 0; padding: 0; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 90%, transparent), color-mix(in srgb, var(--panel) 90%, transparent)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.option { box-sizing: border-box; width: 100%; min-height: 56px; display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 16px 8px 12px; text-align: left; font-size: 17px; }
+button.option:hover, button.option:active { background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 0 0 18px color-mix(in srgb, var(--accent) 12%, transparent); }
+/* Hairlines span the plate, inset from both edges, so a row reads as a band of the plate, not a list cell. */
+.options > li + li { background: linear-gradient(var(--rule), var(--rule)) no-repeat 12px 0 / calc(100% - 24px) 1px; }
+.option-name { min-width: 0; font-size: 16px; }
+.option-count { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; color: var(--text-2); }
+/* The option recorded at a sighted site: a checkmark at the trailing edge. */
+.option-check { color: var(--text-head); margin-right: 8px; }
+.option-clear { display: block; color: var(--text-head); text-align: center; }
+/* Labels share one column sized to the longest (subgrid), so every value starts on the same line. */
+.run-card { margin: 12px 0 0; display: grid; grid-template-columns: auto 1fr; }
+/* Label, then the value left-aligned in its own column: a long boss name wraps under itself. */
+.run-row {
+  position: relative; grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; column-gap: 16px; align-items: baseline;
+  min-height: 44px; box-sizing: border-box; padding: 11px 16px; font-size: 15px; line-height: 20px;
+}
+.run-card > .run-row + .run-row { background: linear-gradient(var(--rule), var(--rule)) no-repeat 12px 0 / calc(100% - 24px) 1px; }
+.run-row dt { font-size: 13px; color: var(--text-head); }
+.run-value { min-width: 0; margin: 0; color: var(--text); }
+/* A list of names: one column. */
+li.run-row { grid-template-columns: 1fr; }
+/* Section headings in the heading tint, with a rule running out to the edge. */
+.result-list h3, .side-heading {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; line-height: 20px; color: var(--text-head); margin: 24px 4px 8px;
+}
+.result-list h3::after, .side-heading::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--rule), transparent); }
+.side-panel h3 { margin-left: 0; margin-right: 0; }
+.result-list .run-card { margin-top: 0; }
+
+/* ---------- Result header ---------- */
+
+.result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.result-text { min-width: 0; }
+/* A long event and its day take their own line under the title rather than lose the day to an ellipsis. */
+.result-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.result-title { font-size: 24px; line-height: 30px; margin: 0; white-space: nowrap; }
+.result-sub { margin: 2px 0 0; color: var(--text-2); font-size: 15px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-badge { min-width: 0; padding: 3px 8px; border-radius: 3px; background: var(--fill); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); font-size: 12px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share { flex: 0 0 auto; width: 44px; height: 44px; background: linear-gradient(180deg, var(--panel-2), var(--panel)); box-shadow: var(--rim); color: var(--text); display: grid; place-items: center; }
+@media (hover: hover) { .share:hover { color: var(--text-head); box-shadow: var(--glow); } }
+.share:active { color: var(--text-head); box-shadow: var(--glow); }

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Drawn for Bonfire Buddy (no game asset exists on the wiki): the player's position as a pale spirit-flame
+       arrowhead on a soft dark disc, held by a thin, faint bronze ring. The disc is about half the box. -->
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0.3" stop-color="#8ff3e6" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#3fd0c0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="disc" cx="50%" cy="45%" r="55%">
+      <stop offset="0" stop-color="#1b2a48" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#0b1222" stop-opacity="0.65"/>
+    </radialGradient>
+    <linearGradient id="arrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#a6efe5"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+  <circle cx="64" cy="64" r="62" fill="url(#halo)"/>
+  <circle cx="64" cy="64" r="31" fill="url(#disc)"/>
+  <circle cx="64" cy="64" r="31" fill="none" stroke="#c9a55c" stroke-opacity="0.55" stroke-width="2"/>
+  <path d="M64 42 L79 81 L64 72.5 L49 81 Z" fill="#8ff3e6" fill-opacity="0.8" filter="url(#soft)"/>
+  <path d="M64 42 L79 81 L64 72.5 L49 81 Z" fill="url(#arrow)" stroke="#0b3b36" stroke-opacity="0.8" stroke-width="1.6" stroke-linejoin="round"/>
+</svg>
