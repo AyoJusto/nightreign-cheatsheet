@@ -2,7 +2,7 @@ import { assess } from '../bestiary/assess'
 import { bestiary, headline, nightlordHeadline } from '../bestiary/bestiary'
 import type { Enemy } from '../bestiary/enemy'
 import { catalog } from '../data/catalog'
-import { NIGHTLORDS, type NightlordId } from '../domain/names'
+import { DAMAGE_NAMES, NIGHTLORDS, type NightlordId } from '../domain/names'
 import { AfflictionIcon, NumbersTable, WeakTo } from './EnemyNumbers'
 import { Group, LinkRow, Page, Section, type Go } from './Page'
 
@@ -11,14 +11,14 @@ function WeakIcons({ enemy, nightlord }: { enemy: Enemy; nightlord?: boolean }) 
   const weak = nightlord ? nightlordHeadline(bestiary.nightlord(enemy.id)!).weak : headline(enemy).weak
   const shown = weak.length ? weak : assess(enemy.forms).oneForm?.weakTo ?? []
   return (
-    <span className="flex shrink-0 gap-1" aria-label={shown.length ? undefined : 'No damage weakness'}>
+    <span role="img" className="flex shrink-0 gap-1" aria-label={shown.length ? `Weak to ${shown.map((k) => DAMAGE_NAMES[k]).join(', ')}` : 'No damage weakness'}>
       {shown.map((k) => <AfflictionIcon key={k} affliction={k} />)}
     </span>
   )
 }
 
-export function EnemyRow({ enemy, href = `#/enemy/${enemy.id}` }: { enemy: Enemy; href?: string }) {
-  return <LinkRow href={href} trailing={<WeakIcons enemy={enemy} />}>{enemy.name}</LinkRow>
+export function EnemyRow({ enemy, href = `#/enemy/${enemy.id}`, nightlord }: { enemy: Enemy; href?: string; nightlord?: boolean }) {
+  return <LinkRow href={href} trailing={<WeakIcons enemy={enemy} nightlord={nightlord} />}>{enemy.name}</LinkRow>
 }
 
 export function NightlordsPage({ go }: { go: Go }) {

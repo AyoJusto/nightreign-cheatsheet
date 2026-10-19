@@ -21,15 +21,12 @@ export const catalog = {
   seedsFor: (nightlord: NightlordPick, earth: EarthId) => all.filter((s) => picked(nightlord)(s) && s.earth === earth),
   earthsFor: (nightlord: NightlordPick) =>
     EARTHS.map((e) => e.id).filter((earth) => all.some((s) => picked(nightlord)(s) && s.earth === earth)),
-  /** The castle's points on this earth's map; undefined where there is no castle (Noklateo, Great Hollow). */
   castleOf: (earth: EarthId): CastlePoints | undefined => (earth === 'noklateo' || earth === 'great-hollow' ? undefined : data.maps.limveld.castle),
-  /** The island's box on this earth's map (map units), as the keyed map draws it (scripts/import-seeds.ts). */
   islandOf: (earth: EarthId): Box => islands[earth],
   nightBossesOf: (nightlord: NightlordId): Record<Night, Enemy[]> => {
     const seeds = all.filter((s) => s.nightlord === nightlord)
     return { 1: nightFights(seeds, 1), 2: nightFights(seeds, 2) }
   },
-  /** Which Nightlords' runs a night boss closes a night in, in roster order. */
   nightsOf: (enemyId: string): { nightlord: NightlordId; nights: Night[] }[] =>
     NIGHTLORDS.map(({ id }) => ({
       nightlord: id,

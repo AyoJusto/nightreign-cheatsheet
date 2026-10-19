@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Icon } from './Icon'
+import { goBack } from './router'
 
 export type Go = (path: string, back?: boolean) => void
 
@@ -9,13 +10,17 @@ export function Page({ title, go, back = '/', children }: { title: string; go: G
   return (
     <main className="page mx-auto box-border min-h-dvh max-w-3xl px-4 pt-[calc(var(--safe-top)+12px)] pb-[calc(var(--safe-bottom)+32px)]">
       <nav className="flex items-center justify-between" aria-label="Page">
-        <button type="button" className={circle} aria-label="Back" onClick={() => go(back, true)}><Icon name="back" /></button>
+        <BackButton go={go} fallback={back} />
         {back !== '/' && <a href="#/" className={circle} aria-label="Home"><HomeGlyph /></a>}
       </nav>
       <h1 className="mx-1 mt-4 mb-5 text-[32px] leading-tight font-bold">{title}</h1>
       {children}
     </main>
   )
+}
+
+export function BackButton({ go, fallback }: { go: Go; fallback: string }) {
+  return <button type="button" className={circle} aria-label="Back" onClick={() => goBack(fallback, go)}><Icon name="back" /></button>
 }
 
 function HomeGlyph() {

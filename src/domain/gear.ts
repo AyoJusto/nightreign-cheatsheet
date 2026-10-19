@@ -23,7 +23,6 @@ export function wantedAfflictions(seed: Seed): Set<Affliction> {
   return wanted
 }
 
-/** The camps whose dropped weapon hits what the run's hardest fights are weak to, and the afflictions they cover. */
 export function gearForTheRun(seed: Seed): { camps: SlotId[]; afflictions: Affliction[] } {
   const wanted = wantedAfflictions(seed)
   const camps: SlotId[] = []

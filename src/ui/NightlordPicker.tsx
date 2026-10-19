@@ -4,6 +4,7 @@ import { useWide } from './useWide'
 import { NIGHTLORDS, earthName, type NightlordPick } from '../domain/names'
 import { catalog } from '../data/catalog'
 import { WeaknessCard } from './NightlordMedallion'
+import { BackButton } from './Page'
 
 const spring = { type: 'spring', visualDuration: 0.45, bounce: 0.15 } as const
 
@@ -17,11 +18,12 @@ function Portrait({ id, name }: { id: NightlordPick; name: string }) {
   return <img className="portrait" src={`nightlords/${id}.webp`} alt="" onError={() => setFailed(true)} />
 }
 
-export function NightlordPicker({ go }: { go: (path: string) => void }) {
+export function NightlordPicker({ go }: { go: (path: string, back?: boolean) => void }) {
   const wide = useWide()
   const [picked, setPicked] = useState<NightlordPick | null>(null)
   return (
     <main className="home">
+      <BackButton go={go} fallback="/" />
       <h1 className="home-title">Choose your Nightlord</h1>
       <ul className="nightlord-grid">
         {PICKS.map((n) => (

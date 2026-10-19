@@ -81,7 +81,9 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const available: Layer[] = ['structures', 'spawn', ...MARKER_LAYERS.filter((l) => markers.some((m) => m.layer === l))]
   const [on, setOn] = useState<Set<Layer>>(() => new Set(available))
 
+  const opener = useRef<HTMLElement | null>(null)
   const open = useCallback((enemy: Enemy, x: number, y: number, on?: Focus['on']) => {
+    opener.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null
     setFocus({ enemy, x, y, on })
     setDetent('half')
   }, [])
@@ -89,6 +91,8 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
     setFocus(null)
     setDetent('peek')
     setDismissals((n) => n + 1)
+    opener.current?.focus()
+    opener.current = null
   }, [])
   const onMark = useCallback((tap: MarkTap | null) => {
     const enemy = tap && enemyOfMark(tap)
@@ -253,7 +257,7 @@ function Popover({ focus, onClose, children }: { focus: Focus; onClose: () => vo
   const top = Math.min(innerHeight - height - EDGE, Math.max(EDGE, focus.y - 40))
   return (
     <section ref={ref} role="dialog" aria-label={focus.enemy.name} className="glass fixed z-30 box-border rounded-card px-4 pt-2 pb-4" style={{ left, top, width: POPOVER_WIDTH }}>
-      <EnemyCardHeader enemy={focus.enemy} onClose={onClose} />
+      <EnemyCardHeader enemy={focus.enemy} onClose={onClose} takeFocus />
       {children}
     </section>
   )

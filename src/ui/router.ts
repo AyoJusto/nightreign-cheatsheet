@@ -104,6 +104,18 @@ export const linkTo = (path: string) => `${location.href.split('#')[0]}#${path}`
 
 type Entry = { from: string } | null
 
+const inAppLink = (e: MouseEvent) => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null
+  const href = (e.target as Element | null)?.closest('a')?.getAttribute('href')
+  return href?.startsWith('#/') ? href.slice(1) : null
+}
+
+/** Back to wherever the user came from in the app, or to `fallback` when the page was opened directly. */
+export function goBack(fallback: string, go: (path: string, back?: boolean) => void) {
+  if ((history.state as Entry)?.from !== undefined) history.back()
+  else go(fallback, true)
+}
+
 /** `go(path, true)` is an in-app Back: it pops history when the previous entry is `path`, so browser Back agrees. */
 export function useRoute(): [Route, (path: string, back?: boolean) => void] {
   const [route, setRoute] = useState(() => parseRoute(currentPathname()))
@@ -129,5 +141,15 @@ export function useRoute(): [Route, (path: string, back?: boolean) => void] {
     }
     setRoute(parseRoute(path.split('?')[0]))
   }, [])
+  useEffect(() => {
+    const followLink = (e: MouseEvent) => {
+      const path = inAppLink(e)
+      if (path === null) return
+      e.preventDefault()
+      go(path)
+    }
+    document.addEventListener('click', followLink)
+    return () => document.removeEventListener('click', followLink)
+  }, [go])
   return [route, go]
 }

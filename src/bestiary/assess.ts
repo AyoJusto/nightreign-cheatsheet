@@ -9,6 +9,8 @@ export interface Assessment {
   resists: DamageType[]
   fastest: Status[]
   fastestAt: number | null
+  /** The fastest statuses, but only when they stand out: a tie across most statuses is the floor, not a weakness. */
+  weakStatuses: Status[]
   immuneTo: Status[]
   /** A weakness only one form has, named when the worst case has none. */
   oneForm: { label: string | null; weakTo: DamageType[]; by: number } | null
@@ -42,6 +44,7 @@ export function assess(forms: Form[]): Assessment {
     resists,
     fastest,
     fastestAt,
+    weakStatuses: fastest.length * 2 <= procs.length ? fastest : [],
     immuneTo,
     oneForm: weakTo.length ? null : deepestOneFormWeakness(forms),
   }
