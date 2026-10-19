@@ -48,9 +48,7 @@ type Spot = { x: number; y: number }
 const MAX_CLAMP_DRIFT = 4
 const CLEAR_OF_OTHERS = 10
 const END_CLEARANCE = 12
-const RING_TOUCH = 6
 const TOUCH_SLACK = 2
-const DIAGONAL = 0.7
 const BESIDE_ART_GAP = 1
 
 /**
@@ -103,12 +101,6 @@ export function placeLabel(
       { x: around.x1 + h, y: cy - label.h / 2 },
       { x: around.x0 - h - label.w, y: cy - label.h / 2 },
     ]
-    const diagonal = [
-      { x: around.x1 + h * DIAGONAL, y: around.y1 + v * DIAGONAL },
-      { x: around.x0 - h * DIAGONAL - label.w, y: around.y1 + v * DIAGONAL },
-      { x: around.x1 + h * DIAGONAL, y: around.y0 - v * DIAGONAL - label.h },
-      { x: around.x0 - h * DIAGONAL - label.w, y: around.y0 - v * DIAGONAL - label.h },
-    ]
     const alignedToEnds = [
       { x: around.x1 - label.w, y: around.y1 + v },
       { x: around.x0, y: around.y1 + v },
@@ -119,21 +111,14 @@ export function placeLabel(
       { x: around.x0 - h - label.w, y: around.y1 - label.h },
       { x: around.x0 - h - label.w, y: around.y0 },
     ]
-    return [...straight, ...diagonal, ...alignedToEnds]
+    return [...straight, ...alignedToEnds]
   }
   const clamp = (s: Spot) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) })
   // Rounded so float error never lets a later spot beat an earlier one covering just as much.
   const coverage = (s: Spot) => Math.round(obstacles.reduce((sum, o) => sum + coveredArea(rectAt(s), o) * (o.weight ?? 1), 0))
 
   if (ring) {
-    const radius = (around.x1 - around.x0) / 2
-    const [below, above, right, left] = spotsAround(gap, gap)
-    const touchesRingClear = (raw: Spot) => {
-      const s = clamp(raw)
-      return belongs(raw, s) && distanceFromBox(rectAt(s), cx, cy) - radius <= RING_TOUCH && coverage(s) === 0
-    }
-    const outside = [above, below, right, left].find(touchesRingClear)
-    if (outside) return { ...clamp(outside), clear: true, own: true }
+    // Inside, never beside: beside the ring, a night's name reads as the name of whatever stands next to it.
     const inside = clamp({ x: cx - label.w / 2, y: cy - label.h / 2 })
     return { ...inside, clear: coverage(inside) === 0, own: true, inside: true }
   }
