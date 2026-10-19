@@ -248,6 +248,8 @@ export function MapView(props: MapContent & {
         },
       },
       pinch: {
+        // iOS Safari can drop a pointer mid-pinch, leaving a stale finger that turns the next one-finger drag into a zoom.
+        pointer: { touch: true },
         scaleBounds: () => ({ min: minScale(), max: MAX_ZOOM }),
         rubberband: true,
         from: (): [number, number] => {
