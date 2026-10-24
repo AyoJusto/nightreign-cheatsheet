@@ -115,7 +115,7 @@ export function WeaknessCard({ nightlord }: { nightlord: NightlordPick }) {
   )
 }
 
-const HIDDEN_NIGHTLORD = 'Deep of Night can hide the Nightlord. Scout the map as usual: the seed you find names it.'
+const HIDDEN_NIGHTLORD = "It's probably the Dreglord."
 
 function CardRows({ weakness }: { weakness: Headline }) {
   const { weak, resist, status } = cardRows(weakness)
