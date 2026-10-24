@@ -5,11 +5,39 @@ import { HomeLink, TopBar } from './TopBar'
 
 export type Go = (path: string, back?: boolean) => void
 
-export function Page({ title, go, back = '/', children }: { title: string; go: Go; back?: string; children: ReactNode }) {
+export function Page({ title, go, back = '/', art, meta, wide, children }: {
+  title: string
+  go: Go
+  back?: string
+  art?: string
+  meta?: ReactNode
+  wide?: boolean
+  children: ReactNode
+}) {
+  const width = wide ? 'max-w-5xl' : 'max-w-3xl'
+  const heading = <h1 className="mx-1 mt-0 font-display text-[40px] leading-none font-bold min-[900px]:text-[52px]">{title}</h1>
   return (
-    <main className="page mx-auto box-border min-h-dvh max-w-3xl px-4 pt-[calc(var(--safe-top)+76px)] pb-[calc(var(--safe-bottom)+32px)]">
+    <main className={`page mx-auto box-border min-h-dvh ${width} px-4 pt-[calc(var(--safe-top)+76px)] pb-[calc(var(--safe-bottom)+32px)]`}>
       <TopBar onBack={() => goBack(back, go)} trailing={back !== '/' && <HomeLink />} />
-      <h1 className="mx-1 mt-0 mb-5 font-display text-[40px] leading-none font-bold min-[900px]:text-[52px]">{title}</h1>
+      {art ? (
+        <header className="mb-5 flex flex-col items-center text-center">
+          <img
+            src={art}
+            alt=""
+            width={150}
+            height={150}
+            className="mb-4 size-[150px] rounded-full shadow-[0_0_0_1px_var(--color-hairline)] min-[900px]:size-[190px]"
+            draggable={false}
+          />
+          {heading}
+          {meta}
+        </header>
+      ) : (
+        <header className="mb-5">
+          {heading}
+          {meta}
+        </header>
+      )}
       {children}
     </main>
   )
