@@ -6,9 +6,7 @@ import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type NightlordPi
 import { bestiary, nightlordHeadline, type Headline } from '../bestiary/bestiary'
 import type { Affliction } from '../bestiary/enemy'
 
-/** Screen px: x from the left edge, `bottom` and `top` measured up from whatever covers the bottom of the screen. */
 export interface CornerRect { x0: number; x1: number; bottom: number; top: number }
-/** `reach` ignores the card and the tuck, so the map never reframes as a sheet is dragged or the card opens. */
 export interface Corner { rects: CornerRect[]; reach: number }
 export const NO_CORNER: Corner = { rects: [], reach: 0 }
 
@@ -44,29 +42,28 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
   const opacity = useTransform(() => Math.min(1, Math.max(0, 1 - (lift.get() - rest.get()) / TUCK_DISTANCE)))
   const visibility = useTransform(opacity, (o) => (o > 0 ? 'visible' : 'hidden'))
 
-  // Offsets, not client rects: they ignore the transforms that ride the corner on the sheet and slide the card in.
   useLayoutEffect(() => {
     const el = root.current!
     let rects = NONE
-    let reach = 0
+    let medalReach = 0
     const publish = () => {
       const visible = opacity.get() > 0.5 ? rects : NONE
       const last = corner.get()
-      if (last.rects !== visible || last.reach !== reach) corner.set({ rects: visible, reach })
+      if (last.rects !== visible || last.reach !== medalReach) corner.set({ rects: visible, reach: medalReach })
     }
-    const measure = () => {
-      const up = parseFloat(getComputedStyle(el).bottom) + el.offsetHeight
+    const measureUntransformed = () => {
+      const topAboveCover = parseFloat(getComputedStyle(el).bottom) + el.offsetHeight
       rects = [...el.querySelectorAll<HTMLElement>(':scope > [data-corner]')].map((part) => ({
         x0: el.offsetLeft + part.offsetLeft,
         x1: el.offsetLeft + part.offsetLeft + part.offsetWidth,
-        bottom: up - part.offsetTop - part.offsetHeight,
-        top: up - part.offsetTop,
+        bottom: topAboveCover - part.offsetTop - part.offsetHeight,
+        top: topAboveCover - part.offsetTop,
       }))
-      reach = rects[0]?.top ?? 0
+      medalReach = rects[0]?.top ?? 0
       publish()
     }
-    measure()
-    const observer = new ResizeObserver(measure)
+    measureUntransformed()
+    const observer = new ResizeObserver(measureUntransformed)
     observer.observe(el)
     const off = opacity.on('change', publish)
     return () => {

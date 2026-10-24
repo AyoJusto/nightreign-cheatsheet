@@ -2,8 +2,6 @@ import type { Effect, EffectGroup, EffectPool } from './loadout'
 import { EFFECTS } from './data/effects'
 import { normalize } from './text'
 
-// Effect text is left out of the index: players type what the game showed them,
-// and the effect column would make "attack" or "stack" match rows whose titles never say so.
 const TITLES = EFFECTS.map((e) => normalize(e.title))
 const KEYWORDS = EFFECTS.map((e) => (e.keywords ? normalize(e.keywords) : ''))
 

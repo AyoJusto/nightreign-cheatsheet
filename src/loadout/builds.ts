@@ -6,8 +6,6 @@ export { BUILDS }
 
 export const BY_CHARACTER = new Map<string, CharacterBuilds>(BUILDS.map((c) => [c.slug, c]))
 
-// Weapon effects are left out: dozens of titles exist in both groups with
-// different numbers, and a relic build quoting the weapon row would be silently wrong.
 const RELIC_EFFECTS = new Map<string, Effect>(EFFECTS.filter((e) => e.group === 'relics').map((e) => [e.title, e]))
 
 export const describe = (title: string): Effect | undefined => RELIC_EFFECTS.get(title)

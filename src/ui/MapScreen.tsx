@@ -20,19 +20,18 @@ export function MapScreen({ route, go }: { route: MapRoute; go: (path: string, b
   const corner = useMotionValue<Corner>(NO_CORNER)
   const moves = useMotionValue(0)
   const [content, setContent] = useState<MapContent>({ pins: [] })
-  // parseRoute only yields a seed route for ids that exist.
   const seed = route.name === 'seed' ? catalog.seed(route.id)! : null
   const { nightlord, earth } = seed ?? (route as Extract<MapRoute, { name: 'find' }>)
   const pool = useMemo(() => catalog.seedsFor(nightlord, earth), [nightlord, earth])
-  // Overlay before the map in the DOM so Tab reaches its controls before the pins; z-index decides what draws on top.
+  const poolKey = `${nightlord}/${earth}`
+  const overlay = seed
+    ? <ResultOverlay seed={seed} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} moves={moves} />
+    : <FinderOverlay key={poolKey} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />
   return (
     <>
-      {seed
-        ? <ResultOverlay seed={seed} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} moves={moves} />
-        // Keyed by pool so a pool change starts a fresh Scouting.
-        : <FinderOverlay key={`${nightlord}/${earth}`} pool={pool} nightlord={nightlord} earth={earth} go={go} bottomInset={bottomInset} topInset={topInset} restInset={restInset} setMap={setContent} />}
+      {overlay}
       <NightlordMedallion nightlord={nightlord} result={seed !== null} lift={bottomInset} rest={restInset} corner={corner} moves={moves} />
-      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} corner={corner} moves={moves} />
+      <MapView key={earth} earth={earth} {...content} topInset={topInset} restInset={wide ? noInset : restInset} bottomInset={wide ? noInset : bottomInset} cornerAboveBottomInset={corner} moves={moves} />
     </>
   )
 }

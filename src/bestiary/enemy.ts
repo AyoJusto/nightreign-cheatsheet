@@ -5,10 +5,10 @@ export type DamageType = (typeof DAMAGE_TYPES)[number]
 export type Status = (typeof STATUSES)[number]
 export type Affliction = DamageType | Status
 
-/** Percent. Below zero, the enemy takes more of that damage. */
-export type Negation = Record<DamageType, number>
-/** The buildup it takes to proc. Lower procs faster. */
-export type Buildup = Record<Status, number | 'immune'>
+type NegationPercent = number
+export type Negation = Record<DamageType, NegationPercent>
+type BuildupToProc = number | 'immune'
+export type Buildup = Record<Status, BuildupToProc>
 
 /** One phase of a fight, or one member of a group. `label` is null when the fight has a single form. */
 export interface Form {
@@ -24,9 +24,9 @@ export interface Enemy {
   forms: Form[]
 }
 
-/** The weakness the game itself names, which can be a status no negation shows. */
+type WeaknessTheGameNames = Affliction
 export interface Nightlord extends Enemy {
-  named: Affliction
+  named: WeaknessTheGameNames
 }
 
 export const isStatus = (a: Affliction): a is Status => (STATUSES as readonly string[]).includes(a)

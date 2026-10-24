@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { BADGE } from './mapGeometry'
+import { BADGE_FRACTION_OF_ART_BOX } from './mapGeometry'
 import { ELEMENT_CODES, splitStructure, structureName, type ElementId, type StructureKey } from '../domain/names'
 
-/** Falls back to the element's two-letter code if the emblem fails to load. */
 export function ElementEmblem({ element, className = 'element-emblem', size }: { element: ElementId; className?: string; size?: number }) {
   const [failedElement, setFailedElement] = useState<ElementId | null>(null)
   if (failedElement === element) {
@@ -13,11 +12,10 @@ export function ElementEmblem({ element, className = 'element-emblem', size }: {
 }
 
 const badgeAt = {
-  left: `${(0.5 + BADGE.x - BADGE.size / 2) * 100}%`,
-  top: `${(0.5 + BADGE.y - BADGE.size / 2) * 100}%`,
+  left: `${(0.5 + BADGE_FRACTION_OF_ART_BOX.x - BADGE_FRACTION_OF_ART_BOX.size / 2) * 100}%`,
+  top: `${(0.5 + BADGE_FRACTION_OF_ART_BOX.y - BADGE_FRACTION_OF_ART_BOX.size / 2) * 100}%`,
 }
 
-/** Falls back to a text glyph if the kind's art fails to load. */
 export function StructureIcon({ structure, size = 36 }: { structure: StructureKey | null; size?: number }) {
   const [failedStructure, setFailedStructure] = useState<StructureKey | null>(null)
   if (!structure) return <span className="icon-empty" style={{ width: size, height: size }} aria-hidden />
@@ -29,7 +27,7 @@ export function StructureIcon({ structure, size = 36 }: { structure: StructureKe
       ) : (
         <img key={kind} className="structure-art" src={`structures/${kind}.webp`} alt="" width={size} height={size} onError={() => setFailedStructure(structure)} draggable={false} />
       )}
-      {element && <span className="element-badge-at" style={badgeAt}><ElementEmblem element={element} className="element-badge" size={Math.round(size * BADGE.size)} /></span>}
+      {element && <span className="element-badge-at" style={badgeAt}><ElementEmblem element={element} className="element-badge" size={Math.round(size * BADGE_FRACTION_OF_ART_BOX.size)} /></span>}
     </span>
   )
 }

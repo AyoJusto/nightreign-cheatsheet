@@ -128,8 +128,7 @@ test('a slot sheet at half scrolls its body to its last option, which then sits 
   await page.getByRole('button', { name: 'Unknown site', exact: true }).first().click()
   const list = page.locator('.options')
   await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
-  // Waits for stillness rather than a fixed time: software rendering stretches the spring's wall-clock time.
-  await page.locator('.sheet').evaluate((el) => new Promise<void>((done) => {
+  const waitForSheetToSettle = (el: Element) => new Promise<void>((done) => {
     let last = NaN
     let still = 0
     const tick = () => {
@@ -140,7 +139,8 @@ test('a slot sheet at half scrolls its body to its last option, which then sits 
       else requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
-  }))
+  })
+  await page.locator('.sheet').evaluate(waitForSheetToSettle)
   const last = await list.evaluate((el) => {
     const body = el.closest('.sheet-body') as HTMLElement
     body.scrollTop = body.scrollHeight
@@ -246,11 +246,10 @@ test('a site picked while the sheet is leaving turns that one sheet around for t
   await expect(page.getByRole('button', { name: "Resize What's here?, half open" })).toBeVisible()
 })
 
-test('the count is announced as a full phrase', async ({ page, isMobile }) => {
+test('the count is announced as a full phrase from a live region that stays mounted', async ({ page, isMobile }) => {
   await page.goto(`#/find/${targets[0].nightlord}/${targets[0].earth}`)
   const live = page.locator('[aria-live]')
   await expect(live).toHaveText(isMobile ? /^Tap where you spawned, \d+ possible$/ : /^\d+ possible$/)
-  // A remounted live region arrives pre-filled and may go unannounced.
   await live.evaluate((el) => { el.dataset.probe = 'kept' })
   await page.getByRole('button', { name: /^Possible spawn point, leaves / }).first().click()
   const row = spawnedHere(page).first()
@@ -301,8 +300,7 @@ test('desktop: hovering a kind tile names its elements', async ({ page, isMobile
   await expect(page.locator('.structure-heading .structure-name')).toHaveText(new RegExp(`: ${escapeRe(types)}$`))
 })
 
-test.describe(() => {
-  // page.route cannot see requests the service worker makes.
+test.describe('with the service worker blocked', () => {
   test.use({ serviceWorkers: 'block' })
   test('a failed emblem falls back to its element code', async ({ page }) => {
     await page.route('**/elements/*.webp', (route) => route.abort())

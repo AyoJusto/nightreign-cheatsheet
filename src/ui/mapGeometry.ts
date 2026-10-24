@@ -5,7 +5,6 @@ export type { Box } from '../domain/seed'
 
 const MAP_UNITS = 1000
 
-/** The pin closest to `point` within `radius`; a `preferred` pin in reach beats any nearer other pin. */
 export function nearestPin<P extends { x: number; y: number }>(
   pins: readonly P[], point: { x: number; y: number }, radius: number, preferred?: (pin: P) => boolean,
 ): P | null {
@@ -37,9 +36,7 @@ export function rubberband(v: number, min: number, max: number, visibleLength: n
 
 export interface Rect { x0: number; y0: number; x1: number; y1: number }
 export type Obstacle = Rect & {
-  /** Scales its covered area when no spot is free (default 1). */
   weight?: number
-  /** The circle inscribed in its box: a label touches it only inside the circle. */
   round?: boolean
 }
 
@@ -51,10 +48,6 @@ const END_CLEARANCE = 12
 const TOUCH_SLACK = 2
 const BESIDE_ART_GAP = 1
 
-/**
- * A label's top-left corner around a mark: the first spot that covers no obstacle and reads as this mark's
- * name (`own`), else the one covering least (`clear: false`). `others` are the other marks' boxes.
- */
 export function placeLabel(
   point: { x: number; y: number },
   label: { w: number; h: number },
@@ -64,7 +57,7 @@ export function placeLabel(
   edge: number,
   mark = 0,
   ring = false,
-  others: readonly Rect[] = [],
+  otherMarks: readonly Rect[] = [],
   box?: Rect,
 ): { x: number; y: number; clear: boolean; own: boolean; inside?: boolean } {
   const top = frame.top ?? 0
@@ -81,14 +74,14 @@ export function placeLabel(
   const belongs = (raw: Spot, s: Spot) => {
     if (Math.abs(s.x - raw.x) > MAX_CLAMP_DRIFT || Math.abs(s.y - raw.y) > MAX_CLAMP_DRIFT) return false
     const rect = rectAt(s)
-    if (!ring && others.some(runsOverAnotherMark(rect))) return false
+    if (!ring && otherMarks.some(runsOverAnotherMark(rect))) return false
     const centreX = s.x + label.w / 2
     const centreY = s.y + label.h / 2
     const ownDistance = distanceFromBox(mine, centreX, centreY)
-    if (others.every((o) => distanceFromBox(o, centreX, centreY) >= ownDistance)) return true
+    if (otherMarks.every((o) => distanceFromBox(o, centreX, centreY) >= ownDistance)) return true
     const touchingDistance = gapBetweenBoxes(mine, rect)
     const touchesOwnMark = touchingDistance <= Math.abs(gap) + TOUCH_SLACK
-    return touchesOwnMark && others.every((o) => gapBetweenBoxes(o, rect) >= touchingDistance + CLEAR_OF_OTHERS)
+    return touchesOwnMark && otherMarks.every((o) => gapBetweenBoxes(o, rect) >= touchingDistance + CLEAR_OF_OTHERS)
   }
 
   const around = box ?? { x0: point.x, y0: point.y, x1: point.x, y1: point.y }
@@ -114,11 +107,9 @@ export function placeLabel(
     return [...straight, ...alignedToEnds]
   }
   const clamp = (s: Spot) => ({ x: keepIn(s.x, label.w, 0, frame.w), y: keepIn(s.y, label.h, top, frame.h) })
-  // Rounded so float error never lets a later spot beat an earlier one covering just as much.
   const coverage = (s: Spot) => Math.round(obstacles.reduce((sum, o) => sum + coveredArea(rectAt(s), o) * (o.weight ?? 1), 0))
 
   if (ring) {
-    // Inside, never beside: beside the ring, a night's name reads as the name of whatever stands next to it.
     const inside = clamp({ x: cx - label.w / 2, y: cy - label.h / 2 })
     return { ...inside, clear: coverage(inside) === 0, own: true, inside: true }
   }
@@ -156,9 +147,8 @@ const overlapArea = (a: Rect, b: Rect) => {
   return w > 0 && h > 0 ? w * h : 0
 }
 
-/** The scale (at most 1) at which `box`, centred on a disc of radius `r`, has its corners inside it; null below `minScale`. */
-export function fitInDisc(box: { w: number; h: number }, r: number, minScale: number): number | null {
-  const scale = Math.min(1, r / Math.hypot(box.w / 2, box.h / 2))
+export function fitInDisc(box: { w: number; h: number }, radius: number, minScale: number): number | null {
+  const scale = Math.min(1, radius / Math.hypot(box.w / 2, box.h / 2))
   return scale >= minScale ? scale : null
 }
 
@@ -172,35 +162,21 @@ function coveredArea(a: Rect, o: Obstacle): number {
 export interface LabelRequest {
   point: { x: number; y: number }
   label: { w: number; h: number }
-  /** Lowest placed first; ties keep their input order. */
   rank: number
-  /** Shown even with no free spot. */
   keep: boolean
-  /** Negative tucks the name over the edge of its own art. */
   gap?: number
-  /** Half the size of the glyph on the point. */
   mark?: number
   ring?: boolean
-  /** The name on two lines as narrow as its words allow. */
   wrap?: { w: number; h: number }
-  /** The smallest a night's name may shrink to inside its ring. */
   minScale?: number
-  /** The night's number alone, shown inside its ring when even `minScale` does not fit. */
   digit?: { w: number; h: number }
-  /** The mark's footprint, which its name goes around. */
   box?: Rect
-  /** What the mark draws, which no other name may touch; defaults to its glyph. */
   body?: Obstacle[]
-  /** Parts of its own mark its name may not cover either. */
   own?: Rect[]
 }
 
 type PlacedLabel = { x: number; y: number; shown: boolean; wrapped?: boolean; scale?: number; numberOnly?: boolean }
 
-/**
- * Places labels in `rank` order so none covers an earlier one or another mark's body. `blocked` areas are drawn
- * over the map: no label crosses one and marks under one go unnamed. `line` is the names' line height.
- */
 export function placeLabels(
   requests: readonly LabelRequest[],
   frame: { w: number; h: number; top?: number },
@@ -208,8 +184,8 @@ export function placeLabels(
   gap: number,
   edge: number,
   mark: number,
-  blocked: readonly Rect[] = [],
-  line = 0,
+  overlaysOnMap: readonly Rect[] = [],
+  lineHeight = 0,
 ): PlacedLabel[] {
   const top = frame.top ?? 0
   const markOf = (r: LabelRequest) => r.mark ?? mark
@@ -219,7 +195,7 @@ export function placeLabels(
     return [{ x0: r.point.x - m, y0: r.point.y - m, x1: r.point.x + m, y1: r.point.y + m, weight: MARKER_WEIGHT }]
   })
   const order = requests.map((_, i) => i).sort((a, b) => requests[a].rank - requests[b].rank || a - b)
-  const placed: Obstacle[] = blocked.map((b) => ({ ...b, weight: PLACED_LABEL_WEIGHT }))
+  const placed: Obstacle[] = overlaysOnMap.map((b) => ({ ...b, weight: PLACED_LABEL_WEIGHT }))
   const results: PlacedLabel[] = new Array(requests.length)
   for (const i of order) {
     const request = requests[i]
@@ -265,33 +241,34 @@ export function placeLabels(
     }
     const rect = { x0: spot.x, y0: spot.y, x1: spot.x + size.w, y1: spot.y + size.h }
     const glyphFullyVisible = point.y - m >= top && point.y + m <= frame.h && point.x - m >= 0 && point.x + m <= frame.w
-    const underBlock = blocked.some((b) => point.x > b.x0 && point.x < b.x1 && point.y > b.y0 && point.y < b.y1)
-    const acrossBlock = blocked.some((b) => overlapArea(rect, b) > 0)
-    const shown = glyphFullyVisible && !underBlock && !acrossBlock && (keep || (spot.own && spot.clear))
-    // Half a line above and below, or two stacked names read as one wrapped name.
-    const padY = Math.max(LABEL_PAD, line / 2)
+    const underOverlay = overlaysOnMap.some((b) => point.x > b.x0 && point.x < b.x1 && point.y > b.y0 && point.y < b.y1)
+    const acrossOverlay = overlaysOnMap.some((b) => overlapArea(rect, b) > 0)
+    const shown = glyphFullyVisible && !underOverlay && !acrossOverlay && (keep || (spot.own && spot.clear))
+    const padY = Math.max(LABEL_PAD, lineHeight / 2)
     if (shown) placed.push({ x0: rect.x0 - LABEL_PAD, y0: rect.y0 - padY, x1: rect.x1 + LABEL_PAD, y1: rect.y1 + padY, weight: PLACED_LABEL_WEIGHT })
     results[i] = { x: spot.x, y: spot.y, shown, ...(wrapped && { wrapped }), ...(scale !== undefined && scale < 1 && { scale }), ...(numberOnly && { numberOnly }) }
   }
   return results
 }
 
-/** The translation that keeps screen point `p` still while zooming from `s0` to `s1`; `t` and `p` are from the frame's centre. */
-export function zoomAbout(t: { x: number; y: number }, s0: number, s1: number, p: { x: number; y: number }): { x: number; y: number } {
-  const ratio = s1 / s0
-  return { x: p.x - (p.x - t.x) * ratio, y: p.y - (p.y - t.y) * ratio }
+export function zoomAbout(
+  translation: { x: number; y: number }, fromScale: number, toScale: number, stillPoint: { x: number; y: number },
+): { x: number; y: number } {
+  const ratio = toScale / fromScale
+  return {
+    x: stillPoint.x - (stillPoint.x - translation.x) * ratio,
+    y: stillPoint.y - (stillPoint.y - translation.y) * ratio,
+  }
 }
 
 const TRACKPAD_MAX_DELTA = 50
 
-/** A heuristic, as browsers do not say which device sent a wheel event: only trackpads scroll sideways or send small fractional px. */
-export function isTrackpadScroll(e: { deltaX: number; deltaY: number; deltaMode: number }): boolean {
+export function looksLikeTrackpadScroll(e: { deltaX: number; deltaY: number; deltaMode: number }): boolean {
   if (e.deltaX !== 0) return true
   const fractional = !Number.isInteger(e.deltaY)
   return e.deltaMode === 0 && fractional && Math.abs(e.deltaY) < TRACKPAD_MAX_DELTA
 }
 
-/** `repeat` is a site's name already written at another site. */
 export type NameKind = 'night' | 'castle' | 'site' | 'boss' | 'evergaol' | 'repeat' | 'chest' | 'other'
 const NAME_ORDER: readonly NameKind[] = ['night', 'castle', 'site', 'boss', 'evergaol', 'repeat', 'chest', 'other']
 export const labelRank = (kind: NameKind) => NAME_ORDER.indexOf(kind)
@@ -309,7 +286,6 @@ export function markSize(kind: MarkKind, mapWidth: number): number {
 }
 
 const ORB_SEPARATION = 0.5
-/** Never wider than the gap between the two nearest sites (`spacing`, map units), so no two glows touch. */
 export const orbSize = (mapWidth: number, spacing: number) =>
   Math.min(markSize('orb', mapWidth), (spacing * mapWidth) / MAP_UNITS - ORB_SEPARATION)
 
@@ -321,24 +297,23 @@ export function minSpacing(points: readonly { x: number; y: number }[]): number 
   return least
 }
 
-/** Each sprite's height over width in public/structures, drawn to fit a square box. */
-export const ART_ASPECT: Record<string, number> = {
+export const ART_HEIGHT_OVER_WIDTH: Record<string, number> = {
   'blacksmith-village': 0.58, church: 1.36, 'eastern-underground-fort': 0.66, fort: 0.77, 'great-church': 0.9,
   'main-encampment': 0.62, marsh: 0.86, 'ruined-rise': 1.87, ruins: 0.56, 'scale-bearing-merchant': 1.22,
   'sorcerers-rise': 2.06, township: 0.44, 'western-underground-fort': 0.68,
 }
 
-/** The element badge as fractions of the art's square box, measured off the game's icons (data/raw/assets/icons). */
-export const BADGE = { size: 0.25, x: 0.27, y: 0.14 }
+// Measured off the game's icons in data/raw/assets/icons.
+export const BADGE_FRACTION_OF_ART_BOX = { size: 0.25, x: 0.27, y: 0.14 }
 
 export function artFootprint(at: { x: number; y: number }, size: number, heightOverWidth: number, badge: boolean): Rect[] {
   const w = size * Math.min(1, 1 / heightOverWidth)
   const h = size * Math.min(1, heightOverWidth)
   const sprite = { x0: at.x - w / 2, y0: at.y - h / 2, x1: at.x + w / 2, y1: at.y + h / 2 }
   if (!badge) return [sprite]
-  const cx = at.x + size * BADGE.x
-  const cy = at.y + size * BADGE.y
-  const half = (size * BADGE.size) / 2
+  const cx = at.x + size * BADGE_FRACTION_OF_ART_BOX.x
+  const cy = at.y + size * BADGE_FRACTION_OF_ART_BOX.y
+  const half = (size * BADGE_FRACTION_OF_ART_BOX.size) / 2
   return [sprite, { x0: cx - half, y0: cy - half, x1: cx + half, y1: cy + half }]
 }
 
@@ -364,12 +339,11 @@ export const square = (c: { x: number; y: number }, halfSize: number): Rect =>
 
 export function structureFootprint(at: { x: number; y: number }, art: number, structure: StructureKey): Rect[] {
   const { kind, element } = splitStructure(structure)
-  return artFootprint(at, art, ART_ASPECT[kind] ?? 1, element !== null)
+  return artFootprint(at, art, ART_HEIGHT_OVER_WIDTH[kind] ?? 1, element !== null)
 }
 
-/** `castle` is the box round the castle's crests, which its guard's name goes around on a phone. */
 export function labelRequest(t: TagSpec, point: { x: number; y: number }, box: NameBox | undefined,
-  size: { art: number; icon: number; ring: number }, wide: boolean, castle: Rect | undefined): LabelRequest {
+  size: { art: number; icon: number; ring: number }, wide: boolean, castleCrestsBox: Rect | undefined): LabelRequest {
   const label = t.silent ? { w: 0, h: 0 } : box ?? { w: 0, h: 0 }
   const rank = labelRank(t.kind)
   if (t.mark === 'ring') {
@@ -378,9 +352,8 @@ export function labelRequest(t: TagSpec, point: { x: number; y: number }, box: N
       minScale: MIN_RING_FONT_PX / (box?.font ?? MIN_RING_FONT_PX), digit: box?.digit }
   }
   if (t.mark === 'none') {
-    // On a phone the guard's point sits on the castle's crests, so every spot round the point runs into them.
     const goesRoundCastleCrests = t.kind === 'castle' && !wide
-    return { point, label, rank, keep: false, mark: 0, gap: NAME_GAP, box: goesRoundCastleCrests ? castle : undefined }
+    return { point, label, rank, keep: false, mark: 0, gap: NAME_GAP, box: goesRoundCastleCrests ? castleCrestsBox : undefined }
   }
   if (t.mark === 'art') {
     const body = structureFootprint(point, size.art, t.structure!)

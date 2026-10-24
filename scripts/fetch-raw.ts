@@ -44,11 +44,11 @@ const icons = [
 ]
 for (const name of icons) files[`data/raw/assets/icons/${name}.webp`] = `${OBSERVER}/assets/icons/${name}.webp`
 
-// The portraits are named "<n>_<internal name>.webp"; discovered at run time so no internal name is written here.
+const PORTRAIT_PATH = /^public\/Images\/nightlordIcons\/(\d+)_[^/]+\.webp$/
 try {
   const tree = await (await fetch('https://api.github.com/repos/abhishek-nerella/Nightreign-Seed-Finder/git/trees/main?recursive=1')).json()
   for (const entry of tree.tree as { path: string }[]) {
-    const match = entry.path.match(/^public\/Images\/nightlordIcons\/(\d+)_[^/]+\.webp$/)
+    const match = entry.path.match(PORTRAIT_PATH)
     if (match) files[`data/raw/assets/nightlords/${match[1]}.webp`] = `${DELETED_OLD_APP_REPO}/main/${entry.path}`
   }
 } catch (err) {

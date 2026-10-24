@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { Icon } from './Icon'
 
-/** 16px or more: iOS Safari zooms the page into a smaller input and does not zoom back out. */
+// Input text stays 16px or more: iOS Safari zooms into a smaller input and never zooms back out.
 export function SearchField({ label, placeholder, value, onChange }: { label: string; placeholder: string; value: string; onChange: (v: string) => void }) {
   const id = useId()
   return (

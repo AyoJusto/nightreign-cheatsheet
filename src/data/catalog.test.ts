@@ -7,13 +7,12 @@ import { NIGHTLORDS, EARTHS, DAMAGE_NAMES, structureName } from '../domain/names
 const raw = readFileSync('src/data/seeds.json', 'utf8')
 const aliases = JSON.parse(readFileSync('data/raw/aliases.json', 'utf8'))
 
-// Binary assets are skipped: their bytes can land in the CJK range by chance.
-const TEXT_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html'])
+const TEXT_FILE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html'])
 const walk = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) return walk(full)
-    return TEXT_EXT.has(extname(entry.name)) ? [full] : []
+    return TEXT_FILE_EXTENSIONS.has(extname(entry.name)) ? [full] : []
   })
 const toPosixPath = (f: string) => f.split(/[\\/]/).join('/')
 const srcFilesBesidesSeeds = walk('src').filter((f) => toPosixPath(f) !== 'src/data/seeds.json')

@@ -26,7 +26,6 @@ describe('weaknessPhrase', () => {
   it("speaks every status last as the card's Weak status row, whichever field the data lists it in", () => {
     expect(weaknessPhrase({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })).toBe('weak to Holy; resists Fire; weak status Sleep')
     expect(weaknessPhrase({ weak: ['holy'], resist: [], status: ['frost', 'rot'] })).toBe('weak to Holy; weak status Frostbite, Scarlet Rot')
-    // Balancers: listed weak to Sleep and Strike, shown as Weak Strike and Weak status Sleep, and spoken the same way.
     expect(weaknessPhrase({ weak: ['sleep', 'strike'], resist: ['holy'], status: [] })).toBe('weak to Strike; resists Holy; weak status Sleep')
     expect(weaknessPhrase({ weak: ['bleed'], resist: [], status: [] })).toBe('weak status Blood Loss')
   })
@@ -36,7 +35,6 @@ describe('cardRows', () => {
   it("puts every status in the Weak status row, Balancers' listed Sleep as well as Tricephalos' fastest one", () => {
     expect(cardRows({ weak: ['sleep', 'strike'], resist: ['holy'], status: [] })).toEqual({ weak: ['strike'], resist: ['holy'], status: ['sleep'] })
     expect(cardRows({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })).toEqual({ weak: ['holy'], resist: ['fire'], status: ['sleep'] })
-    // Gaping Jaw is listed for Poison alone: no Weak row, the status row names it.
     expect(cardRows({ weak: ['poison'], resist: ['lightning'], status: [] })).toEqual({ weak: [], resist: ['lightning'], status: ['poison'] })
     expect(cardRows({ weak: ['madness', 'holy'], resist: [], status: ['sleep', 'madness'] })).toEqual({ weak: ['holy'], resist: [], status: ['madness', 'sleep'] })
   })

@@ -1,18 +1,15 @@
-/** `wrap` is present only when two lines are narrower; `font` and `digit` only for a night's name. */
 export interface NameBox { w: number; h: number; wrap?: { w: number; h: number }; font?: number; digit?: { w: number; h: number } }
 
-/** Shrinks a wrapping name to its longest line, not its max-width, and keeps both widths on the element for Tag. */
-export function measureName(el: HTMLElement): NameBox {
+export function shrinkToLongestLineAndMeasure(el: HTMLElement): NameBox {
   el.style.width = ''
   el.style.whiteSpace = ''
   delete el.dataset.numberOnly
-  // The name may be scaled with the map mid-gesture.
-  const scale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
-  const w = textWidth(el, scale)
-  if (w > 0 && w < el.offsetWidth) el.style.width = `${w}px`
+  const midGestureMapScale = el.getBoundingClientRect().width / (el.offsetWidth || 1) || 1
+  const longestLine = textWidth(el, midGestureMapScale)
+  if (longestLine > 0 && longestLine < el.offsetWidth) el.style.width = `${longestLine}px`
   const box = { w: el.offsetWidth, h: el.offsetHeight }
   const base = el.style.width
-  const two = narrowestTwoLineBox(el, scale)
+  const two = narrowestTwoLineBox(el, midGestureMapScale)
   el.style.width = base
   el.style.whiteSpace = ''
   const wrap = two && two.w < box.w ? two : undefined

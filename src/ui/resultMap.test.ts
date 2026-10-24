@@ -3,7 +3,6 @@ import { enemyOfMark, resultMap, type Layer } from './resultMap'
 import type { MapMarker } from './mapTypes'
 import { catalog } from '../data/catalog'
 
-// Seed 008 has a Church at its spawn, a castle and a caravan; seed 000 has a Sorcerer's Rise with a clue inside.
 const seed = catalog.seed('008')!
 const all = new Set<Layer>(['structures', 'spawn', 'circle', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'])
 const without = (...off: Layer[]) => new Set([...all].filter((l) => !off.includes(l)))

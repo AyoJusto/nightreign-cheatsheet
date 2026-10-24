@@ -4,13 +4,12 @@ import type { Headline } from '../bestiary/bestiary'
 export type NightlordId =
   | 'tricephalos' | 'gaping-jaw' | 'sentient-pest' | 'augur' | 'equilibrious-beast'
   | 'darkdrift-knight' | 'fissure-in-the-fog' | 'night-aspect' | 'balancers' | 'dreglord'
-/** `unknown`: a Deep of Night run that hides the Nightlord, so every Nightlord's seeds on the earth stay in play. */
-export type NightlordPick = NightlordId | 'unknown'
+type HiddenByDeepOfNight = 'unknown'
+export type NightlordPick = NightlordId | HiddenByDeepOfNight
 export type EarthId = 'default' | 'crater' | 'mountaintop' | 'rotted-woods' | 'noklateo' | 'great-hollow'
 export type ElementId =
   | 'fire' | 'holy' | 'magic' | 'lightning' | 'frostbite' | 'poison' | 'bleed' | 'blight' | 'madness' | 'sleep' | 'rot'
 export type SlotId = string
-/** `kind` or `kind:element`, e.g. `great-church:fire`. */
 export type StructureKey = string
 
 export const NIGHTLORDS: readonly { id: NightlordId; name: string; dlc: boolean }[] = [
@@ -62,7 +61,6 @@ export const DAMAGE_NAMES: Record<Affliction, string> = {
   bleed: 'Blood Loss', frost: 'Frostbite', rot: 'Scarlet Rot', poison: 'Poison', sleep: 'Sleep', madness: 'Madness',
 }
 
-/** Statuses always get their own row, so a status icon never stands unnamed among the damage types. */
 export function cardRows(h: Headline): Headline {
   return { weak: h.weak.filter((k) => !isStatus(k)), resist: h.resist, status: [...new Set([...h.weak.filter(isStatus), ...h.status])] }
 }
@@ -77,7 +75,6 @@ export function weaknessPhrase(h: Headline): string {
   ].filter(Boolean).join('; ')
 }
 
-/** Shown when an emblem image fails to load; first letters alone collide (Fire and Frostbite, Bleed and Blight). */
 export const ELEMENT_CODES: Record<ElementId, string> = {
   fire: 'Fi', holy: 'Ho', magic: 'Mg', lightning: 'Li', frostbite: 'Fr', poison: 'Po',
   bleed: 'Bl', blight: 'Bt', madness: 'Md', sleep: 'Sl', rot: 'Ro',

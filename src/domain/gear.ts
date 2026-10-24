@@ -4,13 +4,11 @@ import type { Affliction } from '../bestiary/enemy'
 import { splitStructure, type ElementId, type SlotId } from './names'
 import type { Seed } from './seed'
 
-/** A camp's element is the element of the weapon its boss drops. Blight has no matching weakness. */
-const ELEMENT_AFFLICTION: Record<ElementId, Affliction | null> = {
+const DROPPED_WEAPON_AFFLICTION: Record<ElementId, Affliction | null> = {
   fire: 'fire', holy: 'holy', magic: 'magic', lightning: 'lightning', frostbite: 'frost', poison: 'poison',
   bleed: 'bleed', blight: null, madness: 'madness', sleep: 'sleep', rot: 'rot',
 }
 
-/** What the run's two hardest fights, the Night 2 boss and the Nightlord, are weak to. */
 export function wantedAfflictions(seed: Seed): Set<Affliction> {
   const wanted = new Set<Affliction>()
   const nightlord = bestiary.nightlord(seed.nightlord)
@@ -29,7 +27,7 @@ export function gearForTheRun(seed: Seed): { camps: SlotId[]; afflictions: Affli
   const afflictions = new Set<Affliction>()
   for (const [slot, key] of Object.entries(seed.slots)) {
     const element = key ? splitStructure(key).element : null
-    const affliction = element ? ELEMENT_AFFLICTION[element] : null
+    const affliction = element ? DROPPED_WEAPON_AFFLICTION[element] : null
     if (!affliction || !wanted.has(affliction)) continue
     camps.push(slot)
     afflictions.add(affliction)

@@ -33,10 +33,10 @@ export function buildPins(scouting: Scouting, coords: Record<SlotId, { x: number
     if (taken.has(slot)) continue
     const s = sighted.get(slot)
     const known = certain.get(slot) ?? null
+    const inFocus = focusSlots.has(slot)
     if (s) {
       pins.push({ slot, ...coords[slot], state: 'sighted', structure: s.type === 'structure' ? s.structure : null, label: `${sightingLabel(s)}, sighted` })
-    } else if (focusSlots.has(slot)) {
-      // Before `known`: a certain slot can still be confirmed in focus mode.
+    } else if (inFocus) {
       pins.push({ slot, ...coords[slot], state: 'candidate', structure: known, label: `${structureName(focus!)} here?` })
     } else if (spawnOptions.has(slot)) {
       pins.push({ slot, ...coords[slot], state: 'dimmed', structure: null, label: `Possible spawn point, leaves ${spawnOptions.get(slot)}` })
