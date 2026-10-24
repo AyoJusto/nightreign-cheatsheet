@@ -9,7 +9,7 @@ export function Page({ title, go, back = '/', children }: { title: string; go: G
   return (
     <main className="page mx-auto box-border min-h-dvh max-w-3xl px-4 pt-[calc(var(--safe-top)+76px)] pb-[calc(var(--safe-bottom)+32px)]">
       <TopBar onBack={() => goBack(back, go)} trailing={back !== '/' && <HomeLink />} />
-      <h1 className="mx-1 mt-0 mb-5 text-[32px] leading-tight font-bold">{title}</h1>
+      <h1 className="mx-1 mt-0 mb-5 font-display text-[40px] leading-none font-bold min-[900px]:text-[52px]">{title}</h1>
       {children}
     </main>
   )
@@ -18,7 +18,7 @@ export function Page({ title, go, back = '/', children }: { title: string; go: G
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="mx-4 mb-2 text-[13px] font-semibold tracking-wide text-label-2 uppercase">{title}</h2>
+      <h2 className="mx-1 mb-2.5 font-display text-[22px] font-semibold text-label">{title}</h2>
       {children}
     </section>
   )

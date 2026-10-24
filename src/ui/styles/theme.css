@@ -30,6 +30,7 @@
   --color-current: currentColor;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, serif;
 
   --radius-control: 22px;
   --radius-card: 26px;

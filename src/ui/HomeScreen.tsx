@@ -91,7 +91,7 @@ export function HomeScreen() {
   const searching = query.trim().length > 0
   return (
     <main className="home-screen mx-auto box-border flex min-h-dvh max-w-3xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+40px)] pb-[calc(var(--safe-bottom)+24px)]">
-      <h1 className="mx-1 my-0 text-[34px] font-bold">Nightreign</h1>
+      <h1 className="mx-1 my-0 font-display text-[44px] leading-none font-bold min-[900px]:text-[56px]">Nightreign</h1>
       <SearchField label="Search bosses and relic effects" placeholder="Bosses, relic effects" value={query} onChange={setQuery} />
       {searching ? (
         <Results key={settledQuery} query={settledQuery} />
