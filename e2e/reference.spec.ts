@@ -18,7 +18,7 @@ test('Find My Seed opens the Nightlord picker', async ({ page }) => {
 test("the old cheat sheet's links still open their pages", async ({ page }) => {
   await page.goto('#/tricephalos')
   await expect(page.getByRole('heading', { name: 'Tricephalos', level: 1 })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Weak to' })).toContainText('Holy')
+  await expect(page.getByRole('region', { name: 'Weak to' }).getByRole('img', { name: 'Holy' })).toBeVisible()
   await page.goto('#/boss/ancient-dragon')
   await expect(page.getByRole('heading', { name: 'Ancient Dragon', level: 1 })).toBeVisible()
   await page.goto('#/builds/wylder')
@@ -27,8 +27,32 @@ test("the old cheat sheet's links still open their pages", async ({ page }) => {
 
 test("an enemy page lists the expeditions a night boss closes a night in", async ({ page }) => {
   await page.goto('#/enemy/bell-bearing-hunter')
-  await expect(page.getByRole('region', { name: 'Weak to' })).toContainText('No damage weakness')
+  await expect(page.getByRole('region', { name: 'Weak to' }).getByRole('img', { name: /^(Standard|Slash|Strike|Pierce|Magic|Fire|Lightning|Holy)$/ })).toHaveCount(0)
   await expect(page.getByRole('link', { name: /^Tricephalos/ })).toBeVisible()
+})
+
+test('a Nightlord page leads with its art and weakness icons, then the tables, then the nights', async ({ page }) => {
+  await page.goto('#/nightlord/tricephalos')
+  await expect(page.locator('main img[src$="nightlords/tricephalos.webp"]')).toBeVisible()
+  const weak = page.getByRole('region', { name: 'Weak to' })
+  await expect(weak.getByRole('img', { name: 'Holy' })).toBeVisible()
+  await expect(weak.getByRole('img', { name: 'Sleep' })).toBeVisible()
+  await expect(weak).toHaveText('')
+  expect(await page.getByRole('heading', { level: 2 }).allTextContents()).toEqual(['Damage negation', 'Status buildup', 'Night 1', 'Night 2'])
+  await expect(page.getByRole('row', { name: /^Holy/ })).toHaveCSS('background-color', 'rgb(38, 34, 26)')
+  await expect(page.getByRole('row', { name: /^Fire/ })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+})
+
+test('wide number tables never push the page sideways', async ({ page }) => {
+  await page.goto('#/enemy/albinauric-archers')
+  await expect(page.getByRole('heading', { name: 'Damage negation' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('an enemy with no numbers says so and shows no weakness row', async ({ page }) => {
+  await page.goto('#/enemy/ancestral-followers')
+  await expect(page.getByText('No numbers for this one yet.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Weak to' })).toHaveCount(0)
 })
 
 test('a build switches between its loadouts', async ({ page }) => {
