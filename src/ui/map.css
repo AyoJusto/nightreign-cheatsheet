@@ -60,7 +60,7 @@
 }
 .pin-match .structure-icon::after {
   content: ''; position: absolute; inset: -10px; z-index: -1; border-radius: 50%;
-  background: radial-gradient(circle, rgb(255 214 10 / 0.6) 0%, rgb(255 214 10 / 0.22) 50%, rgb(255 214 10 / 0) 72%);
+  background: radial-gradient(circle, rgb(242 194 110 / 0.6) 0%, rgb(242 194 110 / 0.22) 50%, rgb(242 194 110 / 0) 72%);
 }
 .pin-spawn-option .orb { opacity: 0.5; }
 .pin-spawn-option:hover .orb, .pin-spawn-option.pin-selected .orb { opacity: 0.9; }
