@@ -15,7 +15,7 @@ export function Page({ title, go, back = '/', art, meta, wide, children }: {
   children: ReactNode
 }) {
   const width = wide ? 'max-w-5xl' : 'max-w-3xl'
-  const heading = <h1 className="mx-1 mt-0 font-display text-[40px] leading-none font-bold min-[900px]:text-[52px]">{title}</h1>
+  const heading = <h1 className="mx-1 my-0 font-display text-[40px] leading-none font-bold min-[900px]:text-[52px]">{title}</h1>
   return (
     <main className={`page mx-auto box-border min-h-dvh ${width} px-4 pt-[calc(var(--safe-top)+76px)] pb-[calc(var(--safe-bottom)+32px)]`}>
       <TopBar onBack={() => goBack(back, go)} trailing={back !== '/' && <HomeLink />} />

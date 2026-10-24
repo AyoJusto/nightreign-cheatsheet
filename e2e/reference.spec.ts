@@ -124,3 +124,8 @@ test('a swipe down puts the Shifting Earth panel away and clears the pick', asyn
   await expect(heading).toHaveCount(0)
   await expect(page.getByRole('button', { name: /^Tricephalos/ })).toHaveAttribute('aria-pressed', 'false')
 })
+
+test('a Nightlord named for a status shows that icon once', async ({ page }) => {
+  await page.goto('#/nightlord/balancers')
+  await expect(page.getByRole('region', { name: 'Weak to' }).getByRole('img', { name: 'Sleep' })).toHaveCount(1)
+})

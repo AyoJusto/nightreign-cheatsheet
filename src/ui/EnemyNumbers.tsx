@@ -14,7 +14,7 @@ export function WeakIcons({ forms, named, center }: { forms: Form[]; named?: Aff
   const verdict = assess(forms)
   const weak = verdict.weakTo.length ? verdict.weakTo : verdict.oneForm?.weakTo ?? []
   const lead: Affliction[] = named ? [named, ...weak.filter((k) => k !== named)] : weak
-  const shown = [...lead, ...verdict.weakStatuses]
+  const shown = [...lead, ...verdict.weakStatuses.filter((k) => !lead.includes(k))]
   if (!shown.length) return null
   return (
     <section aria-label="Weak to" className={`mt-3 flex flex-wrap gap-2 ${center ? 'justify-center' : ''}`}>
