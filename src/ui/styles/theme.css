@@ -59,12 +59,10 @@
   box-shadow: var(--glass-rim), var(--glass-shadow);
 }
 
-/* Pages use flat cards; glass is only for panels floating over the map. */
 @utility surface {
   background: var(--color-surface);
   box-shadow: inset 0 0 0 1px var(--color-hairline);
 }
 
-/* Cormorant draws old-style figures by default, so "Seed 000" read as "Seed ooo". */
 .font-display, .home-title, .result-title { font-variant-numeric: lining-nums; }
 .result-title .num { font-variant-numeric: lining-nums tabular-nums; }
