@@ -9,7 +9,6 @@ export function AfflictionIcon({ affliction, size = 20, label }: { affliction: A
   return <img src={`damage/${affliction}.webp`} alt={label ?? ''} width={size} height={size} className="shrink-0 rounded" draggable={false} />
 }
 
-/** The weakness the game names leads, ahead of what the numbers say. */
 export function WeakIcons({ forms, named, center }: { forms: Form[]; named?: Affliction; center?: boolean }) {
   const verdict = assess(forms)
   const weak = verdict.weakTo.length ? verdict.weakTo : verdict.oneForm?.weakTo ?? []
