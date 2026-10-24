@@ -28,6 +28,8 @@
 .nightlord[data-dim] .nightlord-name { color: var(--color-label-2); }
 @media (prefers-reduced-motion: reduce) { .nightlord .medallion, .nightlord .nightlord-name { transition: none; } }
 @media (min-width: 900px) { .nightlord-name { font-size: 15px; } .medallion { width: 84%; } }
+.home-medallion { display: block; width: 72px; aspect-ratio: 1; margin: 0 auto 8px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px var(--color-hairline); }
+@media (min-width: 900px) { .home-medallion { width: 84px; } }
 
 .earth-bar.plate { background: linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02) 30%), var(--color-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .earth-bar { position: sticky; z-index: 10; bottom: calc(var(--safe-bottom) + var(--gutter)); margin: 24px -8px 0; padding: 12px 10px 12px; border-radius: var(--radius-card); }

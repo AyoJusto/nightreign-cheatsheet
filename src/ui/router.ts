@@ -9,7 +9,7 @@ export type EffectGroup = 'relics' | 'weapons'
 
 export type Route =
   | { name: 'home' }
-  | { name: 'pick' }
+  | { name: 'pick'; nightlord?: NightlordPick }
   | { name: 'find'; nightlord: NightlordPick; earth: EarthId }
   | { name: 'seed'; id: string }
   | { name: 'nightlords' }
@@ -84,6 +84,10 @@ export function parseRoute(pathname: string): Route {
   if (first === 'builds') return { name: 'builds', character: second ?? null }
   if (first === 'seed' && second && catalog.seed(second)) return { name: 'seed', id: second }
   if (first === 'find' && parts.length === 1) return { name: 'pick' }
+  if (first === 'find' && parts.length === 2) {
+    const pick = parts[1] === 'unknown' ? 'unknown' : NIGHTLORDS.find((n) => n.id === parts[1])?.id
+    return pick ? { name: 'pick', nightlord: pick } : { name: 'home' }
+  }
   if (first === 'find') {
     const nightlord = parts[1] === 'unknown' ? 'unknown' : NIGHTLORDS.find((n) => n.id === parts[1])?.id
     const earth = EARTHS.find((e) => e.id === parts[2])?.id

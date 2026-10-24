@@ -9,10 +9,28 @@ test('home search finds bosses and relic effects', async ({ page }) => {
   await expect(page.getByText('+20 / +40 / +60 Max HP')).toBeVisible()
 })
 
-test('Find My Seed opens the Nightlord picker', async ({ page }) => {
+test('a Nightlord on home opens the picker with it chosen', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('link', { name: 'Find My Seed' }).click()
+  await expect(page.getByRole('heading', { name: 'Find My Seed' })).toBeVisible()
+  await page.getByRole('link', { name: 'Augur', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Choose your Nightlord' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Augur', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Shifting Earth' })).toBeVisible()
+})
+
+test('Unknown on home opens the picker with Unknown chosen', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('link', { name: 'Unknown', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Unknown', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Shifting Earth' })).toBeVisible()
+})
+
+test('home never scrolls sideways and links every section', async ({ page }) => {
+  await page.goto('./')
+  for (const name of ['Nightlords', 'Bosses', 'Relic Effects', 'Weapon Effects', 'Builds']) {
+    await expect(page.getByRole('link', { name, exact: true })).toBeVisible()
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
 
 test("the old cheat sheet's links still open their pages", async ({ page }) => {
