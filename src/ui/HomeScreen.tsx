@@ -139,7 +139,7 @@ export function HomeScreen({ go, initial }: { go: Go; initial?: NightlordPick })
               </a>
             ))}
           </nav>
-          <a href="#/about" className="mt-auto self-center px-4 py-3 text-[15px] text-label-2">About</a>
+          <p className="mt-auto mb-0 self-center px-4 py-3 text-center text-[13px] text-label-2">Not affiliated with FromSoftware or Bandai Namco. Game art belongs to its owners.</p>
           {!wide && earths}
         </>
       )}
