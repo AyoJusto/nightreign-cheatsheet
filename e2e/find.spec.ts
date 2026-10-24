@@ -596,7 +596,7 @@ test("in-app Back from a result steps back through history, so the browser's Bac
   await expect(page).toHaveURL(finder)
 
   await page.getByRole('button', { name: 'Back' }).click()
-  await expect(page).toHaveURL(/#\/find$/)
+  await expect(page).toHaveURL(new RegExp(`#/find/${target.nightlord}$`))
   expect(await page.evaluate(() => history.length)).toBe(length)
   await page.goForward()
   await expect(page).toHaveURL(finder)

@@ -1,14 +1,18 @@
 import { memo, useDeferredValue, useState, type ReactNode } from 'react'
+import { AnimatePresence } from 'motion/react'
 import { bestiary } from '../bestiary/bestiary'
 import type { Enemy } from '../bestiary/enemy'
 import { searchEffects } from '../loadout/effects'
 import { normalize } from '../loadout/text'
+import type { NightlordPick } from '../domain/names'
 import { Icon, type IconName } from './Icon'
 import { EffectRow, GROUP_TITLES } from './LoadoutPages'
 import { EnemyRow } from './NightlordPages'
-import { PICKS, Portrait } from './NightlordPicker'
+import { EarthPanel, PICKS, Portrait } from './NightlordPicker'
 import { Group, Page, Section, type Go } from './Page'
 import { SearchField } from './SearchField'
+import { replacePath } from './router'
+import { useWide } from './useWide'
 
 const ENEMIES_AND_NIGHTLORDS: { enemy: Enemy; href: string }[] = [
   ...bestiary.nightlords.map((n) => ({ enemy: n as Enemy, href: `#/nightlord/${n.id}` })),
@@ -85,10 +89,21 @@ const Results = memo(function Results({ query }: { query: string }) {
   )
 })
 
-export function HomeScreen() {
+export function HomeScreen({ go, initial }: { go: Go; initial?: NightlordPick }) {
+  const wide = useWide()
   const [query, setQuery] = useState('')
   const settledQuery = useDeferredValue(query)
   const searching = query.trim().length > 0
+  const [picked, setPicked] = useState<NightlordPick | null>(initial ?? null)
+  const pick = (id: NightlordPick | null) => {
+    setPicked(id)
+    replacePath(id ? `/find/${id}` : '/')
+  }
+  const earths = (
+    <AnimatePresence>
+      {picked && !searching && <EarthPanel picked={picked} go={go} wide={wide} onDismiss={() => pick(null)} />}
+    </AnimatePresence>
+  )
   return (
     <main className="home-screen mx-auto box-border flex min-h-dvh max-w-5xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+40px)] pb-[calc(var(--safe-bottom)+24px)]">
       <div className="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
@@ -103,16 +118,17 @@ export function HomeScreen() {
         <>
           <section aria-labelledby="find-heading" className="mt-2">
             <h2 id="find-heading" className="mx-1 mt-0 mb-3 font-display text-[26px] font-semibold min-[900px]:text-[32px]">Find My Seed</h2>
-            <ul className="-mx-4 my-0 flex list-none gap-3 overflow-x-auto px-4 min-[900px]:mx-0 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(88px,1fr))] min-[900px]:gap-3.5 min-[900px]:overflow-visible min-[900px]:px-0">
+            <ul className="-mx-4 my-0 flex list-none gap-3 overflow-x-auto px-4 py-1 min-[900px]:mx-0 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(88px,1fr))] min-[900px]:gap-3.5 min-[900px]:overflow-visible min-[900px]:px-0">
               {PICKS.map(({ id, name }) => (
                 <li key={id} className="w-[72px] shrink-0 text-center text-[12px] min-[900px]:w-auto min-[900px]:text-[13px]">
-                  <a href={`#/find/${id}`} className="block">
+                  <button type="button" className="home-pick" aria-pressed={picked === id} data-dim={(picked && picked !== id) || undefined} onClick={() => pick(id)}>
                     <span className="home-medallion"><Portrait id={id} name={name} /></span>
                     {name}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
+            {wide && earths}
           </section>
           <nav className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-5">
             {LINKS.map(([label, href, icon]) => (
@@ -124,6 +140,7 @@ export function HomeScreen() {
             ))}
           </nav>
           <a href="#/about" className="mt-auto self-center px-4 py-3 text-[15px] text-label-2">About</a>
+          {!wide && earths}
         </>
       )}
     </main>
