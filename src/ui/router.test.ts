@@ -5,7 +5,7 @@ describe('routes', () => {
   it('parses known routes', () => {
     expect(parseRoute('/find/tricephalos/crater')).toEqual({ name: 'find', nightlord: 'tricephalos', earth: 'crater' })
     expect(parseRoute('/seed/042')).toEqual({ name: 'seed', id: '042' })
-    expect(parseRoute('/about')).toEqual({ name: 'about' })
+    expect(parseRoute('/about')).toEqual({ name: 'home' })
     expect(parseRoute('/find/unknown/great-hollow')).toEqual({ name: 'find', nightlord: 'unknown', earth: 'great-hollow' })
   })
   it('parses the reference pages', () => {

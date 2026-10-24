@@ -139,3 +139,8 @@ test('a Nightlord named for a status shows that icon once', async ({ page }) => 
   await page.goto('#/nightlord/balancers')
   await expect(page.getByRole('region', { name: 'Weak to' }).getByRole('img', { name: 'Sleep' })).toHaveCount(1)
 })
+
+test('home says it is not affiliated', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.getByText('Not affiliated with FromSoftware or Bandai Namco. Game art belongs to its owners.')).toBeVisible()
+})

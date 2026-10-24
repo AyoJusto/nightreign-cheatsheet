@@ -18,7 +18,6 @@ export type Route =
   | { name: 'enemy'; id: string }
   | { name: 'effects'; group: EffectGroup }
   | { name: 'builds'; character: string | null }
-  | { name: 'about' }
 
 export const PICK_PATH = '/find'
 
@@ -76,7 +75,6 @@ export function parseRoute(pathname: string): Route {
   const [first, second] = parts
   const nightlord = NIGHTLORDS.find((n) => n.id === (first === 'nightlord' ? second : first))
   if (nightlord && (first === 'nightlord' || parts.length === 1)) return { name: 'nightlord', id: nightlord.id }
-  if (first === 'about') return { name: 'about' }
   if (first === 'nightlords') return { name: 'nightlords' }
   if (first === 'bosses') return { name: 'bosses' }
   if ((first === 'enemy' || first === 'boss') && second && bestiary.enemy(second)) return { name: 'enemy', id: second }
