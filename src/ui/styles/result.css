@@ -28,7 +28,7 @@ li.run-row { grid-template-columns: 1fr; }
 .result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .result-text { min-width: 0; }
 .result-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
-.result-title { font-size: 24px; line-height: 30px; margin: 0; white-space: nowrap; }
+.result-title { font-family: var(--font-display); font-size: 32px; line-height: 1; margin: 0; white-space: nowrap; }
 .event-badge { min-width: 0; padding: 3px 10px; border-radius: 12px; background: var(--color-fill); color: var(--color-label); font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .share { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; background: var(--color-fill); box-shadow: var(--glass-rim); color: var(--color-label); display: grid; place-items: center; }
 @media (hover: hover) { .share:hover { background: var(--color-fill-strong); } }

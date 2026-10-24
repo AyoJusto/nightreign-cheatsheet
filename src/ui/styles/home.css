@@ -5,7 +5,7 @@
     var(--color-ground);
 }
 .home { max-width: 960px; margin: 0 auto; padding: calc(var(--safe-top) + 76px) 16px calc(var(--safe-bottom) + 16px); }
-.home-title { font-size: 32px; line-height: 1.2; text-align: left; margin: 0 4px 20px; color: var(--color-label); }
+.home-title { font-family: var(--font-display); font-size: 40px; line-height: 1; text-align: left; margin: 0 4px 20px; color: var(--color-label); }
 .nightlord-grid { --cols: 3; --gap: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 20px var(--gap); list-style: none; margin: 0; padding: 0; }
 .nightlord-grid > li { width: calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); }
 @media (min-width: 900px) {

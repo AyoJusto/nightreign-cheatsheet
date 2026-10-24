@@ -15,6 +15,7 @@
     "screens": "node --experimental-strip-types scripts/screens.ts"
   },
   "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
     "@use-gesture/react": "^10.3.1",
     "motion": "^13.4.2",
     "react": "^19.2.8",
