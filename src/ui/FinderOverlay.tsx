@@ -10,7 +10,7 @@ import { groupByKind } from './structureGroups'
 import { buildPins, sightingLabel } from './finderPins'
 import { Icon } from './Icon'
 import { useSightings } from './useSightings'
-import { PICK_PATH, findPath, replacePath, seedPath } from './router'
+import { findPath, replacePath, seedPath } from './router'
 import { useFinePointer, useWide } from './useWide'
 import { useMeasure, pillBottom } from './useMeasure'
 import { catalog } from '../data/catalog'
@@ -208,7 +208,7 @@ export function FinderOverlay(props: {
 
   return (
     <>
-      <TopBar className={wide ? 'pill-corner' : 'pill-titled'} ref={pillRef} onBack={() => props.go(PICK_PATH, true)}
+      <TopBar className={wide ? 'pill-corner' : 'pill-titled'} ref={pillRef} onBack={() => props.go(`/find/${props.nightlord}`, true)}
         trailing={<>
           <button aria-label="Undo" disabled={!undo} onClick={() => { undo?.(); close() }}><Icon name="undo" /></button>
           <button aria-label="Reset" disabled={!scouting.sightings.length}

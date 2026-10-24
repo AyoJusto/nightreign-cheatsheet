@@ -9,20 +9,31 @@ test('home search finds bosses and relic effects', async ({ page }) => {
   await expect(page.getByText('+20 / +40 / +60 Max HP')).toBeVisible()
 })
 
-test('a Nightlord on home opens the picker with it chosen', async ({ page }) => {
+test('a Nightlord picked on home shows its Shifting Earth right there', async ({ page }) => {
   await page.goto('./')
-  await expect(page.getByRole('heading', { name: 'Find My Seed' })).toBeVisible()
-  await page.getByRole('link', { name: 'Augur', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Choose your Nightlord' })).toBeVisible()
+  await page.getByRole('button', { name: 'Augur', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Augur', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Shifting Earth' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Find My Seed' })).toBeVisible()
+  await expect(page).toHaveURL(/#\/find\/augur$/)
+})
+
+test('Unknown picked on home shows its Shifting Earth', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Unknown', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Unknown', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('heading', { name: 'Shifting Earth' })).toBeVisible()
 })
 
-test('Unknown on home opens the picker with Unknown chosen', async ({ page }) => {
+test('Back from a map returns home with the Nightlord still picked', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('link', { name: 'Unknown', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Unknown', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('heading', { name: 'Shifting Earth' })).toBeVisible()
+  await page.getByRole('button', { name: 'Tricephalos', exact: true }).click()
+  await page.locator('.earth').first().click()
+  await expect(page).toHaveURL(/#\/find\/tricephalos\/[^/?]+$/)
+  await page.getByRole('button', { name: 'Back' }).click()
+  await expect(page).toHaveURL(/#\/find\/tricephalos$/)
+  await expect(page.getByRole('button', { name: 'Tricephalos', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Find My Seed' })).toBeVisible()
 })
 
 test('home never scrolls sideways and links every section', async ({ page }) => {
@@ -102,9 +113,8 @@ test('Back steps back through history rather than stacking pages', async ({ page
   await expect(page.getByRole('heading', { name: 'Bosses' })).toBeVisible()
 })
 
-test('the Nightlord picker leads back home', async ({ page }) => {
+test('an old Find My Seed link opens home', async ({ page }) => {
   await page.goto('#/find')
-  await page.getByRole('button', { name: 'Back' }).click()
   await expect(page.getByRole('heading', { name: 'Nightreign' })).toBeVisible()
 })
 

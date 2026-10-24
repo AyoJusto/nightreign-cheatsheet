@@ -1,6 +1,5 @@
 import { useRoute } from './router'
 import { HomeScreen, BossesPage } from './HomeScreen'
-import { NightlordPicker } from './NightlordPicker'
 import { MapScreen } from './MapScreen'
 import { AboutScreen } from './AboutScreen'
 import { EnemyPage } from './EnemyPage'
@@ -10,8 +9,8 @@ import { BuildsPage, EffectsPage } from './LoadoutPages'
 export function App() {
   const [route, go] = useRoute()
   switch (route.name) {
-    case 'home': return <HomeScreen />
-    case 'pick': return <NightlordPicker key={route.nightlord ?? ''} go={go} initial={route.nightlord} />
+    case 'home': return <HomeScreen key="" go={go} />
+    case 'pick': return <HomeScreen key={route.nightlord ?? ''} go={go} initial={route.nightlord} />
     case 'about': return <AboutScreen go={go} />
     case 'nightlords': return <NightlordsPage go={go} />
     case 'nightlord': return <NightlordPage key={route.id} id={route.id} go={go} />
