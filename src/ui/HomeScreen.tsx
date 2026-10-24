@@ -103,9 +103,9 @@ export function HomeScreen() {
         <>
           <section aria-labelledby="find-heading" className="mt-2">
             <h2 id="find-heading" className="mx-1 mt-0 mb-3 font-display text-[26px] font-semibold min-[900px]:text-[32px]">Find My Seed</h2>
-            <ul className="-mx-4 my-0 flex list-none gap-3.5 overflow-x-auto px-4 min-[900px]:mx-0 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(88px,1fr))] min-[900px]:overflow-visible min-[900px]:px-0">
+            <ul className="-mx-4 my-0 flex list-none gap-3 overflow-x-auto px-4 min-[900px]:mx-0 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(88px,1fr))] min-[900px]:gap-3.5 min-[900px]:overflow-visible min-[900px]:px-0">
               {PICKS.map(({ id, name }) => (
-                <li key={id} className="w-20 shrink-0 text-center text-[12px] min-[900px]:w-auto min-[900px]:text-[13px]">
+                <li key={id} className="w-[72px] shrink-0 text-center text-[12px] min-[900px]:w-auto min-[900px]:text-[13px]">
                   <a href={`#/find/${id}`} className="block">
                     <span className="home-medallion"><Portrait id={id} name={name} /></span>
                     {name}
