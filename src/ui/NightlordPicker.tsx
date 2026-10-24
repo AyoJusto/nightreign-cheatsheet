@@ -6,15 +6,16 @@ import { catalog } from '../data/catalog'
 import { WeaknessCard } from './NightlordMedallion'
 import { TopBar } from './TopBar'
 import { goBack } from './router'
+import type { Go } from './Page'
 
 const SWIPE_AWAY_DISTANCE = 60
 const SWIPE_AWAY_SPEED = 500
 
 const spring = { type: 'spring', visualDuration: 0.45, bounce: 0.15 } as const
 
-const PICKS: readonly { id: NightlordPick; name: string }[] = [...NIGHTLORDS, { id: 'unknown', name: 'Unknown' }]
+export const PICKS: readonly { id: NightlordPick; name: string }[] = [...NIGHTLORDS, { id: 'unknown', name: 'Unknown' }]
 
-function Portrait({ id, name }: { id: NightlordPick; name: string }) {
+export function Portrait({ id, name }: { id: NightlordPick; name: string }) {
   const [failed, setFailed] = useState(false)
   if (failed) {
     return <div className="portrait monogram" aria-hidden>{name.split(' ').map((w) => w[0]).join('')}</div>
@@ -22,9 +23,9 @@ function Portrait({ id, name }: { id: NightlordPick; name: string }) {
   return <img className="portrait" src={`nightlords/${id}.webp`} alt="" onError={() => setFailed(true)} />
 }
 
-export function NightlordPicker({ go }: { go: (path: string, back?: boolean) => void }) {
+export function NightlordPicker({ go, initial }: { go: Go; initial?: NightlordPick }) {
   const wide = useWide()
-  const [picked, setPicked] = useState<NightlordPick | null>(null)
+  const [picked, setPicked] = useState<NightlordPick | null>(initial ?? null)
   return (
     <main className="home">
       <TopBar onBack={() => goBack('/', go)} />

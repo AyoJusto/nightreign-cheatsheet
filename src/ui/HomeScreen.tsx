@@ -3,11 +3,11 @@ import { bestiary } from '../bestiary/bestiary'
 import type { Enemy } from '../bestiary/enemy'
 import { searchEffects } from '../loadout/effects'
 import { normalize } from '../loadout/text'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 import { EffectRow, GROUP_TITLES } from './LoadoutPages'
 import { EnemyRow } from './NightlordPages'
-import { Group, LinkRow, Page, Section, type Go } from './Page'
-import { PICK_PATH } from './router'
+import { PICKS, Portrait } from './NightlordPicker'
+import { Group, Page, Section, type Go } from './Page'
 import { SearchField } from './SearchField'
 
 const ENEMIES_AND_NIGHTLORDS: { enemy: Enemy; href: string }[] = [
@@ -37,12 +37,12 @@ export function BossesPage({ go }: { go: Go }) {
   )
 }
 
-const LINKS: [string, string][] = [
-  ['Nightlords', '#/nightlords'],
-  ['Bosses', '#/bosses'],
-  ['Relic Effects', '#/effects/relics'],
-  ['Weapon Effects', '#/effects/weapons'],
-  ['Builds', '#/builds'],
+const LINKS: [string, string, IconName][] = [
+  ['Nightlords', '#/nightlords', 'moon'],
+  ['Bosses', '#/bosses', 'swords'],
+  ['Relic Effects', '#/effects/relics', 'relic'],
+  ['Weapon Effects', '#/effects/weapons', 'weapon'],
+  ['Builds', '#/builds', 'builds'],
 ]
 
 const FIRST_RESULTS = 20
@@ -90,25 +90,39 @@ export function HomeScreen() {
   const settledQuery = useDeferredValue(query)
   const searching = query.trim().length > 0
   return (
-    <main className="home-screen mx-auto box-border flex min-h-dvh max-w-3xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+40px)] pb-[calc(var(--safe-bottom)+24px)]">
-      <h1 className="mx-1 my-0 font-display text-[44px] leading-none font-bold min-[900px]:text-[56px]">Nightreign</h1>
-      <SearchField label="Search bosses and relic effects" placeholder="Bosses, relic effects" value={query} onChange={setQuery} />
+    <main className="home-screen mx-auto box-border flex min-h-dvh max-w-5xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+40px)] pb-[calc(var(--safe-bottom)+24px)]">
+      <div className="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
+        <h1 className="mx-1 my-0 font-display text-[44px] leading-none font-bold min-[900px]:text-[56px]">Nightreign</h1>
+        <div className="min-[900px]:w-[380px]">
+          <SearchField label="Search bosses and relic effects" placeholder="Bosses, relic effects" value={query} onChange={setQuery} />
+        </div>
+      </div>
       {searching ? (
         <Results key={settledQuery} query={settledQuery} />
       ) : (
         <>
-          <a href={`#${PICK_PATH}`}
-            className="find-my-seed glass relative mt-2 box-border flex h-48 w-full items-end overflow-hidden rounded-[32px] p-5 text-left">
-            <img src="maps/default.webp" alt="" className="pointer-events-none absolute top-1/2 left-1/2 w-[130%] max-w-none -translate-x-1/2 -translate-y-[42%] opacity-70" draggable={false} />
-            <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgb(0_0_0/0.75),transparent_65%)]" aria-hidden />
-            <span className="relative flex w-full items-center justify-between text-[24px] font-semibold">
-              Find My Seed
-              <Icon name="chevron" size={22} />
-            </span>
-          </a>
-          <Group>
-            {LINKS.map(([label, href]) => <LinkRow key={href} href={href}>{label}</LinkRow>)}
-          </Group>
+          <section aria-labelledby="find-heading" className="mt-2">
+            <h2 id="find-heading" className="mx-1 mt-0 mb-3 font-display text-[26px] font-semibold min-[900px]:text-[32px]">Find My Seed</h2>
+            <ul className="-mx-4 my-0 flex list-none gap-3.5 overflow-x-auto px-4 min-[900px]:mx-0 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(88px,1fr))] min-[900px]:overflow-visible min-[900px]:px-0">
+              {PICKS.map(({ id, name }) => (
+                <li key={id} className="w-20 shrink-0 text-center text-[12px] min-[900px]:w-auto min-[900px]:text-[13px]">
+                  <a href={`#/find/${id}`} className="block">
+                    <span className="home-medallion"><Portrait id={id} name={name} /></span>
+                    {name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <nav className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-5">
+            {LINKS.map(([label, href, icon]) => (
+              <a key={href} href={href}
+                className={`surface flex h-[108px] flex-col justify-between rounded-[18px] p-4 min-[900px]:h-[120px]${icon === 'builds' ? ' col-span-2 min-[900px]:col-span-1' : ''}`}>
+                <Icon name={icon} className="text-accent" />
+                <span className="font-display text-[22px] font-semibold">{label}</span>
+              </a>
+            ))}
+          </nav>
           <a href="#/about" className="mt-auto self-center px-4 py-3 text-[15px] text-label-2">About</a>
         </>
       )}

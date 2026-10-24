@@ -19,6 +19,11 @@ describe('routes', () => {
     expect(parseRoute('/builds')).toEqual({ name: 'builds', character: null })
     expect(parseRoute('/builds/wylder')).toEqual({ name: 'builds', character: 'wylder' })
   })
+  it('opens the picker with a Nightlord already chosen', () => {
+    expect(parseRoute('/find/augur')).toEqual({ name: 'pick', nightlord: 'augur' })
+    expect(parseRoute('/find/unknown')).toEqual({ name: 'pick', nightlord: 'unknown' })
+    expect(parseRoute('/find/nobody')).toEqual({ name: 'home' })
+  })
   it("keeps the old cheat sheet's links working", () => {
     expect(parseRoute('/tricephalos')).toEqual({ name: 'nightlord', id: 'tricephalos' })
     expect(parseRoute('/boss/ancient-dragon')).toEqual({ name: 'enemy', id: 'ancient-dragon' })

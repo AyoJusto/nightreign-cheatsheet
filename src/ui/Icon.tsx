@@ -8,6 +8,11 @@ const PATHS = {
   close: 'M7 7l10 10M17 7 7 17',
   chevron: 'M9 5l7 7-7 7',
   search: 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 20 20',
+  moon: 'M12 3a7 7 0 1 0 7 9 5.5 5.5 0 0 1-7-9z',
+  swords: 'M4 20L20 4M14 4h6v6M4 14l6 6M7 17l-3 3',
+  relic: 'M12 3l7 5-2.5 9h-9L5 8z',
+  weapon: 'M14.5 4.5l5 5L9 20H4v-5z',
+  builds: 'M4 7h16M4 12h16M4 17h10',
 } as const
 
 export type IconName = keyof typeof PATHS
