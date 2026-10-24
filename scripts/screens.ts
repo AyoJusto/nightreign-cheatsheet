@@ -52,7 +52,6 @@ const shots: [string, Shot][] = [
     await p.getByRole('button', { name: 'Your spawn point', exact: true }).click()
   }],
   ['finder-spawn-church', async (p) => { await p.goto(`${base}/find/${spawnChurch.nightlord}/${spawnChurch.earth}?s=spawn@${spawnChurch.spawn},${spawnChurch.spawn}@church`) }],
-  ['about', async (p) => { await p.goto(`${base}/about`) }],
   ['great-hollow', async (p) => { await p.goto(`${base}/find/dreglord/great-hollow`) }],
 ]
 
