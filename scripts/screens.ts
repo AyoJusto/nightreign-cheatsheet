@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync } from 'node:fs'
 const iter = process.argv[2] ?? '0'
 const out = `docs/specs/screens/iter-${iter}`
 mkdirSync(out, { recursive: true })
-const base = 'http://localhost:4173'
+const base = 'http://localhost:4173/nightreign-cheatsheet/#'
 const seed = JSON.parse(readFileSync('src/data/seeds.json', 'utf8')).seeds.find((s: any) => s.nightlord === 'tricephalos' && s.earth === 'default')
 
 const spawnChurch = JSON.parse(readFileSync('src/data/seeds.json', 'utf8')).seeds.find((s: any) => s.slots[s.spawn] === 'church')
@@ -22,7 +22,7 @@ async function stepSheetTo(page: Page, detent: 'half' | 'full') {
 
 const shots: [string, Shot][] = [
   ['home', async (p) => { await p.goto(base) }],
-  ['home-picked', async (p) => { await p.goto(base); await p.getByRole('button', { name: /^Tricephalos/ }).click() }],
+  ['home-picked', async (p) => { await p.goto(`${base}/find/tricephalos`) }],
   ['finder-start', async (p) => { await p.goto(`${base}/find/tricephalos/default`) }],
   ['finder-sheet-many-options', async (p) => {
     await p.goto(`${base}/find/tricephalos/default`)
