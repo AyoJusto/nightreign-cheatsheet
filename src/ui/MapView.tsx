@@ -7,14 +7,13 @@ import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
 import { useWide } from './useWide'
-import { ICON_BODY, isTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
+import { ICON_BODY, looksLikeTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
 import './map.css'
 import { EventGlow, ICON_SIZE, MarkerIcon, Ring, RingName, RING_SIZE, Tag, tagOf } from './mapMarks'
 import type { NameBox } from './mapNames'
 import type { MapContent, MarkTap, PinState } from './mapTypes'
 
 const MAX_ZOOM = 4
-// Laid out near desktop size and scaled to the map's width, so on a phone marks scale down, not up, and stay crisp.
 const ART_SIZE = 80
 const ORB_SIZE = 50
 const ORB_DISC = 0.5
@@ -28,6 +27,7 @@ const MIN_BOTTOM_CLEARANCE = 56
 const WHEEL_ZOOM_RATE = 500
 const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 const MAX_REDUCED_MOTION_JUMP = 24
+const MS_PER_S = 1000
 
 const LABEL_EDGE = 8
 const LABEL_GAP = 9
@@ -43,15 +43,10 @@ const isMouseHover = (e: PointerEvent) => e.pointerType === 'mouse' && !e.button
 
 export function MapView(props: MapContent & {
   earth: EarthId
-  /** Screen y of the top overlay's bottom edge. */
   topInset: MotionValue<number>
-  /** Covered at the bottom with no sheet open: the map frames itself above it. */
   restInset: MotionValue<number>
-  /** Covered at the bottom right now, open sheet included: pins are kept above it. */
   bottomInset: MotionValue<number>
-  /** Measured up from bottomInset. */
-  corner?: MotionValue<Corner>
-  /** Incremented on every pan and pinch. */
+  cornerAboveBottomInset?: MotionValue<Corner>
   moves?: MotionValue<number>
 }) {
   const frame = useRef<HTMLDivElement>(null)
@@ -73,11 +68,10 @@ export function MapView(props: MapContent & {
   const fade = useMotionValue(1)
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
-  const cornerRects = () => props.corner?.get().rects ?? []
+  const cornerRects = () => props.cornerAboveBottomInset?.get().rects ?? []
   const cornerUp = () => Math.max(0, ...cornerRects().map((r) => r.top))
-  // `s` is passed in because settle clamps against the scale it is springing to, not the rubber-banded one.
-  const bounds = (axis: 'x' | 'y', s = scale.get()) => {
-    const slack = Math.abs(side(s) - (axis === 'x' ? size.get().w : size.get().h)) / 2
+  const bounds = (axis: 'x' | 'y', targetScale = scale.get()) => {
+    const slack = Math.abs(side(targetScale) - (axis === 'x' ? size.get().w : size.get().h)) / 2
     const coveredBelow = props.bottomInset.get() + cornerUp()
     return { min: axis === 'x' ? -slack : -slack - coveredBelow, max: slack }
   }
@@ -101,12 +95,11 @@ export function MapView(props: MapContent & {
     const visibleBottom = h - props.bottomInset.get() - Math.max(MIN_BOTTOM_CLEARANCE, ...over)
     return pinY > visibleBottom ? y.get() - (pinY - visibleBottom) : undefined
   }
-  // Against the resting inset, so a rising sheet neither reframes the map nor changes how far it zooms out.
   const fitScale = () => {
     const { w, h } = size.get()
     if (!w || !h) return 1
-    const free = h - props.topInset.get() - props.restInset.get()
-    return Math.min(w / (((island.x1 - island.x0) / 1000) * side(1)), free / (((island.y1 - island.y0) / 1000) * side(1)))
+    const freeHeight = h - props.topInset.get() - props.restInset.get()
+    return Math.min(w / (((island.x1 - island.x0) / 1000) * side(1)), freeHeight / (((island.y1 - island.y0) / 1000) * side(1)))
   }
   const minScale = () => Math.min(1, fitScale())
   const boundScale = (s: number) => Math.min(MAX_ZOOM, Math.max(minScale(), s))
@@ -120,8 +113,8 @@ export function MapView(props: MapContent & {
     const centerY = ((island.y0 + island.y1) / 2000 - 0.5) * side(s)
     const islandH = ((island.y1 - island.y0) / 1000) * side(s)
     const highestFit = top + islandH / 2
-    // The corner's steady reach, not whether it shows right now: a tuck mid-drag must not move the map.
-    const centredAboveCorner = (top + bottom - (props.corner?.get().reach ?? 0)) / 2
+    const cornerReach = props.cornerAboveBottomInset?.get().reach ?? 0
+    const centredAboveCorner = (top + bottom - cornerReach) / 2
     const mid = Math.max(highestFit, centredAboveCorner)
     scale.jump(s)
     x.jump(clamp(-centerX, 'x', s))
@@ -135,7 +128,6 @@ export function MapView(props: MapContent & {
     y.stop()
     scale.stop()
   }
-  // use-gesture calls `from` at pointer-down, before any handler, so stopping here freezes the map under the finger.
   const grab = (gesture: 'drag' | 'pinch') => {
     active.current[gesture] = true
     stopMotion()
@@ -147,9 +139,7 @@ export function MapView(props: MapContent & {
     props.moves?.set(props.moves.get() + 1)
     setCallout(null)
   }
-  // `targets` is read again once faded out, so a reduced-motion jump lands where things are by then.
-  type Targets = () => [MotionValue<number>, number][]
-  const moveTo = (targets: Targets) => {
+  const moveTo = (targets: () => [MotionValue<number>, number][]) => {
     if (reduce && movesAwaitingFade.current) return void movesAwaitingFade.current.push(targets)
     const now = targets()
     if (!reduce) return now.forEach(([v, t]) => { if (v !== scale || t !== v.get()) animate(v, t, snap) })
@@ -174,7 +164,6 @@ export function MapView(props: MapContent & {
       onDrag: ({ offset: [ox, oy], pinching, cancel, tap, first }) => {
         if (pinching) return cancel()
         if (first && !tap) moved()
-        // onDragEnd never runs for a tap, so its pointer-up must end the grab here or settle stays blocked.
         if (tap) {
           active.current.drag = false
           return settle()
@@ -182,19 +171,18 @@ export function MapView(props: MapContent & {
         x.set(band(ox, 'x'))
         y.set(band(oy, 'y'))
       },
-      onDragEnd: ({ velocity: [vx, vy], direction: [dx, dy], tap, canceled }) => {
+      onDragEnd: ({ velocity: [speedXPxPerMs, speedYPxPerMs], direction: [signX, signY], tap, canceled }) => {
         active.current.drag = false
         if (canceled) return
         if (tap || reduce) return settle()
-        // use-gesture reports speed in px/ms with a separate sign; Motion wants signed px/s.
-        const velocityX = vx * dx * 1000
-        const velocityY = vy * dy * 1000
+        const velocityXPxPerS = speedXPxPerMs * signX * MS_PER_S
+        const velocityYPxPerS = speedYPxPerMs * signY * MS_PER_S
         const inertia = { type: 'inertia', power: 0.3, bounceStiffness: 300, bounceDamping: 30 } as const
         // Motion skips an inertia animation whose target equals the current value, so pass the projected end.
-        const glideX = clamp(x.get() + velocityX * inertia.power, 'x')
-        const glideY = clamp(y.get() + velocityY * inertia.power, 'y')
-        animate(x, glideX, { ...inertia, ...bounds('x'), velocity: velocityX, modifyTarget: (t: number) => clamp(t, 'x') })
-        animate(y, glideY, { ...inertia, ...bounds('y'), velocity: velocityY, modifyTarget: (t: number) => clamp(t, 'y') })
+        const glideX = clamp(x.get() + velocityXPxPerS * inertia.power, 'x')
+        const glideY = clamp(y.get() + velocityYPxPerS * inertia.power, 'y')
+        animate(x, glideX, { ...inertia, ...bounds('x'), velocity: velocityXPxPerS, modifyTarget: (t: number) => clamp(t, 'x') })
+        animate(y, glideY, { ...inertia, ...bounds('y'), velocity: velocityYPxPerS, modifyTarget: (t: number) => clamp(t, 'y') })
       },
       onPinch: ({ origin: [ox, oy], first, offset: [s], memo }) => {
         if (first) {
@@ -215,12 +203,11 @@ export function MapView(props: MapContent & {
       },
       onWheel: ({ event, delta: [dx, dy] }) => {
         event.preventDefault()
-        // A trackpad pinch arrives as ctrl+wheel and is already handled by onPinch.
-        if (event.ctrlKey) return
+        const isTrackpadPinch = event.ctrlKey
+        if (isTrackpadPinch) return
         userMovedMap.current = true
         stopMotion()
-        // Clamped, not rubber-banded: a scroll has no release to spring back from.
-        if (isTrackpadScroll(event)) {
+        if (looksLikeTrackpadScroll(event)) {
           x.set(clamp(x.get() - dx, 'x'))
           y.set(clamp(y.get() - dy, 'y'))
           return
@@ -228,8 +215,8 @@ export function MapView(props: MapContent & {
         const r = frame.current!.getBoundingClientRect()
         const pointer = { x: event.clientX - (r.left + r.width / 2), y: event.clientY - (r.top + r.height / 2) }
         const s0 = scale.get()
-        // Exponential, so a step in and the same step out cancel, and no step can flip the scale's sign.
-        const s1 = boundScale(s0 * Math.exp(-dy / WHEEL_ZOOM_RATE))
+        const zoomFactor = Math.exp(-dy / WHEEL_ZOOM_RATE)
+        const s1 = boundScale(s0 * zoomFactor)
         const t = zoomAbout({ x: x.get(), y: y.get() }, s0, s1, pointer)
         scale.set(s1)
         x.set(band(t.x, 'x'))
@@ -260,7 +247,6 @@ export function MapView(props: MapContent & {
     },
   )
 
-  // Re-subscribes on selected/pins changes so the listeners never read stale props.
   useEffect(() => {
     const revealing = Boolean(props.selected || props.focusPoint)
     if (reveal() !== undefined) moveTo(() => { const target = reveal(); return target === undefined ? [] : [[y, target]] })
@@ -269,7 +255,7 @@ export function MapView(props: MapContent & {
       if (!active.current.drag && !active.current.pinch) settle()
     }
     const onFrame = () => (userMovedMap.current || revealing ? onInset() : fit())
-    let reach = props.corner?.get().reach
+    let reach = props.cornerAboveBottomInset?.get().reach
     const onCorner = (c: Corner) => {
       if (c.reach === reach) return
       reach = c.reach
@@ -277,14 +263,13 @@ export function MapView(props: MapContent & {
     }
     const offs = [
       ...[size, props.topInset, props.restInset].map((v) => v.on('change', onFrame)),
-      ...(props.corner ? [props.corner.on('change', onCorner)] : []),
+      ...(props.cornerAboveBottomInset ? [props.cornerAboveBottomInset.on('change', onCorner)] : []),
       props.bottomInset.on('change', onInset),
     ]
     return () => offs.forEach((off) => off())
-  }, [props.topInset, props.restInset, props.bottomInset, props.corner, props.selected, props.focusPoint, props.pins])
+  }, [props.topInset, props.restInset, props.bottomInset, props.cornerAboveBottomInset, props.selected, props.focusPoint, props.pins])
 
-  // Snaps to the nearest slot in reach, not to whichever hit area happens to be on top.
-  const tapAt = (clientX: number, clientY: number) => {
+  const tapNearestMarkInReach = (clientX: number, clientY: number) => {
     const r = frame.current!.getBoundingClientRect()
     const s = side()
     const point = {
@@ -363,7 +348,7 @@ export function MapView(props: MapContent & {
       .reduce<Rect | undefined>((u, r) => (u ? { x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) } : r), undefined)
     const requests = tags.map((t, i) => labelRequest(t, points[i], boxes[i], { art, icon, ring }, wide, castle))
     const visible = { w, top: props.topInset.get(), h: h - props.bottomInset.get() }
-    const blocked = (props.corner?.get().rects ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
+    const blocked = (props.cornerAboveBottomInset?.get().rects ?? []).map((r) => ({ x0: r.x0, x1: r.x1, y0: visible.h - r.top, y1: visible.h - r.bottom }))
     const oneLineHeight = Math.min(...requests.filter((r) => !r.ring && r.label.h > 0).map((r) => r.label.h))
     const spots = placeLabels(requests, visible, pinRects, LABEL_GAP, LABEL_EDGE, 0, blocked, Number.isFinite(oneLineHeight) ? oneLineHeight : 0)
       .map((spot, i) => ({ ...spot, x: spot.x - points[i].x, y: spot.y - points[i].y }))
@@ -382,7 +367,7 @@ export function MapView(props: MapContent & {
 
   // use-gesture swallows the click that ends a pan, so any click reaching the frame is a real tap.
   return (
-    <div ref={frame} className="map-frame" onClick={(e) => tapAt(e.clientX, e.clientY)}>
+    <div ref={frame} className="map-frame" onClick={(e) => tapNearestMarkInReach(e.clientX, e.clientY)}>
       <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
         <img className="map-image" src={`maps/${props.earth}.webp`} alt="" draggable={false} />
         <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
@@ -395,9 +380,8 @@ export function MapView(props: MapContent & {
           const drawsArt = p.structure || p.state === 'sighted'
           return (
             <motion.span
-              // Keyed by what it shows, so an orb keeps its element (and keyboard focus) through state changes.
               key={`${p.slot}:${p.structure ?? 'dot'}`}
-              className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}${p.match ? ' pin-match' : ''}`}
+              className={`pin pin-${p.state}${props.selected === p.slot ? ' pin-selected' : ''}${p.weaponHitsRunWeakness ? ' pin-match' : ''}`}
               {...(props.onPin ? {} : { role: 'img', 'aria-label': p.label })}
               data-slot={p.slot}
               style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
@@ -423,8 +407,8 @@ export function MapView(props: MapContent & {
                   onPointerEnter={(e) => { if (isMouseHover(e)) props.onHover?.(p) }}
                   onPointerLeave={(e) => { if (e.pointerType === 'mouse') props.onHover?.(null) }}
                   onClick={(e) => {
-                    // Pointer taps bubble to the frame's tapAt; only keyboard activation (detail 0) is handled here.
-                    if (e.detail) return
+                    const isPointerTap = e.detail !== 0
+                    if (isPointerTap) return
                     e.stopPropagation()
                     props.onPin?.(p.slot, p.state)
                   }}
@@ -434,7 +418,7 @@ export function MapView(props: MapContent & {
           )
         })}
         {props.markers?.map((m, i) => (
-          <Tag key={`m${i}`} index={i} at={m} className={`marker-${m.layer}${m.plain ? ' marker-plain' : ''}`} labels={labels} onMeasure={measured} pinScale={pinScale}
+          <Tag key={`m${i}`} index={i} at={m} className={`marker-${m.layer}${m.nameWithoutIcon ? ' marker-plain' : ''}`} labels={labels} onMeasure={measured} pinScale={pinScale}
             text={m.layer === 'circle' ? <RingName marker={m} /> : tags[i].silent ? null : m.label} textKey={m.label}>
             {m.layer !== 'circle' && <MarkerIcon marker={m} scale={iconScale} />}
           </Tag>

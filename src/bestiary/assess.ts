@@ -1,6 +1,5 @@
 import { DAMAGE_TYPES, STATUSES, type Buildup, type DamageType, type Form, type Negation, type Status } from './enemy'
 
-/** What a fight is weak to, counted on its worst form: you carry one weapon into the arena. */
 export interface Assessment {
   negation: Negation
   buildup: Buildup
@@ -9,10 +8,8 @@ export interface Assessment {
   resists: DamageType[]
   fastest: Status[]
   fastestAt: number | null
-  /** The fastest statuses, but only when they stand out: a tie across most statuses is the floor, not a weakness. */
   weakStatuses: Status[]
   immuneTo: Status[]
-  /** A weakness only one form has, named when the worst case has none. */
   oneForm: { label: string | null; weakTo: DamageType[]; by: number } | null
 }
 
@@ -35,6 +32,7 @@ export function assess(forms: Form[]): Assessment {
   const procs = STATUSES.filter((s) => buildup[s] !== 'immune')
   const fastestAt = procs.length ? Math.min(...procs.map((s) => buildup[s] as number)) : null
   const fastest = fastestAt === null ? [] : tiedAt(procs, (s) => buildup[s] as number, fastestAt)
+  const fastestStandOut = fastest.length * 2 <= procs.length
 
   return {
     negation,
@@ -44,7 +42,7 @@ export function assess(forms: Form[]): Assessment {
     resists,
     fastest,
     fastestAt,
-    weakStatuses: fastest.length * 2 <= procs.length ? fastest : [],
+    weakStatuses: fastestStandOut ? fastest : [],
     immuneTo,
     oneForm: weakTo.length ? null : deepestOneFormWeakness(forms),
   }

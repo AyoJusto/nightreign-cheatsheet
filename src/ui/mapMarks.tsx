@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, type ReactNode } from 'react'
 import { motion, useTransform, type MotionValue } from 'motion/react'
 import type { MapMarker } from './mapTypes'
 import { shortBossName, type TagSpec } from './mapGeometry'
-import { measureName, type NameBox } from './mapNames'
+import { shrinkToLongestLineAndMeasure, type NameBox } from './mapNames'
 
 export const ICON_SIZE = 36
 export const RING_SIZE = 110
@@ -10,7 +10,7 @@ export const RING_SIZE = 110
 export function tagOf(m: MapMarker): TagSpec {
   const at = { x: m.x, y: m.y }
   if (m.layer === 'circle' || m.layer === 'event') return { ...at, kind: 'night', mark: 'ring' }
-  const mark = m.plain || !MARKER_ART[m.layer] ? 'none' : 'icon'
+  const mark = m.nameWithoutIcon || !MARKER_ART[m.layer] ? 'none' : 'icon'
   if (m.layer === 'castle') return { ...at, kind: 'castle', mark }
   if (m.layer === 'boss' || m.layer === 'evergaol') return { ...at, kind: m.layer, mark }
   if (m.layer === 'chest') return { ...at, kind: 'chest', mark, silent: true }
@@ -24,7 +24,7 @@ const MARKER_ART: Partial<Record<MapMarker['layer'], string>> = {
 
 export function MarkerIcon({ marker, scale }: { marker: MapMarker; scale: MotionValue<number> }) {
   const src = marker.great ? 'markers/great-boss.webp' : MARKER_ART[marker.layer]
-  if (marker.plain || !src) return null
+  if (marker.nameWithoutIcon || !src) return null
   const chestHasNoVisibleName = marker.layer === 'chest'
   return (
     <motion.span className="mark" style={{ scale }}>
@@ -35,19 +35,18 @@ export function MarkerIcon({ marker, scale }: { marker: MapMarker; scale: Motion
 
 export function RingName({ marker }: { marker: MapMarker }) {
   const boss = marker.label.replace(/^Night \d: /, '')
+  const words = shortBossName(boss).split(' ')
   return (
     <>
-      {/* .ring-word keeps "Demi-Human" from breaking after its hyphen. */}
       <span aria-hidden>
         <span className={`night-${marker.night}`}>{marker.night}</span>
-        <span className="ring-rest"> · {shortBossName(boss).split(' ').map((word, i) => <span key={i}>{i > 0 && ' '}<span className="ring-word">{word}</span></span>)}</span>
+        <span className="ring-rest"> · {words.map((word, i) => <span key={i}>{i > 0 && ' '}<span className="ring-word">{word}</span></span>)}</span>
       </span>
       <span className="sr-only">{marker.label}</span>
     </>
   )
 }
 
-// Gradients, not a blur filter, so the ring costs nothing extra to repaint while zooming.
 export function Ring({ night }: { night: 1 | 2 }) {
   const glow = `ring-glow-${night}`
   const c = RING_SIZE / 2
@@ -96,7 +95,6 @@ export function Tag({ index, at, className, labels, onMeasure, pinScale, text, t
   pinScale: MotionValue<number>
   text: ReactNode
   textKey: string
-  /** Already spoken by something else, such as a site's pin. */
   hidden?: boolean
   children?: ReactNode
 }) {
@@ -117,7 +115,7 @@ export function Tag({ index, at, className, labels, onMeasure, pinScale, text, t
   }), [spot])
   useLayoutEffect(() => {
     const el = label.current
-    onMeasure(index, el ? measureName(el) : { w: 0, h: 0 })
+    onMeasure(index, el ? shrinkToLongestLineAndMeasure(el) : { w: 0, h: 0 })
   }, [textKey, index])
   return (
     <motion.span className={`marker ${className}`} style={{ left: `${at.x / 10}%`, top: `${at.y / 10}%`, scale: pinScale }}>

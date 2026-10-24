@@ -62,13 +62,13 @@ export function seedPath(id: string, sightings: readonly Sighting[], unknown: bo
   return `/seed/${id}${query ? `?${query}` : ''}`
 }
 
-/** One sighting back, so the finder does not solve the seed again and bounce straight back to it. */
 export function resultBackPath(search: string, seed: Pick<Seed, 'nightlord' | 'earth'>) {
   const params = new URLSearchParams(search)
   const q = params.get('s')
   if (q === null) return PICK_PATH
   const nightlord = params.get('n') === 'unknown' ? 'unknown' : seed.nightlord
-  return findPath(nightlord, seed.earth, decodeSightings(q).slice(0, -1))
+  const priorSightings = decodeSightings(q).slice(0, -1)
+  return findPath(nightlord, seed.earth, priorSightings)
 }
 
 export function parseRoute(pathname: string): Route {
@@ -114,13 +114,12 @@ const inAppLink = (e: MouseEvent) => {
   return href?.startsWith('#/') ? href.slice(1) : null
 }
 
-/** Back to wherever the user came from in the app, or to `fallback` when the page was opened directly. */
 export function goBack(fallback: string, go: (path: string, back?: boolean) => void) {
-  if ((history.state as Entry)?.from !== undefined) history.back()
+  const cameFromInApp = (history.state as Entry)?.from !== undefined
+  if (cameFromInApp) history.back()
   else go(fallback, true)
 }
 
-/** `go(path, true)` is an in-app Back: it pops history when the previous entry is `path`, so browser Back agrees. */
 export function useRoute(): [Route, (path: string, back?: boolean) => void] {
   const [route, setRoute] = useState(() => parseRoute(currentPathname()))
   useEffect(() => {

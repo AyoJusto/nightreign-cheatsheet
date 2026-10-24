@@ -2,7 +2,6 @@ import type { ReactNode, Ref } from 'react'
 import { Plate } from './Plate'
 import { Icon } from './Icon'
 
-/** Back is always the first button, in the same place on every screen; the bar is only as wide as what it holds. */
 export function TopBar({ onBack, children, trailing, className = '', ref }: {
   onBack: () => void; children?: ReactNode; trailing?: ReactNode; className?: string; ref?: Ref<HTMLDivElement>
 }) {

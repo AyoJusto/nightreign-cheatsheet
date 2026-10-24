@@ -1,10 +1,9 @@
 export type Detent = 'peek' | 'half' | 'full'
 
-/** What the Sheet measures on screen, in CSS px. pillBottom is 0 when no pill is showing. */
 export interface SheetMeasure {
-  frame: number // visible viewport height
-  grab: number // the grab handle and header
-  content: number // what the half detent should show below the header
+  frame: number
+  grab: number
+  content: number
   safeTop: number
   safeBottom: number
   safeLeft: number
@@ -12,7 +11,6 @@ export interface SheetMeasure {
   pillBottom: number
 }
 
-// 0.66, not 0.5: seed 000's run card with wrapped Night names needs 66% of Safari's 659px iPhone 15 viewport.
 export const HALF_MAX = 0.66
 const PILL_GAP = 0
 

@@ -24,7 +24,6 @@ export function headline(enemy: Enemy): Headline {
   return { weak: verdict.weakTo, resist: verdict.resists, status: [] }
 }
 
-/** The game's named weakness leads; a Nightlord named for a damage type also lists the statuses that build fastest. */
 export function nightlordHeadline(nightlord: Nightlord): Headline {
   const verdict = assess(nightlord.forms)
   return {

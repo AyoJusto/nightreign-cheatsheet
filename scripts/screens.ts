@@ -11,7 +11,6 @@ const spawnChurch = JSON.parse(readFileSync('src/data/seeds.json', 'utf8')).seed
 
 type Shot = (page: Page) => Promise<void>
 
-// A keypress lands exactly on a detent; a scripted drag would have to guess its height.
 async function stepSheetTo(page: Page, detent: 'half' | 'full') {
   const handle = page.getByRole('button', { name: /^Resize / })
   await handle.focus()
@@ -38,8 +37,8 @@ const shots: [string, Shot][] = [
     await p.getByRole('button', { name: /^Find / }).first().click()
   }],
   ['finder-certain-slot', async (p) => {
-    // On this seed, slot 24 as a church leaves two candidates that agree on several other slots.
-    await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn},24@church`)
+    const twoCandidatesLeft = `spawn@${seed.spawn},24@church`
+    await p.goto(`${base}/find/tricephalos/default?s=${twoCandidatesLeft}`)
   }],
   ['finder-sighted-sheet', async (p) => {
     await p.goto(`${base}/find/tricephalos/default?s=spawn@${seed.spawn},24@church`)

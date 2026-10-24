@@ -17,7 +17,6 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS
 
-/** Decorative: the control around it carries the accessible name. */
 export function Icon({ name, size = 22, className }: { name: IconName; size?: number; className?: string }) {
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"

@@ -1,11 +1,10 @@
 import { useEffect } from 'react'
 import { motion, useSpring, useTransform, useReducedMotion } from 'motion/react'
 
-/** `phrase` is what the live region says for the settled value; the words shown around the digits should be aria-hidden. */
 export function Count({ value, phrase }: { value: number; phrase: string }) {
   const spring = useSpring(value, { visualDuration: 0.45, bounce: 0.2 })
   const text = useTransform(spring, (v) => Math.round(v).toString())
-  // MotionConfig does not reach useSpring; with reduced motion the number changes in place.
+  // MotionConfig does not reach useSpring.
   const reduce = useReducedMotion()
   useEffect(() => (reduce ? spring.jump(value) : spring.set(value)), [spring, value, reduce])
   return (

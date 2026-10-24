@@ -2,7 +2,6 @@ import type { Seed } from './seed'
 import type { SlotId, StructureKey } from './names'
 import { bestiary } from '../bestiary/bestiary'
 
-/** `night1`: the boss the first night closed on, by its fight's id. */
 export type Sighting =
   | { type: 'spawn'; slot: SlotId }
   | { type: 'structure'; slot: SlotId; structure: StructureKey }
@@ -19,8 +18,8 @@ export class ImpossibleSighting extends Error {}
 const matches = (seed: Seed, s: Sighting) => {
   if (s.type === 'spawn') return seed.spawn === s.slot
   if (s.type === 'night1') return nightOneFight(seed) === s.boss
-  // seed.slots lists every slot on the map, so a slot it lacks is not "nothing": it is not there at all.
-  if (!Object.hasOwn(seed.slots, s.slot)) return false
+  const slotIsOnThisMap = Object.hasOwn(seed.slots, s.slot)
+  if (!slotIsOnThisMap) return false
   const actual = seed.slots[s.slot]
   return s.type === 'nothing' ? actual === null : actual === s.structure
 }
@@ -67,7 +66,6 @@ export class Scouting {
     return [...counts].map(([option, remaining]) => ({ option, remaining })).sort(byRemainingThenOption)
   }
 
-  /** Each way the player could have spawned at this site: on open ground, or beside what some seed builds there. */
   spawnChoicesAt(slot: SlotId): { structure: StructureKey | null; remaining: number }[] {
     const spawn = this.sightings.find((s) => s.type === 'spawn')
     if (spawn && spawn.slot !== slot) return []

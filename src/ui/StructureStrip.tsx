@@ -9,7 +9,6 @@ const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
 const MAX_EMBLEMS = 3
 const NEIGHBOUR_SLIVER = 32
 
-/** With `variantsBelow`, an open kind's chips go in a row beneath the tiles, so no tile moves. */
 export function StructureButtons({ groups, open, focus, onKind, onVariant, onName, variantsBelow }: {
   groups: KindGroup[]; open: string | null; focus: StructureKey | null
   onKind: (kind: string) => void; onVariant: (structure: StructureKey) => void
@@ -89,7 +88,6 @@ export function StructureStrip({ plateRef, open, hidden, children }: {
     return () => observer.disconnect()
   }, [markHiddenEdges])
   useEffect(markHiddenEdges)
-  // An expanded kind's chips open to its right, possibly off-screen: bring the kind near the start.
   useEffect(() => {
     const el = scroller.current
     const item = open ? el?.querySelector<HTMLElement>(`[data-kind="${open}"]`) : null

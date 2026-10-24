@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPin, rubberband, placeLabel, placeLabels, fitInDisc, zoomAbout, isTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_ASPECT, labelRequest, structureFootprint } from './mapGeometry'
+import { nearestPin, rubberband, placeLabel, placeLabels, fitInDisc, zoomAbout, looksLikeTrackpadScroll, labelRank, markSize, shortBossName, orbSize, minSpacing, artFootprint, ART_HEIGHT_OVER_WIDTH, labelRequest, structureFootprint } from './mapGeometry'
 import { catalog } from '../data/catalog'
 import seedData from '../data/seeds.json'
-// Per-character advances of 11px Cinzel, measured in WebKit on an iPhone 15.
 import caption from './ringCaption.fixture.json'
 import { readdirSync } from 'node:fs'
 
@@ -151,24 +150,24 @@ describe('wheel zoom keeps the point under the pointer still', () => {
 
 describe('a wheel event pans for a trackpad and zooms for a mouse wheel', () => {
   it('pans on a sideways component', () => {
-    expect(isTrackpadScroll({ deltaX: 3, deltaY: 0, deltaMode: 0 })).toBe(true)
-    expect(isTrackpadScroll({ deltaX: -1, deltaY: 12, deltaMode: 0 })).toBe(true)
+    expect(looksLikeTrackpadScroll({ deltaX: 3, deltaY: 0, deltaMode: 0 })).toBe(true)
+    expect(looksLikeTrackpadScroll({ deltaX: -1, deltaY: 12, deltaMode: 0 })).toBe(true)
   })
 
   it('pans on the small fractional pixel deltas a trackpad sends', () => {
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: 2.5, deltaMode: 0 })).toBe(true)
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: -0.75, deltaMode: 0 })).toBe(true)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: 2.5, deltaMode: 0 })).toBe(true)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: -0.75, deltaMode: 0 })).toBe(true)
   })
 
   it('zooms on a mouse wheel notch: whole pixels, or lines or pages', () => {
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: 100, deltaMode: 0 })).toBe(false)
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: -300, deltaMode: 0 })).toBe(false)
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: 3, deltaMode: 1 })).toBe(false)
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: 1, deltaMode: 2 })).toBe(false)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: 100, deltaMode: 0 })).toBe(false)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: -300, deltaMode: 0 })).toBe(false)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: 3, deltaMode: 1 })).toBe(false)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: 1, deltaMode: 2 })).toBe(false)
   })
 
   it('zooms on a large fractional delta, which a fast mouse wheel with acceleration sends', () => {
-    expect(isTrackpadScroll({ deltaX: 0, deltaY: 120.5, deltaMode: 0 })).toBe(false)
+    expect(looksLikeTrackpadScroll({ deltaX: 0, deltaY: 120.5, deltaMode: 0 })).toBe(false)
   })
 })
 
@@ -215,8 +214,7 @@ describe('placeLabels: markers never cover each other', () => {
     expect(first.shown && second.shown).toBe(true)
     expect(intersects(rectOf(first), rectOf(second))).toBe(false)
   })
-  it("a circle with no free spot clips a pin's edge rather than cover another marker's glyph", () => {
-    // "below" clips 190 px² of a pin; "right" holds a 144 px² boss glyph: by area alone, the glyph would lose.
+  it("a circle with no free spot clips a pin's edge (190 px² below) rather than cover another marker's smaller glyph (144 px² right)", () => {
     const circle = at(200, 300, 0, true)
     const pins = [
       { x0: 80, y0: 250, x1: 320, y1: 280 },
@@ -546,10 +544,10 @@ describe('structure art footprints', () => {
   it("knows how much of its square box each kind's sprite fills, as the shipped art is drawn", async () => {
     const sharp = (await import('sharp')).default
     const kinds = readdirSync('public/structures').map((f) => f.replace('.webp', ''))
-    expect(Object.keys(ART_ASPECT).sort()).toEqual(kinds.sort())
+    expect(Object.keys(ART_HEIGHT_OVER_WIDTH).sort()).toEqual(kinds.sort())
     for (const kind of kinds) {
       const { width, height } = await sharp(`public/structures/${kind}.webp`).metadata()
-      expect(ART_ASPECT[kind], kind).toBeCloseTo(height! / width!, 1)
+      expect(ART_HEIGHT_OVER_WIDTH[kind], kind).toBeCloseTo(height! / width!, 1)
     }
   })
   it('sizes a low sprite by its width and a tall one by its height, with the badge where the game puts it', () => {

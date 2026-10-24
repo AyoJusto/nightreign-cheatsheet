@@ -9,7 +9,6 @@ export const hasCjk = (s: string) => /[\u3000-\u9FFF\uFF00-\uFFEF]/.test(s)
 export const normalizeBossName = (name: string) =>
   name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]/g, '')
 
-// Great Hollow labels can stack several bosses in one string: "A, B, C".
 export const applyPerName = (label: string, resolve: (name: string) => string) =>
   label.split(', ').map(resolve).join(', ')
 
@@ -45,7 +44,6 @@ export function toStructureKey(raw: string): string | null {
 }
 
 type Crop = { left: number; top: number; width: number; height: number }
-// Measured by diffing all 21 variant arts against their plain kind art; this box sits inside every emblem's frame.
 const VARIANT_EMBLEM: Crop = { left: 186, top: 155, width: 56, height: 56 }
 const STATUS_EMBLEM: Crop = { left: 5, top: 5, width: 90, height: 90 }
 
@@ -167,16 +165,15 @@ function main() {
     for (const night of [1, 2] as const) {
       const circle = nc?.[`night${night}`]?.circle
       let pos = circle ? remote.nightCircles.positions[circle] : undefined
-      // The Great Hollow sheet says "Divine Tower" for every night 2; the real marker was read off the maps.
-      if (earth === 'great-hollow' && night === 2) pos = remote.greatHollowDay2Circle.positions[remote.greatHollowDay2Circle.seeds[id]]
+      const isGreatHollowNight2 = earth === 'great-hollow' && night === 2
+      if (isGreatHollowNight2) pos = remote.greatHollowDay2Circle.positions[remote.greatHollowDay2Circle.seeds[id]]
       if (pos) markers.push({ layer: 'circle', night, x: pos.x, y: pos.y, label: `Night ${night}: ${bossName(nc[`night${night}`].boss)}` })
       else problems.push(`seed ${id} night ${night} circle has no position`)
     }
-    // bossAssignments and bossPositions spell some spots differently; aliases.bossSlots maps one to the other.
-    const fieldBosses = Object.fromEntries(Object.entries<string>(remote.bossAssignments.seeds[id] ?? {})
+    const fieldBossesBySlot = Object.fromEntries(Object.entries<string>(remote.bossAssignments.seeds[id] ?? {})
       .map(([slot, boss]) => [aliases.bossSlots[slot] ?? slot, boss]))
     for (const p of remote.bossPositions.positions[s.map_type] ?? []) {
-      const boss = p.slot && fieldBosses[p.slot]
+      const boss = p.slot && fieldBossesBySlot[p.slot]
       if (boss && !p.slot.startsWith('Castle') && !notFieldBosses.has(boss)) {
         markers.push({ layer: 'boss', x: p.x, y: p.y, label: bossName(boss), ...(greatBosses.has(bossName(boss)) && { great: true }) })
       }
@@ -316,7 +313,6 @@ export const hazeCoverage = (clearBelow = 180, solidAbove = 250): Coverage => (_
 
 const FLOOD_FILL_DOWNHILL_SLACK = 0.15
 
-// A flood fill from the edges rather than a colour key, so water enclosed by land keeps its colour.
 export function keyBackground(
   rgba: Uint8Array, width: number, height: number, coverage: Coverage,
   { feather = 2, streak = 12 }: { feather?: number; streak?: number } = {},
@@ -347,7 +343,6 @@ export function keyBackground(
     if (p >= width) visit(p - width, c)
     if (p < n - width) visit(p + width, c)
   }
-  // The Limveld sources carry 1-3 px tall grey streaks in the ocean along the coast.
   const cleared = (p: number) => seen[p] === 1 && cover[p] === 0
   for (let x = 0; x < width; x++) {
     let start = -1
@@ -407,7 +402,6 @@ async function copyAssets() {
     const image = sharp(`data/raw/assets/maps/${file}`)
     const { width, height } = await image.metadata()
     if (width !== height) throw new Error(`${file} is ${width}x${height}; the 1000-unit coordinate space assumes a square map`)
-    // Great Hollow's art encodes far less cleanly: 878 KB at 2000px/q78 against a 500 KB budget.
     const [size, quality] = earth === 'great-hollow' ? [1400, 70] : [2000, 78]
     const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true })
     const coverage = earth === 'great-hollow' ? hazeCoverage() : oceanCoverage(LIMVELD_OCEAN_RGB)
@@ -459,9 +453,8 @@ async function copyAssets() {
   const fieldBossCrestTurnedRed = await trimmedMarker('field-boss.png').modulate({ hue: 100, saturation: 1.4 }).png().toBuffer()
   await withShadow(sharp(fieldBossCrestTurnedRed))
     .then((img) => img.webp({ quality: 90 }).toFile('public/markers/great-boss.webp'))
-  // Not trimmed: the glows fade out to the box's edge, and MapView sizes them by the box.
-  const glow = (name: string) => sharp(`data/raw/assets/markers/${name}.svg`, { density: 144 }).resize(128, 128)
-  for (const name of ['unknown', 'player']) await glow(name).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
+  const untrimmedGlow = (name: string) => sharp(`data/raw/assets/markers/${name}.svg`, { density: 144 }).resize(128, 128)
+  for (const name of ['unknown', 'player']) await untrimmedGlow(name).webp({ quality: 90 }).toFile(`public/markers/${name}.webp`)
   console.log('assets copied')
 }
 
