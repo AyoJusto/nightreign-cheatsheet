@@ -4,6 +4,7 @@ import type { MapContent, Pin } from './mapTypes'
 import { Sheet, type Detent } from './Sheet'
 import { TopBar } from './TopBar'
 import { Count } from './Count'
+import { LAST_PIN_TO_RESULT_MS } from './motion'
 import { StructureIcon } from './StructureIcon'
 import { StructureButtons, StructureStrip } from './StructureStrip'
 import { groupByKind } from './structureGroups'
@@ -20,7 +21,6 @@ import { Scouting, targetOf } from '../domain/scouting'
 import { bestiary } from '../bestiary/bestiary'
 
 const NIGHT_ONE = 'night1'
-const LAST_PIN_ANIMATION_MS = 350
 
 const stripCoverHeight = (el: HTMLElement) => (el.offsetHeight ? el.offsetHeight + parseFloat(getComputedStyle(el).bottom) : 0)
 const previewable = (p: Pin) => p.state !== 'spawn' && p.state !== 'spawn-option'
@@ -52,7 +52,7 @@ export function FinderOverlay(props: {
     const t = setTimeout(() => {
       replacePath(findPath(props.nightlord, props.earth, scouting.sightings.slice(0, -1)))
       props.go(seedPath(seed.id, scouting.sightings, props.nightlord === 'unknown'))
-    }, LAST_PIN_ANIMATION_MS)
+    }, LAST_PIN_TO_RESULT_MS)
     return () => clearTimeout(t)
   }, [scouting, props.go, props.nightlord, props.earth])
 

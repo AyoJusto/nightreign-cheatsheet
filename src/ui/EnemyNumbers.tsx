@@ -1,6 +1,8 @@
 import { assess } from '../bestiary/assess'
 import { DAMAGE_TYPES, STATUSES, isStatus, type Affliction, type Form } from '../bestiary/enemy'
 import { DAMAGE_NAMES } from '../domain/names'
+import { motion } from 'motion/react'
+import { staggered, useMotion } from './motion'
 import { Section } from './Page'
 
 export const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
@@ -25,10 +27,11 @@ export function WeakIcons({ forms, named, center }: { forms: Form[]; named?: Aff
 const isWeak = (v: number | 'immune', weakWhen: (v: number) => boolean) => v !== 'immune' && weakWhen(v)
 
 export function NumbersTable({ forms }: { forms: Form[] }) {
+  const m = useMotion()
   const labelled = forms.length > 1
   const cell = 'px-3 py-2.5 text-right tabular-nums'
-  const row = (key: Affliction, value: (f: Form) => number | 'immune', weakWhen: (v: number) => boolean) => (
-    <tr key={key} className={`shadow-[inset_0_-0.5px_0_var(--color-separator)] last:shadow-none ${forms.some((f) => isWeak(value(f), weakWhen)) ? 'bg-weak-row' : ''}`}>
+  const row = (key: Affliction, index: number, value: (f: Form) => number | 'immune', weakWhen: (v: number) => boolean) => (
+    <motion.tr key={key} {...staggered(m, index)} className={`shadow-[inset_0_-0.5px_0_var(--color-separator)] last:shadow-none ${forms.some((f) => isWeak(value(f), weakWhen)) ? 'bg-weak-row' : ''}`}>
       <th scope="row" className="px-4 py-2.5 text-left font-normal">
         <span className="flex items-center gap-2.5"><AfflictionIcon affliction={key} />{DAMAGE_NAMES[key]}</span>
       </th>
@@ -37,7 +40,7 @@ export function NumbersTable({ forms }: { forms: Form[] }) {
         const tone = v === 'immune' ? 'text-immune' : weakWhen(v) ? 'font-semibold text-weak' : v === 0 ? 'text-label-2' : ''
         return <td key={i} className={`${cell} ${tone}`}>{v === 'immune' ? 'Immune' : isStatus(key) ? v : signed(v)}</td>
       })}
-    </tr>
+    </motion.tr>
   )
   const head = labelled && (
     <thead>
@@ -54,7 +57,7 @@ export function NumbersTable({ forms }: { forms: Form[] }) {
         <div className="surface overflow-x-auto rounded-card">
           <table className="w-full border-collapse text-base">
             {head}
-            <tbody>{DAMAGE_TYPES.map((t) => row(t, (f) => f.negation[t], (v) => v < 0))}</tbody>
+            <tbody>{DAMAGE_TYPES.map((t, i) => row(t, i, (f) => f.negation[t], (v) => v < 0))}</tbody>
           </table>
         </div>
       </Section>
@@ -62,7 +65,7 @@ export function NumbersTable({ forms }: { forms: Form[] }) {
         <div className="surface overflow-x-auto rounded-card">
           <table className="w-full border-collapse text-base">
             {head}
-            <tbody>{STATUSES.map((s) => row(s, (f) => f.buildup[s], (v) => v === lowestBuildup))}</tbody>
+            <tbody>{STATUSES.map((s, i) => row(s, i, (f) => f.buildup[s], (v) => v === lowestBuildup))}</tbody>
           </table>
         </div>
       </Section>

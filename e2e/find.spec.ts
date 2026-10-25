@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page } from './test'
 import { readFileSync } from 'node:fs'
 import { structureName, nightlordName, earthName, weaknessPhrase, DAMAGE_NAMES } from '../src/domain/names'
 import { bestiary, headline, nightlordHeadline } from '../src/bestiary/bestiary'
@@ -222,6 +222,88 @@ for (const reduced of [false, true]) {
     expect((await sheet()).top).toBeNull()
   })
 }
+
+const watchScreenAnimations = (page: Page) => page.evaluate(() => {
+  const seen = new Set<string>()
+  const record = () => {
+    for (const a of document.getAnimations()) {
+      const effect = a.effect as KeyframeEffect
+      if (effect.pseudoElement) seen.add(`${effect.pseudoElement} ${(a as CSSAnimation).animationName} ${effect.getComputedTiming().duration}`)
+    }
+    requestAnimationFrame(record)
+  }
+  record()
+  ;(window as any).screenAnimations = seen
+})
+const seenScreenAnimations = (page: Page) => page.evaluate(() => [...(window as any).screenAnimations as Set<string>])
+
+for (const reduced of [false, true]) {
+  test(`a route change ${reduced ? 'crossfades without moving (reduced motion)' : 'slides forward, and Back slides back to where the list was'}`, async ({ page }) => {
+    if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('#/bosses')
+    const row = page.getByRole('link', { name: /^Golden Hippopotamus/ })
+    await row.scrollIntoViewIfNeeded()
+    const listScroll = await page.evaluate(() => scrollY)
+    expect(listScroll).toBeGreaterThan(0)
+
+    await watchScreenAnimations(page)
+    await page.evaluate(() => document.addEventListener('click', () => { (window as any).leftAt = scrollY }, { capture: true, once: true }))
+    await row.click()
+    await expect(page.getByRole('heading', { name: 'Golden Hippopotamus', level: 1 })).toBeVisible()
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.nav ?? null)).toBeNull()
+    const forward = await seenScreenAnimations(page)
+    expect(await page.evaluate(() => scrollY)).toBe(0)
+    const transitions = await page.evaluate(() => typeof document.startViewTransition === 'function')
+    if (!transitions) expect(forward).toEqual([])
+    else if (reduced) {
+      expect(forward).toContain('::view-transition-new(root) screen-fade-in 120')
+      expect(forward.filter((a) => /screen-(from|to)-|hero-/.test(a))).toEqual([])
+    } else {
+      expect(forward).toContain('::view-transition-new(root) screen-from-end 400')
+      expect(forward).toContain('::view-transition-old(root) screen-to-start 400')
+      expect(forward.some((a) => a.startsWith('::view-transition-group(hero-title)')), 'the row name carries into the title').toBe(true)
+    }
+
+    await watchScreenAnimations(page)
+    await page.getByRole('button', { name: 'Back' }).click()
+    await expect(page).toHaveURL(/#\/bosses$/)
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.nav ?? null)).toBeNull()
+    const back = await seenScreenAnimations(page)
+    if (reduced || !transitions) expect(back.filter((a) => /screen-(from|to)-/.test(a))).toEqual([])
+    else expect(back).toContain('::view-transition-new(root) screen-from-start 400')
+    expect(await page.evaluate(() => scrollY)).toBe(await page.evaluate(() => (window as any).leftAt))
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  })
+}
+
+test('each history entry keeps its filter and scroll through Back, Forward and a reload, and a new entry starts clean', async ({ page }) => {
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 400 })
+  await page.goto('./')
+  await page.getByRole('link', { name: 'Bosses', exact: true }).click()
+  const filter = page.getByRole('searchbox', { name: 'Filter bosses' })
+  await filter.fill('golden')
+  await expect(page.locator('main li')).toHaveCount(2)
+  await page.getByRole('link', { name: /^Golden Hippopotamus/ }).click()
+  await expect(page.getByRole('heading', { name: 'Golden Hippopotamus', level: 1 })).toBeVisible()
+  await page.evaluate(() => scrollTo(0, 300))
+  const enemyScroll = await page.evaluate(() => scrollY)
+  expect(enemyScroll).toBeGreaterThan(0)
+
+  await page.goBack()
+  await expect(filter).toHaveValue('golden')
+  await page.goForward()
+  await expect(page.getByRole('heading', { name: 'Golden Hippopotamus', level: 1 })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(enemyScroll)
+
+  await page.reload()
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(enemyScroll)
+  await page.getByRole('button', { name: 'Back' }).click()
+  await expect(filter).toHaveValue('golden')
+
+  await page.goBack()
+  await page.evaluate(() => { location.hash = '#/effects/relics' })
+  await expect(page.getByRole('searchbox', { name: 'Filter' })).toHaveValue('')
+})
 
 test('a site picked while the sheet is leaving turns that one sheet around for the new site, nothing left inert', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the sheet is phone only')

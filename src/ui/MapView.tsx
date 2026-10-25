@@ -6,6 +6,8 @@ import { StructureIcon } from './StructureIcon'
 import type { Corner } from './NightlordMedallion'
 import { catalog } from '../data/catalog'
 import { crossfade } from './crossfade'
+import { FadeImg } from './FadeImg'
+import { DIMMED_PIN_OPACITY, mapInertia, SCRIM_OPACITY, SELECTED_PIN_SCALE, useMotion } from './motion'
 import { useWide } from './useWide'
 import { ICON_BODY, looksLikeTrackpadScroll, labelRequest, markSize, minSpacing, nearestPin, orbSize, placeLabels, rubberband, square, structureFootprint, zoomAbout, type Rect, type TagSpec } from './mapGeometry'
 import './map.css'
@@ -25,7 +27,6 @@ const HALF_HIT_TARGET = 22
 const CORNER_CLEARANCE = 22
 const MIN_BOTTOM_CLEARANCE = 56
 const WHEEL_ZOOM_RATE = 500
-const snap = { type: 'spring', visualDuration: 0.4, bounce: 0 } as const
 const MAX_REDUCED_MOTION_JUMP = 24
 const MS_PER_S = 1000
 
@@ -65,6 +66,7 @@ export function MapView(props: MapContent & {
   const ringScale = useTransform(mapWidth, (m) => markSize('ring', m) / RING_SIZE)
   // MotionConfig only reaches declarative animations; imperative moves crossfade themselves.
   const reduce = useReducedMotion()
+  const m = useMotion()
   const fade = useMotionValue(1)
 
   const side = (s = scale.get()) => Math.max(size.get().w, size.get().h) * s
@@ -142,7 +144,7 @@ export function MapView(props: MapContent & {
   const moveTo = (targets: () => [MotionValue<number>, number][]) => {
     if (reduce && movesAwaitingFade.current) return void movesAwaitingFade.current.push(targets)
     const now = targets()
-    if (!reduce) return now.forEach(([v, t]) => { if (v !== scale || t !== v.get()) animate(v, t, snap) })
+    if (!reduce) return now.forEach(([v, t]) => { if (v !== scale || t !== v.get()) animate(v, t, m.mapSnap) })
     const far = now.some(([v, t]) => Math.abs(v === scale ? side(t) - side() : t - v.get()) > MAX_REDUCED_MOTION_JUMP)
     if (!far) return now.forEach(([v, t]) => v.jump(t))
     const batch = [targets]
@@ -177,7 +179,7 @@ export function MapView(props: MapContent & {
         if (tap || reduce) return settle()
         const velocityXPxPerS = speedXPxPerMs * signX * MS_PER_S
         const velocityYPxPerS = speedYPxPerMs * signY * MS_PER_S
-        const inertia = { type: 'inertia', power: 0.3, bounceStiffness: 300, bounceDamping: 30 } as const
+        const inertia = mapInertia
         // Motion skips an inertia animation whose target equals the current value, so pass the projected end.
         const glideX = clamp(x.get() + velocityXPxPerS * inertia.power, 'x')
         const glideY = clamp(y.get() + velocityYPxPerS * inertia.power, 'y')
@@ -369,8 +371,8 @@ export function MapView(props: MapContent & {
   return (
     <div ref={frame} className="map-frame" onClick={(e) => tapNearestMarkInReach(e.clientX, e.clientY)}>
       <motion.div className="map-layer" style={{ x, y, scale, opacity: fade }}>
-        <img className="map-image" src={`maps/${props.earth}.webp`} alt="" draggable={false} />
-        <motion.div className="map-scrim" animate={{ opacity: props.dim ? 0.55 : 0 }} transition={snap} aria-hidden />
+        <FadeImg data-hero="map" className="map-image" src={`maps/${props.earth}.webp`} alt="" draggable={false} />
+        <motion.div className="map-scrim" animate={{ opacity: props.dim ? SCRIM_OPACITY : 0 }} transition={m.mapSnap} aria-hidden />
         {props.markers?.map((m, i) => (m.layer === 'circle' || m.layer === 'event') && (
           <motion.span key={`r${i}`} className="marker ring-mark" style={{ left: `${m.x / 10}%`, top: `${m.y / 10}%`, scale: pinScale }}>
             <motion.span className="mark" style={{ scale: ringScale }}>{m.layer === 'event' ? <EventGlow /> : <Ring night={m.night ?? 1} />}</motion.span>
@@ -386,11 +388,11 @@ export function MapView(props: MapContent & {
               data-slot={p.slot}
               style={{ left: `${p.x / 10}%`, top: `${p.y / 10}%`, scale: pinScale }}
               initial={{ opacity: 0 }}
-              animate={{ opacity: p.state === 'dimmed' ? 0.4 : 1 }}
-              transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.2 }}
+              animate={{ opacity: p.state === 'dimmed' ? DIMMED_PIN_OPACITY : 1 }}
+              transition={m.pinAppear}
             >
               <motion.span className="pin-body" style={{ scale: drawsArt ? artScale : drawsPlayer(p.state) ? iconScale : orbScale }}>
-                <motion.span className={drawsArt ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? 1.2 : 1 }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.25 }}>
+                <motion.span className={drawsArt ? 'pin-mark' : 'pin-mark pin-orb'} animate={{ scale: props.selected === p.slot ? SELECTED_PIN_SCALE : 1 }} transition={m.pinSelect}>
                   {drawsArt
                     ? <StructureIcon structure={p.structure} size={ART_SIZE} />
                     : drawsPlayer(p.state)

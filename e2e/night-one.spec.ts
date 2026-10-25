@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './test'
 
 test('the Night 1 boss narrows the seeds and is kept in the link', async ({ page, isMobile }) => {
   await page.goto('#/find/tricephalos/default')

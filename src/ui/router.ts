@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { NIGHTLORDS, EARTHS, type EarthId, type NightlordId, type NightlordPick } from '../domain/names'
 import { bestiary } from '../bestiary/bestiary'
 import type { Sighting } from '../domain/scouting'
 import type { Seed } from '../domain/seed'
 import { catalog } from '../data/catalog'
+import { HERO_IMAGE_WAIT_MS, screenArrival } from './motion'
 
 export type EffectGroup = 'relics' | 'weapons'
 
@@ -104,7 +106,40 @@ export const currentSearch = () => {
 export const replacePath = (path: string) => history.replaceState(history.state, '', `#${path}`)
 export const linkTo = (path: string) => `${location.href.split('#')[0]}#${path}`
 
-type Entry = { from: string } | null
+type Entry = { from?: string; idx: number } | null
+type Nav = 'forward' | 'back' | 'fade'
+
+const entryIndex = () => (history.state as Entry)?.idx ?? 0
+const ENTRIES_KEY = 'entries'
+function readEntries(): { scroll: [number, number][]; kept: [number, Record<string, unknown>][] } {
+  try {
+    return JSON.parse(sessionStorage.getItem(ENTRIES_KEY) ?? '') ?? { scroll: [], kept: [] }
+  } catch {
+    return { scroll: [], kept: [] }
+  }
+}
+const saved = readEntries()
+const scrollAt = new Map<number, number>(saved.scroll)
+const keptAt = new Map<number, Record<string, unknown>>(saved.kept)
+const rememberScroll = () => scrollAt.set(entryIndex(), scrollY)
+function persistEntries() {
+  rememberScroll()
+  try {
+    sessionStorage.setItem(ENTRIES_KEY, JSON.stringify({ scroll: [...scrollAt], kept: [...keptAt] }))
+  } catch {
+    return
+  }
+}
+const forget = (idx: number) => {
+  scrollAt.delete(idx)
+  keptAt.delete(idx)
+}
+let ownBack = false
+let lastIdx = 0
+let clicked: Element | null = null
+let running: ViewTransition | null = null
+
+export const screenKey = (route: Route) => (route.name === 'find' || route.name === 'seed' ? 'map' : JSON.stringify(route))
 
 const inAppLink = (e: MouseEvent) => {
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null
@@ -114,34 +149,137 @@ const inAppLink = (e: MouseEvent) => {
 
 export function goBack(fallback: string, go: (path: string, back?: boolean) => void) {
   const cameFromInApp = (history.state as Entry)?.from !== undefined
-  if (cameFromInApp) history.back()
-  else go(fallback, true)
+  if (!cameFromInApp) return go(fallback, true)
+  rememberScroll()
+  ownBack = true
+  history.back()
 }
+
+export function useKept<T>(name: string, initial: T): [T, (value: T) => void] {
+  const [idx] = useState(entryIndex)
+  const [value, setValue] = useState(() => (keptAt.get(idx)?.[name] as T | undefined) ?? initial)
+  const keep = useCallback((next: T) => {
+    setValue(next)
+    keptAt.set(idx, { ...keptAt.get(idx), [name]: next })
+  }, [idx, name])
+  return [value, keep]
+}
+
+const prefersReducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+
+function nameHeroes(source: Element | null) {
+  if (!source || prefersReducedMotion()) return []
+  return [...source.querySelectorAll<HTMLElement>('[data-hero-from]')].map((el) => {
+    el.style.viewTransitionName = `hero-${el.dataset.heroFrom}`
+    return el
+  })
+}
+
+function nameTargets(sources: HTMLElement[]) {
+  return sources.flatMap((source) => {
+    const target = document.querySelector<HTMLElement>(`[data-hero="${source.dataset.heroFrom}"]`)
+    if (!target) return []
+    target.style.viewTransitionName = source.style.viewTransitionName
+    return [target]
+  })
+}
+
+const imagesReady = (els: HTMLElement[]) => Promise.race([
+  Promise.all(els.filter((el) => el instanceof HTMLImageElement).map((img) => img.decode().catch(() => undefined))),
+  new Promise((done) => setTimeout(done, HERO_IMAGE_WAIT_MS)),
+])
 
 export function useRoute(): [Route, (path: string, back?: boolean) => void] {
   const [route, setRoute] = useState(() => parseRoute(currentPathname()))
+  const shown = useRef(route)
+
+  const show = useCallback((next: Route, nav: Nav, scroll: number) => {
+    const source = clicked?.closest('a, button') ?? null
+    clicked = null
+    const sameScreen = screenKey(next) === screenKey(shown.current)
+    shown.current = next
+    if (sameScreen) return setRoute(next)
+    running?.skipTransition()
+    const commit = () => {
+      screenArrival.returning = nav !== 'forward'
+      flushSync(() => setRoute(next))
+      screenArrival.returning = false
+      scrollTo(0, scroll)
+    }
+    if (!document.startViewTransition) return commit()
+    const root = document.documentElement
+    const sources = nameHeroes(source)
+    let targets: HTMLElement[] = []
+    root.dataset.nav = nav
+    const transition = document.startViewTransition(async () => {
+      commit()
+      targets = nameTargets(sources)
+      await imagesReady(targets)
+    })
+    running = transition
+    transition.finished.finally(() => {
+      for (const el of [...sources, ...targets]) el.style.viewTransitionName = ''
+      if (running !== transition) return
+      running = null
+      delete root.dataset.nav
+    })
+  }, [])
+
   useEffect(() => {
-    const follow = () => setRoute(parseRoute(currentPathname()))
-    const arrive = () => {
-      follow()
-      scrollTo(0, 0)
+    history.scrollRestoration = 'manual'
+    const arrived = history.state as Entry
+    if (arrived?.idx === undefined) {
+      forget(0)
+      history.replaceState({ ...arrived, idx: 0 } satisfies Entry, '')
     }
+    lastIdx = entryIndex()
+    scrollTo(0, scrollAt.get(lastIdx) ?? 0)
+    const remember = (e: MouseEvent) => {
+      clicked = e.target as Element
+      setTimeout(() => { clicked = null })
+    }
+    const follow = () => {
+      scrollAt.set(lastIdx, scrollY)
+      const state = history.state as Entry
+      if (state?.idx === undefined) {
+        forget(lastIdx + 1)
+        history.replaceState({ ...state, idx: lastIdx + 1 } satisfies Entry, '')
+      }
+      lastIdx = entryIndex()
+      const nav: Nav = ownBack ? 'back' : 'fade'
+      ownBack = false
+      show(parseRoute(currentPathname()), nav, scrollAt.get(lastIdx) ?? 0)
+    }
+    document.addEventListener('click', remember, true)
     addEventListener('popstate', follow)
-    addEventListener('hashchange', arrive)
+    addEventListener('pagehide', persistEntries)
+    const missedBeforeListening = parseRoute(currentPathname())
+    if (JSON.stringify(missedBeforeListening) !== JSON.stringify(shown.current)) {
+      shown.current = missedBeforeListening
+      setRoute(missedBeforeListening)
+    }
     return () => {
+      document.removeEventListener('click', remember, true)
       removeEventListener('popstate', follow)
-      removeEventListener('hashchange', arrive)
+      removeEventListener('pagehide', persistEntries)
     }
-  }, [])
+  }, [show])
+
   const go = useCallback((path: string, back = false) => {
-    if (back && (history.state as Entry)?.from === path) return history.back()
-    if (back) replacePath(path)
-    else {
-      history.pushState({ from: appPath() } satisfies Entry, '', `#${path}`)
-      scrollTo(0, 0)
+    if (back && (history.state as Entry)?.from === path) {
+      rememberScroll()
+      ownBack = true
+      return history.back()
     }
-    setRoute(parseRoute(path.split('?')[0]))
-  }, [])
+    const idx = back ? entryIndex() : entryIndex() + 1
+    lastIdx = idx
+    rememberScroll()
+    if (back) replacePath(path)
+    else history.pushState({ from: appPath(), idx } satisfies Entry, '', `#${path}`)
+    forget(idx)
+    show(parseRoute(path.split('?')[0]), back ? 'back' : 'forward', 0)
+  }, [show])
+
   useEffect(() => {
     const followLink = (e: MouseEvent) => {
       const path = inAppLink(e)

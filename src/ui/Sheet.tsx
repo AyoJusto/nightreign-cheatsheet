@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, useDragControls, usePresence, type MotionValue, type PanInfo } from 'motion/react'
 import { crossfade } from './crossfade'
+import { sheetFade, sheetSpring } from './motion'
 import { detentHeights, type Detent, type SheetMeasure } from './sheetDetents'
 
 export type { Detent }
-const sheetSpring = { type: 'spring', visualDuration: 0.5, bounce: 0 } as const
 const FLOAT_GAP = 8
 const ORDER: Detent[] = ['peek', 'half', 'full']
 const DETENT_NAMES: Record<Detent, string> = { peek: 'collapsed', half: 'half open', full: 'fully open' }
@@ -84,7 +84,7 @@ export function Sheet(props: {
       y.jump(m.frame)
       safeToRemove?.()
     }
-    if (reduce) animate(fade, 0, { duration: 0.2, ease: 'easeOut' }).then(gone)
+    if (reduce) animate(fade, 0, sheetFade).then(gone)
     else animate(y, m.frame, sheetSpring).then(gone)
     return () => { cancelled = true }
   }, [present, props.detent, h.peek, h.half, h.full, measured])

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './test'
 
 const tapMarker = async (page: import('@playwright/test').Page, name: string) => {
   const icon = page.locator('.marker-boss').filter({ hasText: name }).locator('.marker-icon')

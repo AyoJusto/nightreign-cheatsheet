@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './test'
 
 test('pages paint in Graphite', async ({ page }) => {
   await page.goto('#/nightlord/tricephalos')

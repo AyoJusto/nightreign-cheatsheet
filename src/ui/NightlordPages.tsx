@@ -17,19 +17,19 @@ function RowWeakIcons({ enemy, nightlord }: { enemy: Enemy; nightlord?: boolean 
   )
 }
 
-export function EnemyRow({ enemy, href = `#/enemy/${enemy.id}`, nightlord }: { enemy: Enemy; href?: string; nightlord?: boolean }) {
-  return <LinkRow href={href} trailing={<RowWeakIcons enemy={enemy} nightlord={nightlord} />}>{enemy.name}</LinkRow>
+export function EnemyRow({ enemy, index, href = `#/enemy/${enemy.id}`, nightlord }: { enemy: Enemy; index: number; href?: string; nightlord?: boolean }) {
+  return <LinkRow href={href} index={index} trailing={<RowWeakIcons enemy={enemy} nightlord={nightlord} />}><span data-hero-from="title">{enemy.name}</span></LinkRow>
 }
 
 export function NightlordsPage({ go }: { go: Go }) {
   return (
     <Page title="Nightlords" go={go}>
       <Group>
-        {NIGHTLORDS.map(({ id, name }) => (
-          <LinkRow key={id} href={`#/nightlord/${id}`} trailing={<RowWeakIcons enemy={bestiary.nightlord(id)!} nightlord />}>
+        {NIGHTLORDS.map(({ id, name }, i) => (
+          <LinkRow key={id} href={`#/nightlord/${id}`} index={i} trailing={<RowWeakIcons enemy={bestiary.nightlord(id)!} nightlord />}>
             <span className="flex items-center gap-3">
-              <img src={`nightlords/${id}.webp`} alt="" width={40} height={40} className="rounded-full" draggable={false} />
-              {name}
+              <img data-hero-from="art" src={`nightlords/${id}.webp`} alt="" width={40} height={40} className="rounded-full" draggable={false} />
+              <span data-hero-from="title">{name}</span>
             </span>
           </LinkRow>
         ))}
@@ -54,7 +54,7 @@ export function NightlordPage({ id, go }: { id: NightlordId; go: Go }) {
         <NumbersTable forms={nightlord.forms} />
         {([1, 2] as const).map((n) => (
           <Section key={n} title={`Night ${n}`}>
-            <Group>{nights[n].map((e) => <EnemyRow key={e.id} enemy={e} />)}</Group>
+            <Group>{nights[n].map((e, i) => <EnemyRow key={e.id} enemy={e} index={i} />)}</Group>
           </Section>
         ))}
       </div>

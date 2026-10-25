@@ -1,10 +1,21 @@
-import type { ReactNode, Ref } from 'react'
+import { useLayoutEffect, useRef, type ReactNode, type Ref } from 'react'
+import { animate } from 'motion/react'
 import { Plate } from './Plate'
 import { Icon } from './Icon'
+import { useMotion } from './motion'
 
 export function TopBar({ onBack, children, trailing, className = '', ref }: {
   onBack: () => void; children?: ReactNode; trailing?: ReactNode; className?: string; ref?: Ref<HTMLDivElement>
 }) {
+  const m = useMotion()
+  const leading = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const parts = [...(leading.current?.parentElement?.children ?? [])] as HTMLElement[]
+    if (!parts.length) return
+    parts.forEach((part) => { part.style.opacity = '0' })
+    const fadeIn = animate(parts, { opacity: 1 }, m.fade)
+    return () => fadeIn.stop()
+  }, [])
   const back = <button className="pill-back" aria-label="Back" onClick={onBack}><Icon name="back" /></button>
   if (children === undefined) {
     return (
@@ -16,7 +27,7 @@ export function TopBar({ onBack, children, trailing, className = '', ref }: {
   }
   return (
     <Plate className={`pill ${className}`} ref={ref}>
-      <div className="pill-leading">{back}</div>
+      <div className="pill-leading" ref={leading}>{back}</div>
       {children}
       {trailing && <div className="pill-trailing">{trailing}</div>}
     </Plate>

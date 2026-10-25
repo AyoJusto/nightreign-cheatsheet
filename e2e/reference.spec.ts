@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './test'
 
 test('home search finds bosses and relic effects', async ({ page }) => {
   await page.goto('./')

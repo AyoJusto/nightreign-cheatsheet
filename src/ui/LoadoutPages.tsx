@@ -1,24 +1,47 @@
-import { useDeferredValue, useState } from 'react'
+import { useDeferredValue, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { byCategory, effectsIn, POOL_TAG, searchEffects, stackLabel, type StackTone } from '../loadout/effects'
 import { BUILDS, BY_CHARACTER, describe, groupSlots } from '../loadout/builds'
 import type { BuildLine, BuildSlot, Effect, EffectGroup } from '../loadout/loadout'
 import { Icon } from './Icon'
+import { CHEVRON_TURN, staggered, useMotion } from './motion'
 import { Group, LinkRow, Page, Section, type Go } from './Page'
 import { SearchField } from './SearchField'
+import { useKept } from './router'
 
 const STACK_TONE: Record<StackTone, string> = { yes: 'text-label', no: 'text-label-2', unknown: 'text-label-2' }
 export const GROUP_TITLES: Record<EffectGroup, string> = { relics: 'Relic Effects', weapons: 'Weapon Effects' }
 
 function Disclosure({ open }: { open: boolean }) {
-  return <Icon name="chevron" size={14} className={`mt-1 shrink-0 text-label-3 transition-transform ${open ? 'rotate-90' : ''}`} />
+  const m = useMotion()
+  return (
+    <motion.span className="mt-1 flex shrink-0 text-label-3" initial={false} animate={{ rotate: open ? CHEVRON_TURN : 0 }} transition={m.small}>
+      <Icon name="chevron" size={14} />
+    </motion.span>
+  )
 }
 
-export function EffectRow({ effect }: { effect: Effect }) {
+function Details({ open, children }: { open: boolean; children: ReactNode }) {
+  const m = useMotion()
+  return (
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div key="details" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }} transition={{ ...m.layout, opacity: m.fade }}>
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+export function EffectRow({ effect, index }: { effect: Effect; index: number }) {
+  const m = useMotion()
   const [open, setOpen] = useState(false)
   const stack = stackLabel(effect.stack)
   const pool = POOL_TAG[effect.pool]
   return (
-    <li className="shadow-[inset_0_-0.5px_0_var(--color-separator)] last:shadow-none">
+    <motion.li {...staggered(m, index)} className="shadow-[inset_0_-0.5px_0_var(--color-separator)] last:shadow-none">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-fill">
         <Disclosure open={open} />
         <span className="min-w-0 flex-1 text-base [overflow-wrap:anywhere]">{effect.title}</span>
@@ -27,18 +50,18 @@ export function EffectRow({ effect }: { effect: Effect }) {
           {pool && <span className="block text-label-2">{pool}</span>}
         </span>
       </button>
-      {open && (
+      <Details open={open}>
         <div className="px-4 pb-3 pl-10 text-[15px] leading-snug text-label-2">
           <p className="m-0 text-label">{effect.effect}</p>
           {effect.notes && <p className="m-0 mt-1.5">{effect.notes}</p>}
         </div>
-      )}
-    </li>
+      </Details>
+    </motion.li>
   )
 }
 
 export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useKept('query', '')
   const settledQuery = useDeferredValue(query)
   const found = settledQuery.trim() ? searchEffects(settledQuery).filter((e) => e.group === group) : null
   const list = found ?? effectsIn(group)
@@ -46,11 +69,11 @@ export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
     <Page title={GROUP_TITLES[group]} go={go}>
       <SearchField label="Filter" placeholder="Text on the relic" value={query} onChange={setQuery} />
       {found ? (
-        <Group className="mt-4">{list.map((e) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} />)}</Group>
+        <Group className="mt-4">{list.map((e, i) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} index={i} />)}</Group>
       ) : (
         byCategory(list).map(({ cat, items }) => (
           <Section key={cat} title={cat}>
-            <Group>{items.map((e) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} />)}</Group>
+            <Group>{items.map((e, i) => <EffectRow key={`${e.pool}:${e.title}`} effect={e} index={i} />)}</Group>
           </Section>
         ))
       )}
@@ -59,11 +82,12 @@ export function EffectsPage({ group, go }: { group: EffectGroup; go: Go }) {
   )
 }
 
-function Line({ line }: { line: BuildLine }) {
+function Line({ line, index }: { line: BuildLine; index: number }) {
+  const m = useMotion()
   const [open, setOpen] = useState(false)
   const effect = describe(line.effect)
   return (
-    <li className="shadow-[inset_0_-0.5px_0_var(--color-separator)] last:shadow-none">
+    <motion.li {...staggered(m, index)} className="shadow-[inset_0_-0.5px_0_var(--color-separator)] last:shadow-none">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-start gap-2 px-4 py-2.5 text-left hover:bg-fill">
         <Disclosure open={open} />
         <span className="min-w-0 flex-1 text-base">
@@ -71,8 +95,10 @@ function Line({ line }: { line: BuildLine }) {
           {(line.curses ?? []).map((c) => <span key={c} className="block text-[15px] text-immune">{c}</span>)}
         </span>
       </button>
-      {open && <p className="m-0 px-4 pb-3 pl-10 text-[15px] leading-snug text-label-2">{effect?.effect ?? 'No effect text in the sheet.'}</p>}
-    </li>
+      <Details open={open}>
+        <p className="m-0 px-4 pb-3 pl-10 text-[15px] leading-snug text-label-2">{effect?.effect ?? 'No effect text in the sheet.'}</p>
+      </Details>
+    </motion.li>
   )
 }
 
@@ -84,7 +110,7 @@ function Slots({ title, slots }: { title: string; slots: BuildSlot[] }) {
         {groupSlots(slots).flatMap((g) => g.options.map((slot, i) => (
           <div key={`${g.n}:${i}`}>
             <h3 className="mx-4 mb-1.5 text-[15px] font-semibold">{slot.label ?? `${title === 'Relics' ? 'Relic' : 'Deep'} ${g.n}`}</h3>
-            <Group>{slot.lines.map((l) => <Line key={l.effect + (l.as ?? '')} line={l} />)}</Group>
+            <Group>{slot.lines.map((l, i) => <Line key={l.effect + (l.as ?? '')} line={l} index={i} />)}</Group>
           </div>
         )))}
       </div>
@@ -94,11 +120,11 @@ function Slots({ title, slots }: { title: string; slots: BuildSlot[] }) {
 
 export function BuildsPage({ character, go }: { character: string | null; go: Go }) {
   const builds = character ? BY_CHARACTER.get(character) : undefined
-  const [picked, setPicked] = useState(0)
+  const [picked, setPicked] = useKept('build', 0)
   if (!builds) {
     return (
       <Page title="Builds" go={go}>
-        <Group>{BUILDS.map((c) => <LinkRow key={c.slug} href={`#/builds/${c.slug}`}>{c.name}</LinkRow>)}</Group>
+        <Group>{BUILDS.map((c, i) => <LinkRow key={c.slug} href={`#/builds/${c.slug}`} index={i}>{c.name}</LinkRow>)}</Group>
       </Page>
     )
   }

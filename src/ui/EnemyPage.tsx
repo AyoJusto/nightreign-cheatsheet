@@ -26,8 +26,8 @@ export function EnemyPage({ id, go }: { id: string; go: Go }) {
         {runs.length > 0 && (
           <Section title="Expeditions">
             <Group>
-              {runs.map((r) => (
-                <LinkRow key={r.nightlord} href={`#/nightlord/${r.nightlord}`} trailing={<span className="text-[15px] text-label-2">{nightsPhrase(r.nights)}</span>}>
+              {runs.map((r, i) => (
+                <LinkRow key={r.nightlord} href={`#/nightlord/${r.nightlord}`} index={i} trailing={<span className="text-[15px] text-label-2">{nightsPhrase(r.nights)}</span>}>
                   {nightlordName(r.nightlord)}
                 </LinkRow>
               ))}

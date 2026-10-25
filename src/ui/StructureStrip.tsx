@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, type ReactNode, type Ref } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { StructureIcon, ElementEmblem } from './StructureIcon'
 import { Plate } from './Plate'
 import type { KindGroup } from './structureGroups'
+import { useMotion } from './motion'
 import { ELEMENT_NAMES, kindName, splitStructure, structureName, type StructureKey } from '../domain/names'
 
-const appear = { initial: { opacity: 0 }, animate: { opacity: 1 } }
 const MAX_EMBLEMS = 3
 const NEIGHBOUR_SLIVER = 32
 
@@ -15,13 +15,15 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
   onName?: (name: string | null) => void
   variantsBelow?: boolean
 }) {
+  const m = useMotion()
+  const fadeInOut = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { ...m.layout, opacity: m.fade } }
   const naming = (name: string) => onName && {
     onPointerEnter: () => onName(name), onPointerLeave: () => onName(null), onFocus: () => onName(name), onBlur: () => onName(null),
   }
   const variantChips = (variants: StructureKey[]) => variants.map((v) => {
     const { element } = splitStructure(v)
     return (
-      <motion.button key={v} layout {...appear} className="strip-variant" aria-label={`Find ${structureName(v)}`}
+      <motion.button key={v} layout {...fadeInOut} className="strip-variant" aria-label={`Find ${structureName(v)}`}
         aria-pressed={focus === v} onClick={() => onVariant(v)}>
         <StructureIcon structure={v} size={36} />
         <span>{element ? ELEMENT_NAMES[element] : 'No element'}</span>
@@ -34,7 +36,7 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
       const [only] = variants
       const { element } = splitStructure(only)
       return [
-        <motion.button key={kind} layout className={element ? 'strip-variant' : 'strip-item'} data-kind={kind}
+        <motion.button key={kind} layout transition={m.layout} className={element ? 'strip-variant' : 'strip-item'} data-kind={kind}
           {...naming(structureName(only))} aria-label={`Find ${structureName(only)}`}
           aria-pressed={focus === only} onClick={() => onVariant(only)}>
           <StructureIcon structure={only} size={element ? 36 : 44} />
@@ -47,7 +49,7 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
     const typeNames = variants.map((v) => { const { element } = splitStructure(v); return element ? ELEMENT_NAMES[element] : 'no element' })
     const shown = elements.length > MAX_EMBLEMS ? elements.slice(0, 1) : elements
     return [
-      <motion.button key={kind} layout className="strip-item" data-kind={kind} {...naming(`${kindName(kind)}: ${typeNames.join(', ')}`)}
+      <motion.button key={kind} layout transition={m.layout} className="strip-item" data-kind={kind} {...naming(`${kindName(kind)}: ${typeNames.join(', ')}`)}
         aria-label={`${kindName(kind)}, ${variants.length} types: ${typeNames.join(', ')}`}
         aria-expanded={expanded} onClick={() => onKind(kind)}>
         <StructureIcon structure={kind} size={44} />
@@ -61,13 +63,13 @@ export function StructureButtons({ groups, open, focus, onKind, onVariant, onNam
       ...(expanded && !variantsBelow ? variantChips(variants) : []),
     ]
   })
-  if (!variantsBelow || !expandedGroup) return tiles
-  return [
-    ...tiles,
-    <div key="variants" className="structure-variants" role="group" aria-label={`${kindName(expandedGroup.kind)} types`}>
+  const below = variantsBelow && expandedGroup && (
+    <motion.div key={`variants:${expandedGroup.kind}`} className="structure-variants" role="group" aria-label={`${kindName(expandedGroup.kind)} types`}
+      exit={{ opacity: 0 }} transition={m.fade}>
       {variantChips(expandedGroup.variants)}
-    </div>,
-  ]
+    </motion.div>
+  )
+  return <AnimatePresence mode="popLayout">{tiles}{below}</AnimatePresence>
 }
 
 export function StructureStrip({ plateRef, open, hidden, children }: {

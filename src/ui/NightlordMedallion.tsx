@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
+import { AnimatePresence, motion, useTransform, type MotionValue } from 'motion/react'
+import { useMotion } from './motion'
 import { useWide } from './useWide'
 import './weakness.css'
 import { DAMAGE_NAMES, cardRows, nightlordName, weaknessPhrase, type NightlordPick } from '../domain/names'
@@ -11,7 +12,6 @@ export interface Corner { rects: CornerRect[]; reach: number }
 export const NO_CORNER: Corner = { rects: [], reach: 0 }
 
 const NONE: CornerRect[] = []
-const cardMotion = { type: 'spring', visualDuration: 0.3, bounce: 0 } as const
 const TUCK_DISTANCE = 48
 
 export function NightlordMedallion({ nightlord, result, lift, rest, corner, moves }: {
@@ -36,7 +36,8 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
   const weakness = unknown ? undefined : nightlordHeadline(bestiary.nightlord(nightlord)!)
   const label = [nightlordName(nightlord), weakness ? weaknessPhrase(weakness) : 'named once the seed is found'].filter(Boolean).join(': ')
 
-  const slide = useReducedMotion() ? 0 : -12
+  const m = useMotion()
+  const slide = -m.cardSlide
   const root = useRef<HTMLDivElement>(null)
   const y = useTransform(lift, (v) => -v)
   const opacity = useTransform(() => Math.min(1, Math.max(0, 1 - (lift.get() - rest.get()) / TUCK_DISTANCE)))
@@ -90,7 +91,7 @@ export function NightlordMedallion({ nightlord, result, lift, rest, corner, move
             initial={{ opacity: 0, x: slide }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: slide }}
-            transition={cardMotion}
+            transition={{ ...m.layout, opacity: m.fade }}
           >
             <CardRows weakness={weakness} />
           </motion.div>

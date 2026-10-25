@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { MotionValue } from 'motion/react'
+import { AnimatePresence, motion, useIsPresent, type MotionValue } from 'motion/react'
 import type { MapContent, MarkTap } from './mapTypes'
 import { enemyOfMark, resultMap, type Layer } from './resultMap'
 import { Sheet, type Detent } from './Sheet'
@@ -15,6 +15,7 @@ import { bestiary, headline, type Headline } from '../bestiary/bestiary'
 import type { Affliction, Enemy } from '../bestiary/enemy'
 import type { Seed } from '../domain/seed'
 import { TopBar } from './TopBar'
+import { TOAST_MS, useMotion } from './motion'
 import { EnemyCardHeader, EnemyFacts, EnemyPageLink } from './EnemyCard'
 import { gearForTheRun } from '../domain/gear'
 
@@ -32,6 +33,7 @@ const LAYER_ICON: Record<Layer, string> = {
 const CHIP_WIDTH = 49
 const CHIP_GAP = 4
 const CHIP_STEP = CHIP_WIDTH + CHIP_GAP
+const MotionPlate = motion.create(Plate)
 const MARKER_LAYERS = ['circle', 'event', 'boss', 'evergaol', 'chest', 'merchant', 'rot-blessing'] as const
 const LISTS = [['boss', 'Field bosses'], ['evergaol', 'Evergaols'], ['merchant', 'Merchants']] as const
 const POPOVER_WIDTH = 320
@@ -47,6 +49,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   moves: MotionValue<number>
 }) {
   const wide = useWide()
+  const m = useMotion()
   const pillRef = useMeasure(topInset, pillBottom)
   const chips = useRef<HTMLDivElement>(null)
   const fadeChips = useCallback(() => {
@@ -118,7 +121,7 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
   const flash = (text: string) => {
     clearTimeout(toastTimer.current)
     setToast(text)
-    toastTimer.current = setTimeout(() => setToast(null), 1500)
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS)
   }
   const share = async () => {
     const url = linkTo(`/seed/${seed.id}`)
@@ -232,22 +235,34 @@ export function ResultOverlay({ seed, go, bottomInset, topInset, restInset, setM
       {wide ? (
         <>
           <aside className="side-panel" aria-label="Seed details"><div className="side-scroll">{title}{runCard}{lists}</div></aside>
-          {focus && <Popover focus={focus} onClose={close}>{card}</Popover>}
+          <AnimatePresence>
+            {focus && <Popover key="popover" focus={focus} onClose={close}>{card}</Popover>}
+          </AnimatePresence>
         </>
       ) : (
         <Sheet detent={detent} onDetent={(d) => { if (d === 'peek' && focus) close(); else setDetent(d) }} height={bottomInset} rest={restInset} top={topInset}
           label={focus ? focus.enemy.name : 'Seed details'}
           header={focus ? <EnemyCardHeader enemy={focus.enemy} onClose={close} /> : title}
           more={focus ? undefined : lists}>
-          {focus ? card : runCard}
+          <motion.div key={focus ? focus.enemy.id : 'run'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={m.fade}>
+            {focus ? card : runCard}
+          </motion.div>
         </Sheet>
       )}
-      {toast && <Plate className="toast" role="status">{toast}</Plate>}
+      <AnimatePresence>
+        {toast && (
+          <MotionPlate key="toast" className="toast" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={m.fade}>
+            {toast}
+          </MotionPlate>
+        )}
+      </AnimatePresence>
     </>
   )
 }
 
 function Popover({ focus, onClose, children }: { focus: Focus; onClose: () => void; children: ReactNode }) {
+  const m = useMotion()
+  const present = useIsPresent()
   const ref = useRef<HTMLElement>(null)
   const [height, setHeight] = useState(0)
   useLayoutEffect(() => setHeight(ref.current!.offsetHeight), [focus])
@@ -256,10 +271,11 @@ function Popover({ focus, onClose, children }: { focus: Focus; onClose: () => vo
   const left = Math.min(mapRight - POPOVER_WIDTH - EDGE, Math.max(EDGE, beside))
   const top = Math.min(innerHeight - height - EDGE, Math.max(EDGE, focus.y - 40))
   return (
-    <section ref={ref} role="dialog" aria-label={focus.enemy.name} className="glass fixed z-30 box-border rounded-card px-4 pt-2 pb-4" style={{ left, top, width: POPOVER_WIDTH }}>
+    <motion.section ref={ref} role={present ? 'dialog' : undefined} inert={!present} aria-label={focus.enemy.name} className="glass fixed z-30 box-border rounded-card px-4 pt-2 pb-4" style={{ left, top, width: POPOVER_WIDTH }}
+      initial={{ opacity: 0, y: m.rise }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: m.rise }} transition={{ ...m.layout, opacity: m.fade }}>
       <EnemyCardHeader enemy={focus.enemy} onClose={onClose} takeFocus />
       {children}
-    </section>
+    </motion.section>
   )
 }
 
